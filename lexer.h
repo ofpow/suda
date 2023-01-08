@@ -1,3 +1,5 @@
+#pragma once
+
 typedef enum {
     Eof,
     Equal,
@@ -34,6 +36,48 @@ typedef enum {
     Break,
     Comment,
 } Token_Type;
+
+char *find_tok_type(int type) {
+    switch (type) {
+        case Eof: return "Eof";
+        case Equal: return "Equal";
+        case Bang: return "Bang";
+        case Bang_Equal: return "Bang_Equal";
+        case Greater: return "Greater";
+        case Greater_Equal: return "Greater_Equal";
+        case Less: return "Less";
+        case Less_Equal: return "Less_Equal";
+        case At: return "At";
+        case Semicolon: return "Semicolon";
+        case Left_Paren: return "Left_Paren";
+        case Right_Paren: return "Right_Paren";
+        case Identifier: return "Identifier";
+        case String: return "String";
+        case Number: return "Number";
+        case And: return "And";
+        case If: return "If";
+        case Else: return "Else";
+        case Func: return "Func";
+        case Or: return "Or";
+        case Print: return "Print";
+        case Return: return "Return";
+        case While: return "While";
+        case Add: return "Add";
+        case Sub: return "Sub";
+        case Mult: return "Mult";
+        case Div: return "Div";
+        case Num: return "Num";
+        case Str: return "Str";
+        case Arr: return "Arr";
+        case Set:return "Set";
+        case Continue: return "Continue";
+        case Break: return "Break";
+        case Comment: return "Comment";
+        default:
+            ERR("unreachable\n");
+            exit(1);
+    }
+}
 
 typedef struct Lexer {
     const char *start;
