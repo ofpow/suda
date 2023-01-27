@@ -1,82 +1,81 @@
 #pragma once
 
 typedef enum {
-    Eof,
-    Equal,
-    Bang,
-    Bang_Equal,
-    Greater,
-    Greater_Equal,
-    Less,
-    Less_Equal,
-    At,
-    Semicolon,
-    Left_Paren,
-    Right_Paren,
-    Identifier,
-    String,
-    Number,
-    And,
-    If,
-    Else,
-    Func,
-    Or,
-    Print,
-    Return,
-    While,
-    Add,
-    Sub,
-    Mult,
-    Div,
-    Num,
-    Str,
-    Arr,
-    Set,
-    Continue,
-    Break,
-    Comment,
+    Tok_Eof,
+    Tok_Equal,
+    Tok_Bang,
+    Tok_Bang_Equal,
+    Tok_Greater,
+    Tok_Greater_Equal,
+    Tok_Less,
+    Tok_Less_Equal,
+    Tok_At,
+    Tok_Semicolon,
+    Tok_Left_Paren,
+    Tok_Right_Paren,
+    Tok_Identifier,
+    Tok_String,
+    Tok_Number,
+    Tok_And,
+    Tok_If,
+    Tok_Else,
+    Tok_Func,
+    Tok_Or,
+    Tok_Print,
+    Tok_Return,
+    Tok_While,
+    Tok_Add,
+    Tok_Sub,
+    Tok_Mult,
+    Tok_Div,
+    Tok_Num,
+    Tok_Str,
+    Tok_Arr,
+    Tok_Set,
+    Tok_Continue,
+    Tok_Break,
+    Tok_Comment,
 } Token_Type;
 
 char *find_tok_type(int type) {
     switch (type) {
-        case Eof: return "Eof";
-        case Equal: return "Equal";
-        case Bang: return "Bang";
-        case Bang_Equal: return "Bang_Equal";
-        case Greater: return "Greater";
-        case Greater_Equal: return "Greater_Equal";
-        case Less: return "Less";
-        case Less_Equal: return "Less_Equal";
-        case At: return "At";
-        case Semicolon: return "Semicolon";
-        case Left_Paren: return "Left_Paren";
-        case Right_Paren: return "Right_Paren";
-        case Identifier: return "Identifier";
-        case String: return "String";
-        case Number: return "Number";
-        case And: return "And";
-        case If: return "If";
-        case Else: return "Else";
-        case Func: return "Func";
-        case Or: return "Or";
-        case Print: return "Print";
-        case Return: return "Return";
-        case While: return "While";
-        case Add: return "Add";
-        case Sub: return "Sub";
-        case Mult: return "Mult";
-        case Div: return "Div";
-        case Num: return "Num";
-        case Str: return "Str";
-        case Arr: return "Arr";
-        case Set:return "Set";
-        case Continue: return "Continue";
-        case Break: return "Break";
-        case Comment: return "Comment";
-        default:
-            ERR("unreachable\n");
-            exit(1);
+        case Tok_Eof: return "Tok_Eof";
+        case Tok_Equal: return "Tok_Equal";
+        case Tok_Bang: return "Tok_Bang";
+        case Tok_Bang_Equal: return "Tok_Bang_Equal";
+        case Tok_Greater: return "Tok_Greater";
+        case Tok_Greater_Equal: return "Tok_Greater_Equal";
+        case Tok_Less: return "Tok_Less";
+        case Tok_Less_Equal: return "Tok_Less_Equal";
+        case Tok_At: return "Tok_At";
+        case Tok_Semicolon: return "Tok_Semicolon";
+        case Tok_Left_Paren: return "Tok_Left_Paren";
+        case Tok_Right_Paren: return "Tok_Right_Paren";
+        case Tok_Identifier: return "Tok_Identifier";
+        case Tok_String: return "Tok_String";
+        case Tok_Number: return "Tok_Number";
+        case Tok_And: return "Tok_And";
+        case Tok_If: return "Tok_If";
+        case Tok_Else: return "Tok_Else";
+        case Tok_Func: return "Tok_Func";
+        case Tok_Or: return "Tok_Or";
+        case Tok_Print: return "Tok_Print";
+        case Tok_Return: return "Tok_Return";
+        case Tok_While: return "Tok_While";
+        case Tok_Add: return "Tok_Add";
+        case Tok_Sub: return "Tok_Sub";
+        case Tok_Mult: return "Tok_Mult";
+        case Tok_Div: return "Tok_Div";
+        case Tok_Num: return "Tok_Num";
+        case Tok_Str: return "Tok_Str";
+        case Tok_Arr: return "Tok_Arr";
+        case Tok_Set:return "Tok_Set";
+        case Tok_Continue: return "Tok_Continue";
+        case Tok_Break: return "Tok_Break";
+        case Tok_Comment: return "Tok_Comment";
+        default: ERR("unreachable\n");
     }
+    return "unreachable";
 }
 
 typedef struct Lexer {
@@ -86,7 +85,7 @@ typedef struct Lexer {
 } Lexer;
 
 typedef struct Token {
-    int type;
+    Token_Type type;
     const char *start;
     int length;
     int line;
@@ -168,14 +167,14 @@ static Token parse_string(Lexer *l) {
         ERR("Unclosed string on line %d\n", l->line);
     }
     advance(l);
-    return make_token(String, l);
+    return make_token(Tok_String, l);
 }
 
 static Token_Type check_keyword(int start, int length, const char *rest, Token_Type type, Lexer *l) {
     if (l->current - l->start == start + length && memcmp(l->start + start, rest, length) == 0) {
         return type;
     }
-    return Identifier;
+    return Tok_Identifier;
 }
 
 static Token_Type id_type(Lexer *l) {
@@ -184,53 +183,53 @@ static Token_Type id_type(Lexer *l) {
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
                     case 'd':
-                        return check_keyword(2, 1, "d", Add, l);
+                        return check_keyword(2, 1, "d", Tok_Add, l);
                     case 'n':
-                        return check_keyword(2, 1, "d", And, l);
+                        return check_keyword(2, 1, "d", Tok_And, l);
                     case 'r':
-                        return check_keyword(2, 1, "r", Arr, l);
+                        return check_keyword(2, 1, "r", Tok_Arr, l);
                 }
             }
             break;
         case 'b':
-            return check_keyword(1, 4, "reak", Break, l);
+            return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':
-            return check_keyword(1, 3, "ont", Continue, l);
+            return check_keyword(1, 3, "ont", Tok_Continue, l);
         case 'd':
-            return check_keyword(1, 2, "iv", Div, l);
+            return check_keyword(1, 2, "iv", Tok_Div, l);
         case 'e':
-            return check_keyword(1, 3, "lse", Else, l);
+            return check_keyword(1, 3, "lse", Tok_Else, l);
         case 'f':
-            return check_keyword(1, 3, "unc", Func, l);
+            return check_keyword(1, 3, "unc", Tok_Func, l);
         case 'i':
-            return check_keyword(1, 1, "f", If, l);
+            return check_keyword(1, 1, "f", Tok_If, l);
         case 'm':
-            return check_keyword(1, 3, "ult", Mult, l);
+            return check_keyword(1, 3, "ult", Tok_Mult, l);
         case 'n':
-            return check_keyword(1, 2, "um", Num, l);
+            return check_keyword(1, 2, "um", Tok_Num, l);
         case 'o':
-            return check_keyword(1, 1, "r", Or, l);
+            return check_keyword(1, 1, "r", Tok_Or, l);
         case 'p':
-            return check_keyword(1, 4, "rint", Print, l);
+            return check_keyword(1, 4, "rint", Tok_Print, l);
         case 'r':
-            return check_keyword(1, 5, "eturn", Return, l);
+            return check_keyword(1, 5, "eturn", Tok_Return, l);
         case 's':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
                     case 'u':
-                        return check_keyword(2, 1, "b", Sub, l);
+                        return check_keyword(2, 1, "b", Tok_Sub, l);
                     case 'e':
-                        return check_keyword(2, 1, "t", Set, l);
+                        return check_keyword(2, 1, "t", Tok_Set, l);
                     case 't':
-                        return check_keyword(2, 1, "r", Str, l);
+                        return check_keyword(2, 1, "r", Tok_Str, l);
                 }
             }
             break;
         case 'w':
-            return check_keyword(1, 4, "hile", While, l);
+            return check_keyword(1, 4, "hile", Tok_While, l);
 
     }
-    return Identifier;
+    return Tok_Identifier;
 }
 
 static Token parse_number(Lexer *l) {
@@ -240,7 +239,7 @@ static Token parse_number(Lexer *l) {
         advance(l);
         while (is_num(peek(l))) advance(l);
     }
-    return make_token(Number, l);
+    return make_token(Tok_Number, l);
 }
 
 static Token parse_identifier(Lexer *l) {
@@ -255,7 +254,7 @@ Token scan_token(Lexer *l) {
     l->start = l->current;
     //at end?
     if (at_end(l)) {
-        return make_token(Eof, l);
+        return make_token(Tok_Eof, l);
     }
 
     //parse token
@@ -273,23 +272,23 @@ Token scan_token(Lexer *l) {
     switch (c) {
         case '#':
             while (!at_end(l) && *l->current != '\n') advance(l);
-            return make_token(Comment, l);
+            return make_token(Tok_Comment, l);
         case '=':
-            return make_token(Equal, l);
+            return make_token(Tok_Equal, l);
         case '!':
-            return make_token(match('=', l) ? Bang_Equal : Bang, l);
+            return make_token(match('=', l) ? Tok_Bang_Equal : Tok_Bang, l);
         case '>':
-            return make_token(match('=', l) ? Greater_Equal : Greater, l);
+            return make_token(match('=', l) ? Tok_Greater_Equal : Tok_Greater, l);
         case '<':
-            return make_token(match('=', l) ? Less_Equal : Less, l);
+            return make_token(match('=', l) ? Tok_Less_Equal : Tok_Less, l);
         case '"':
             return parse_string(l);
         case ';':
-            return make_token(Semicolon, l);
+            return make_token(Tok_Semicolon, l);
         case '(':
-            return make_token(Left_Paren, l);
+            return make_token(Tok_Left_Paren, l);
         case ')':
-            return make_token(Right_Paren, l);
+            return make_token(Tok_Right_Paren, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c);
     }
@@ -304,3 +303,47 @@ Token scan_token(Lexer *l) {
 //    printf("   | ");
 //}
 //printf("%2d '%.*s' %d\n", tok.type, tok.length, tok.start, tok.jump_index);
+//
+//old tokenizer, with calculated jump indices
+//while (1) {
+//    if (tokens_index >= tokens_size) {
+//        tokens_size *= 2;
+//        tokens = realloc(tokens, tokens_size);
+//    }
+//    Token tok = scan_token(&lexer);
+//    if (tok.type == Tok_Eof) {
+//        tokens[tokens_index] = tok;
+//        tokens_index++;
+//        break;
+//    } else if (tok.type == Tok_Comment) {
+//    } else if (tok.type == Tok_If || tok.type == Tok_While) {
+//        if (jumps_index >= jumps_size) {
+//            jumps_size *= 2;
+//            jump_indices = realloc(jump_indices, jumps_size);
+//        }
+//        jump_indices[jumps_index] = tokens_index;
+//        jumps_index++;
+//        tokens[tokens_index] = tok;
+//        tokens_index++;
+//    } else if (tok.type == Tok_Else) {
+//        if (tokens[jump_indices[jumps_index - 1]].type != Tok_If) {
+//            ERR("ERROR: else can only be used in if blocks\n");
+//        } else {
+//            tok.jump_index = jump_indices[jumps_index - 1];
+//            jumps_index--;
+//            tokens[tokens_index] = tok;
+//            tokens_index++;
+//        }
+//    } else if (tok.type == Tok_Semicolon) {
+//        if (jumps_index - 1 < 0) {
+//            ERR("ERROR: semicolon without block opener on line %d\n", tok.line);
+//        }
+//        tok.jump_index = jump_indices[jumps_index - 1];
+//        jumps_index--;
+//        tokens[tokens_index] = tok;
+//        tokens_index++;
+//    } else {
+//        tokens[tokens_index] = tok;
+//        tokens_index++;
+//    }
+//}

@@ -2,9 +2,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdarg.h>
 
-#define ERR(...) fprintf (stderr, __VA_ARGS__);
-#define ASSERT(expr, ...) if (!expr) {fprintf (stderr, __VA_ARGS__); exit(1);}
+#define DEBUG
+
+void free_mem(int exit_val);
+
+#define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
+#define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
+
 
 int strtoi(const char *str, int len) {
     int total = 0;
@@ -17,6 +23,34 @@ int strtoi(const char *str, int len) {
 }
 
 #include "lexer.h"
+#include "parser.h"
+#include "interpreter.h"
+
+//global variables for access to freeing from anywhere
+Token *tokens;
+char *program;
+Parser p;
+
+void free_node(Node *n) {
+    #ifdef DEBUG
+    printf("free node %s\n", find_ast_type(n->type));
+    #endif
+    if (n == NULL) return;
+    if (n->value != NULL) n->value = NULL;
+    if (n->left != NULL) {free_node(n->left); n->left = NULL;}
+    if (n->right != NULL) {free_node(n->right); n->right = NULL;}
+    if (n->left == NULL && n->right == NULL && n->value == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
+}
+
+void free_mem(int exit_val) {
+    #ifdef DEBUG
+    printf("\n----------\n\n");
+    #endif
+    free(tokens);
+    free_node(p.nodes);
+    free(program);
+    exit(exit_val);
+}
 
 int main(int argc, char *argv[]) {
     //read input file
@@ -34,7 +68,7 @@ int main(int argc, char *argv[]) {
     size_t file_size = ftell(file);
     rewind(file);
 
-    char *program = malloc(file_size + 1);
+    program = malloc(file_size + 1);
     program[fread(program, 1, file_size, file)] = '\0';
 
     fclose(file);
@@ -44,13 +78,7 @@ int main(int argc, char *argv[]) {
     int tokens_index = 0;
     int tokens_size = 100;
 
-    Token *tokens = calloc(tokens_size, sizeof(struct Token));
-
-    int line = -1;
-
-    int jumps_size = 10;
-    int jumps_index = 0;
-    int *jump_indices = calloc(jumps_size, sizeof(int));
+    tokens = calloc(tokens_size, sizeof(struct Token));
 
     while (1) {
         if (tokens_index >= tokens_size) {
@@ -58,46 +86,22 @@ int main(int argc, char *argv[]) {
             tokens = realloc(tokens, tokens_size);
         }
         Token tok = scan_token(&lexer);
-        if (tok.type == Eof) {
+        if (tok.type == Tok_Eof) {
+            tokens[tokens_index] = tok;
+            tokens_index++;
             break;
-        } else if (tok.type == Comment) {
-        } else if (tok.type == If || tok.type == While) {
-            if (jumps_index >= jumps_size) {
-                jumps_size *= 2;
-                jump_indices = realloc(jump_indices, jumps_size);
-            }
-            jump_indices[jumps_index] = tokens_index;
-            jumps_index++;
-            tokens[tokens_index] = tok;
-            tokens_index++;
-        } else if (tok.type == Else) {
-            if (tokens[jump_indices[jumps_index - 1]].type != If) {
-                ERR("ERROR: else can only be used in if blocks\n");
-                goto clean_up;
-            } else {
-                tok.jump_index = jump_indices[jumps_index - 1];
-                jumps_index--;
-                tokens[tokens_index] = tok;
-                tokens_index++;
-            }
-        } else if (tok.type == Semicolon) {
-            if (jumps_index - 1 < 0) {
-                ERR("ERROR: semicolon without block opener on line %d\n", tok.line);
-                goto clean_up;
-            }
-            tok.jump_index = jump_indices[jumps_index - 1];
-            jumps_index--;
-            tokens[tokens_index] = tok;
-            tokens_index++;
+        } else if (tok.type == Tok_Comment) {
         } else {
             tokens[tokens_index] = tok;
             tokens_index++;
         }
+        #ifdef DEBUG
+        printf("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
+        #endif
     }
-clean_up:
-    free(jump_indices);
+    p.tokens = tokens;
+    p.index = 0;
+    parse(&p);
 
-    free(tokens);
-    free(program);
-    return 0;
+    free_mem(0);
 }
