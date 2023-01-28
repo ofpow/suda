@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
     //tokenize program
     Lexer lexer = { program, program, 1 };
     int tokens_index = 0;
-    int tokens_size = 100;
+    int tokens_size = 10;
 
     tokens = calloc(tokens_size, sizeof(struct Token));
 
     while (1) {
         if (tokens_index >= tokens_size) {
             tokens_size *= 2;
-            tokens = realloc(tokens, tokens_size);
+            tokens = realloc(tokens, tokens_size * sizeof(struct Token));
         }
         Token tok = scan_token(&lexer);
         if (tok.type == Tok_Eof) {
