@@ -9,7 +9,9 @@
  * <expr> : <literal>
  */
 
-#define CURRENT_TOK p->tokens[p->index]
+#define CURRENT_TOK p->tokens[p->tok_index]
+#define NEXT_TOK p->tokens[p->tok_index + 1]
+#define CURRENT_NODE p->nodes[p->node_index]
 #define NO_TOK (Token) {0}
 
 typedef enum {
@@ -45,12 +47,18 @@ typedef struct Node {
 
 typedef struct Parser {
     Token *tokens;
-    int index;
+    int tok_index;
 
-    Node *nodes;
+    Node **nodes;
+    int node_index;
 } Parser;
 
 Node *new_node(AST_Type type, Token *value) {
+
+    #ifdef DEBUG
+    printf("NODE ( `%s` )\n", find_ast_type(type));
+    #endif
+
     Node *node = calloc(1, sizeof(struct Node));
     node->type = type;
     if (value->type) node->value = value;
@@ -60,14 +68,14 @@ Node *new_node(AST_Type type, Token *value) {
 Node *expr(Parser *p) {
     switch (CURRENT_TOK.type) {
         case Tok_String:
-            p->index++; return new_node(AST_Literal, &CURRENT_TOK);
+            p->tok_index++; return new_node(AST_Literal, &CURRENT_TOK);
         case Tok_Number:
-            p->index++; return new_node(AST_Literal, &CURRENT_TOK);
+            p->tok_index++; return new_node(AST_Literal, &CURRENT_TOK);
         case Tok_Left_Paren:
-            p->index++;
+            p->tok_index++;
             Node *n = expr(p);
             ASSERT((CURRENT_TOK.type == Tok_Right_Paren), "Require closing parenthese, got %s\n", find_tok_type(CURRENT_TOK.type));
-            p->index++;
+            p->tok_index++;
             return n;
         default: ERR("Unsupported token type %s\n", find_tok_type(CURRENT_TOK.type));
     }
@@ -78,7 +86,7 @@ Node *statement(Parser *p) {
     switch (CURRENT_TOK.type) {
         case Tok_Print:;
             Node *n = new_node(AST_Print, &NO_TOK);
-            p->index++;
+            p->tok_index++;
             n->left = expr(p);
             return n;        
         case Tok_Eof:;
@@ -86,8 +94,4 @@ Node *statement(Parser *p) {
         default: ERR("Unsupported token type %s\n", find_tok_type(CURRENT_TOK.type));
     }
     return (Node*) {0};
-}
-
-void parse(Parser *p) {
-    p->nodes = statement(p);
 }

@@ -1,26 +1,15 @@
+//#define DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 
-#define DEBUG
-
 void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
-
-
-int strtoi(const char *str, int len) {
-    int total = 0;
-    for (int i = 0; i < len - 1; i++) {
-        total += str[i] - '0';
-        total *= 10;
-    }
-    total += str[len - 1] - '0';
-    return total;
-}
 
 #include "lexer.h"
 #include "parser.h"
@@ -30,11 +19,15 @@ int strtoi(const char *str, int len) {
 Token *tokens;
 char *program;
 Parser p;
+Node **nodes;
+int nodes_index;
 
 void free_node(Node *n) {
+
     #ifdef DEBUG
     printf("free node %s\n", find_ast_type(n->type));
     #endif
+
     if (n == NULL) return;
     if (n->value != NULL) n->value = NULL;
     if (n->left != NULL) {free_node(n->left); n->left = NULL;}
@@ -43,11 +36,14 @@ void free_node(Node *n) {
 }
 
 void free_mem(int exit_val) {
+
     #ifdef DEBUG
     printf("\n----------\n\n");
     #endif
+
     free(tokens);
-    free_node(p.nodes);
+    for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
+    free(nodes);
     free(program);
     exit(exit_val);
 }
@@ -99,9 +95,35 @@ int main(int argc, char *argv[]) {
         printf("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
         #endif
     }
+
+    #ifdef DEBUG
+    printf("\n----------\n\n");
+    #endif
+
+    //parse tokens
     p.tokens = tokens;
-    p.index = 0;
-    parse(&p);
+    p.tok_index = 0;
+
+    nodes_index = 0;
+    int nodes_size = 10;
+
+    nodes = calloc(nodes_size, sizeof(Node*));
+
+    while (1) {
+        if (nodes_index >= nodes_size) {
+            nodes_size *= 2;
+            nodes = realloc(nodes, nodes_size * sizeof(Node*));
+        }
+        Node *n = statement(&p);
+        if (n->type == Tok_Eof) {
+            nodes[nodes_index] = n;
+            nodes_index++;
+            break;
+        } else {
+            nodes[nodes_index] = n;
+            nodes_index++;
+        }
+    }
 
     free_mem(0);
 }
