@@ -10,6 +10,11 @@ void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
+#ifdef DEBUG
+    #define debug(...) printf(__VA_ARGS__);
+#else
+    #define debug(...)
+#endif
 
 #include "lexer.h"
 #include "parser.h"
@@ -24,9 +29,7 @@ int nodes_index;
 
 void free_node(Node *n) {
 
-    #ifdef DEBUG
-    printf("free node %s\n", find_ast_type(n->type));
-    #endif
+    debug("free node %s\n", find_ast_type(n->type));
 
     if (n == NULL) return;
     if (n->value != NULL) n->value = NULL;
@@ -37,9 +40,7 @@ void free_node(Node *n) {
 
 void free_mem(int exit_val) {
 
-    #ifdef DEBUG
-    printf("\n----------\n\n");
-    #endif
+    debug("\n----------\n\n");
 
     free(tokens);
     for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
@@ -91,14 +92,10 @@ int main(int argc, char *argv[]) {
             tokens[tokens_index] = tok;
             tokens_index++;
         }
-        #ifdef DEBUG
-        printf("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
-        #endif
+        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
     }
 
-    #ifdef DEBUG
-    printf("\n----------\n\n");
-    #endif
+    debug("\n----------\n\n");
 
     //parse tokens
     p.tokens = tokens;
@@ -124,6 +121,8 @@ int main(int argc, char *argv[]) {
             nodes_index++;
         }
     }
+
+    interpret(nodes, nodes_index);
 
     free_mem(0);
 }

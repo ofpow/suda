@@ -11,6 +11,7 @@
 
 #define CURRENT_TOK p->tokens[p->tok_index]
 #define NEXT_TOK p->tokens[p->tok_index + 1]
+#define LAST_TOK p->tokens[p->tok_index - 1]
 #define CURRENT_NODE p->nodes[p->node_index]
 #define NO_TOK (Token) {0}
 
@@ -55,22 +56,22 @@ typedef struct Parser {
 
 Node *new_node(AST_Type type, Token *value) {
 
-    #ifdef DEBUG
-    printf("NODE ( `%s` )\n", find_ast_type(type));
-    #endif
+    debug("NODE ( `%s` )\n", find_ast_type(type));
 
     Node *node = calloc(1, sizeof(struct Node));
     node->type = type;
-    if (value->type) node->value = value;
+    if (value != NULL) node->value = value; else node->value = NULL;
+    node->left = NULL;
+    node->right = NULL;
     return node;
 }
 
 Node *expr(Parser *p) {
     switch (CURRENT_TOK.type) {
         case Tok_String:
-            p->tok_index++; return new_node(AST_Literal, &CURRENT_TOK);
+            p->tok_index++; return new_node(AST_Literal, &LAST_TOK);
         case Tok_Number:
-            p->tok_index++; return new_node(AST_Literal, &CURRENT_TOK);
+            p->tok_index++; return new_node(AST_Literal, &LAST_TOK);
         case Tok_Left_Paren:
             p->tok_index++;
             Node *n = expr(p);
