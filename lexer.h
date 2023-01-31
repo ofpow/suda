@@ -182,8 +182,6 @@ static Token_Type id_type(Lexer *l) {
         case 'a':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
-                    case 'd':
-                        return check_keyword(2, 1, "d", Tok_Add, l);
                     case 'n':
                         return check_keyword(2, 1, "d", Tok_And, l);
                     case 'r':
@@ -195,16 +193,12 @@ static Token_Type id_type(Lexer *l) {
             return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':
             return check_keyword(1, 3, "ont", Tok_Continue, l);
-        case 'd':
-            return check_keyword(1, 2, "iv", Tok_Div, l);
         case 'e':
             return check_keyword(1, 3, "lse", Tok_Else, l);
         case 'f':
             return check_keyword(1, 3, "unc", Tok_Func, l);
         case 'i':
             return check_keyword(1, 1, "f", Tok_If, l);
-        case 'm':
-            return check_keyword(1, 3, "ult", Tok_Mult, l);
         case 'n':
             return check_keyword(1, 2, "um", Tok_Num, l);
         case 'o':
@@ -216,8 +210,6 @@ static Token_Type id_type(Lexer *l) {
         case 's':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
-                    case 'u':
-                        return check_keyword(2, 1, "b", Tok_Sub, l);
                     case 'e':
                         return check_keyword(2, 1, "t", Tok_Set, l);
                     case 't':
@@ -275,6 +267,14 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_Comment, l);
         case '=':
             return make_token(Tok_Equal, l);
+        case '+':
+            return make_token(Tok_Add, l);
+        case '-':
+            return make_token(Tok_Sub, l);
+        case '*':
+            return make_token(Tok_Mult, l);
+        case '/':
+            return make_token(Tok_Div, l);
         case '!':
             return make_token(match('=', l) ? Tok_Bang_Equal : Tok_Bang, l);
         case '>':

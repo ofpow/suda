@@ -6,7 +6,8 @@
  * <print statement> : "print" <paren expr> | <literal>
  *
  * <paren expr> : "(" <expr> ")"
- * <expr> : <literal>
+ * <expr> : <literal> | <math_expr>
+ * <math_expr> : "<literal>" "+" | "-" | "*" | "/" "<literal>"
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
@@ -67,6 +68,7 @@ Node *new_node(AST_Type type, Token *value) {
 }
 
 Node *expr(Parser *p) {
+    Node *n;
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; return new_node(AST_Literal, &LAST_TOK);
@@ -74,11 +76,35 @@ Node *expr(Parser *p) {
             p->tok_index++; return new_node(AST_Literal, &LAST_TOK);
         case Tok_Left_Paren:
             p->tok_index++;
-            Node *n = expr(p);
+            n = expr(p);
             ASSERT((CURRENT_TOK.type == Tok_Right_Paren), "Require closing parenthese, got %s\n", find_tok_type(CURRENT_TOK.type));
             p->tok_index++;
             return n;
-        default: ERR("Unsupported token type %s\n", find_tok_type(CURRENT_TOK.type));
+        case Tok_Add:
+            n = new_node(AST_Add, &NO_TOK);
+            p->tok_index++;
+            n->left = expr(p);
+            n->right = expr(p);
+            return n;
+        case Tok_Sub:
+            n = new_node(AST_Sub, &NO_TOK);
+            p->tok_index++;
+            n->left = expr(p);
+            n->right = expr(p);
+            return n;
+        case Tok_Mult:
+            n = new_node(AST_Mult, &NO_TOK);
+            p->tok_index++;
+            n->left = expr(p);
+            n->right = expr(p);
+            return n;
+        case Tok_Div:
+            n = new_node(AST_Div, &NO_TOK);
+            p->tok_index++;
+            n->left = expr(p);
+            n->right = expr(p);
+            return n;
+        default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
     }
     return (Node*) {0};
 }
@@ -90,9 +116,11 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->left = expr(p);
             return n;        
+            break;
         case Tok_Eof:;
             return new_node(AST_End, &NO_TOK);
-        default: ERR("Unsupported token type %s\n", find_tok_type(CURRENT_TOK.type));
+            break;
+        default: return expr(p); 
     }
     return (Node*) {0};
 }

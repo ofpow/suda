@@ -1,4 +1,9 @@
 //#define DEBUG
+#ifdef DEBUG
+    #define debug(...) printf(__VA_ARGS__);
+#else
+    #define debug(...)
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,11 +15,6 @@ void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
-#ifdef DEBUG
-    #define debug(...) printf(__VA_ARGS__);
-#else
-    #define debug(...)
-#endif
 
 #include "lexer.h"
 #include "parser.h"
@@ -121,6 +121,8 @@ int main(int argc, char *argv[]) {
             nodes_index++;
         }
     }
+
+    debug("\n----------\n\n");
 
     interpret(nodes, nodes_index);
 
