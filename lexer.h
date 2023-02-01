@@ -156,7 +156,7 @@ static void skip_whitespace(Lexer *l) {
     }
 }
 
-static Token parse_string(Lexer *l) {
+static Token lex_string(Lexer *l) {
     while (peek(l) != '"' && !at_end(l)) {
         if (peek(l) == '\n') {
             l->line++;
@@ -224,7 +224,7 @@ static Token_Type id_type(Lexer *l) {
     return Tok_Identifier;
 }
 
-static Token parse_number(Lexer *l) {
+static Token lex_number(Lexer *l) {
     while (is_num(peek(l))) advance(l);
 
     if (peek(l) == '.' && is_num(peek_next(l))) {
@@ -234,7 +234,7 @@ static Token parse_number(Lexer *l) {
     return make_token(Tok_Number, l);
 }
 
-static Token parse_identifier(Lexer *l) {
+static Token lex_identifier(Lexer *l) {
     while (is_alphabet(peek(l)) || is_num(peek(l))) advance(l);
     return make_token(id_type(l), l);
 }
@@ -249,17 +249,17 @@ Token scan_token(Lexer *l) {
         return make_token(Tok_Eof, l);
     }
 
-    //parse token
+    //lex token
     char c = advance(l);
 
     //token is number?
     if (is_num(c)) {
-        return parse_number(l);
+        return lex_number(l);
     }
 
     //token is alphabetical?
     if (is_alphabet(c)) {
-        return parse_identifier(l);
+        return lex_identifier(l);
     }
     switch (c) {
         case '#':
@@ -282,7 +282,7 @@ Token scan_token(Lexer *l) {
         case '<':
             return make_token(match('=', l) ? Tok_Less_Equal : Tok_Less, l);
         case '"':
-            return parse_string(l);
+            return lex_string(l);
         case ';':
             return make_token(Tok_Semicolon, l);
         case '(':
