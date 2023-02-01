@@ -1,1 +1,2 @@
-print(+ 34 35)
+print (+ (+ "hel" "lo ") (+ "wo" "rld"))
+print (+ (+ 17 18) (* 17 2))
