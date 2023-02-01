@@ -113,8 +113,6 @@ int main(int argc, char *argv[]) {
         }
         Node *n = statement(&p);
         if (n->type == Tok_Eof) {
-            nodes[nodes_index] = n;
-            nodes_index++;
             break;
         } else {
             nodes[nodes_index] = n;

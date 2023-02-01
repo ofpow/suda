@@ -91,6 +91,7 @@ char *eval_node(Node *n) {
         free(op2);
         return result;
     } else ERR("unknown node type `%s`\n", find_ast_type(n->type));
+    return "unreachable";
 }
 
 void do_statement(Node *n) {
@@ -101,8 +102,6 @@ void do_statement(Node *n) {
             printf("%s\n", print);
             free(print);
             break;
-        case AST_End:
-            return;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }
 }
