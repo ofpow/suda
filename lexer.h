@@ -14,6 +14,7 @@ typedef enum {
     Tok_Left_Paren,
     Tok_Right_Paren,
     Tok_Identifier,
+    //tokens for literals
     Tok_String,
     Tok_Number,
     Tok_And,
@@ -28,6 +29,7 @@ typedef enum {
     Tok_Sub,
     Tok_Mult,
     Tok_Div,
+    //tokens for variable type
     Tok_Num,
     Tok_Str,
     Tok_Arr,
