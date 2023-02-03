@@ -1,5 +1,7 @@
 #pragma once
 
+#define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div))
+
 float strtofloat(const char *str, int len) {
     float total = 0;
     for (int i = 0; i < len - 1; i++) {
@@ -9,8 +11,6 @@ float strtofloat(const char *str, int len) {
     total += str[len - 1] - '0';
     return total;
 }
-
-#define IS_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div))
 
 char *ast_add(char *op1, char *op2, int is_string){
     if (!is_string) {
@@ -97,7 +97,7 @@ char *eval_node(Node *n) {
 void do_statement(Node *n) {
     switch (n->type) {
         case AST_Print:;
-            ASSERT((n->left->type == AST_Literal || IS_MATH_OP(n->left->type)), "Can't print `%s`\n", find_ast_type(n->left->type));
+            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type)), "Can't print `%s`\n", find_ast_type(n->left->type));
             char *print = eval_node(n->left);
             printf("%s\n", print);
             free(print);

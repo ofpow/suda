@@ -27,20 +27,9 @@ Parser p;
 Node **nodes;
 int nodes_index;
 
-void free_node(Node *n) {
-
-    debug("free node %s\n", find_ast_type(n->type));
-
-    if (n == NULL) return;
-    if (n->value != NULL) n->value = NULL;
-    if (n->left != NULL) {free_node(n->left); n->left = NULL;}
-    if (n->right != NULL) {free_node(n->right); n->right = NULL;}
-    if (n->left == NULL && n->right == NULL && n->value == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
-}
-
 void free_mem(int exit_val) {
 
-    debug("\n----------\n\n");
+    debug("\n----------\nFREEING\n");
 
     free(tokens);
     for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
@@ -77,6 +66,7 @@ int main(int argc, char *argv[]) {
 
     tokens = calloc(tokens_size, sizeof(struct Token));
 
+    debug("LEXING\n")
     while (1) {
         if (tokens_index >= tokens_size) {
             tokens_size *= 2;
@@ -95,7 +85,7 @@ int main(int argc, char *argv[]) {
         debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
     }
 
-    debug("\n----------\n\n");
+    debug("\n----------\nPARSING\n");
 
     //parse tokens
     p.tokens = tokens;
@@ -113,6 +103,7 @@ int main(int argc, char *argv[]) {
         }
         Node *n = statement(&p);
         if (n->type == Tok_Eof) {
+            free_node(n);
             break;
         } else {
             nodes[nodes_index] = n;
@@ -120,7 +111,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    debug("\n----------\n\n");
+    debug("\n----------\nINTERPRETING\n");
 
     interpret(nodes, nodes_index);
 

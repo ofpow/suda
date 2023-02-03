@@ -1,2 +1,1 @@
-print (+ (+ "hel" "lo ") (+ "wo" "rld"))
-print (+ (+ 17 18) (* 17 2))
+print("hello " + "world")
