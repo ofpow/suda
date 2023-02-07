@@ -1,6 +1,15 @@
 #pragma once
 
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div))
+#define VARS interpreter->vars, interpreter->vars_index
+
+typedef struct {
+    Node **nodes;
+    int stmts_size;
+
+    Variable *vars;
+    int vars_index;
+} Interpreter;
 
 float strtofloat(const char *str, int len) {
     float total = 0;
@@ -16,136 +25,101 @@ char *ast_add(char *op1, char *op2, int is_string){
     if (!is_string) {
         int op1_len = strlen(op1);
         int op2_len = strlen(op2);
-        char *result = malloc(op1_len + op2_len + 1);
-        snprintf(result, op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1, op2_len, op2);
-        return result;
+        return format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1, op2_len, op2);
     } else {
         int op1_len = strlen(op1);
         int op2_len = strlen(op2);
-        char *result = malloc(op1_len + op2_len + 1);
-        snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) + strtofloat(op2, op2_len));
-        return result;
+        return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) + strtofloat(op2, op2_len));
     }
 }
+
 char *ast_sub(char *op1, char *op2){
     int op1_len = strlen(op1);
     int op2_len = strlen(op2);
-    char *result = malloc(op1_len + op2_len + 1);
-    snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) - strtofloat(op2, op2_len));
-    return result;
+    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) - strtofloat(op2, op2_len));
 }
+
 char *ast_mult(char *op1, char *op2){
     int op1_len = strlen(op1);
     int op2_len = strlen(op2);
-    char *result = malloc(op1_len + op2_len + 1);
-    snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) * strtofloat(op2, op2_len));
-    return result;
+    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) * strtofloat(op2, op2_len));
 }
+
 char *ast_div(char *op1, char *op2){
     int op1_len = strlen(op1);
     int op2_len = strlen(op2);
-    char *result = malloc(op1_len + op2_len + 1);
-    snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) / strtofloat(op2, op2_len));
-    return result;
+    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) / strtofloat(op2, op2_len));
 }
 
-char *eval_node(Node *n) {
+char *eval_node(Node *n, Interpreter *interpreter) {
     if (n == NULL) {
         ERR("can't evaluate null node\n");
     } else if (n->type == AST_Literal) {
         if (n->value->type == Tok_String) {
-            char *val = malloc(n->value->length + 1);
-            snprintf(val, n->value->length, "%.*s", n->value->length - 2, n->value->start + 1);
-            return val;
+            return format_str(n->value->length, "%.*s", n->value->length - 2, n->value->start + 1);
         } else if (n->value->type == Tok_Number) {
-            char *val = malloc(n->value->length + 1);
-            snprintf(val, n->value->length + 1, "%.*s", n->value->length, n->value->start);
-            return val;
+            return format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
         } else ERR("unknown literal type `%s`\n", find_tok_type(n->value->type));
     } else if (n->type == AST_Add) {
-        char *op1 = eval_node(n->left);
-        char *op2 = eval_node(n->right);
+        char *op1 = eval_node(n->left, interpreter);
+        char *op2 = eval_node(n->right, interpreter);
         char *result = ast_add(op1, op2, (is_num(op1[0]) && is_num(op2[0])));
         free(op1);
         free(op2);
         return result;
     } else if (n->type == AST_Sub) {
-        char *op1 = eval_node(n->left);
-        char *op2 = eval_node(n->right);
+        char *op1 = eval_node(n->left, interpreter);
+        char *op2 = eval_node(n->right, interpreter);
         char *result = ast_sub(op1, op2);
         free(op1);
         free(op2);
         return result;
     } else if (n->type == AST_Mult) {
-        char *op1 = eval_node(n->left);
-        char *op2 = eval_node(n->right);
+        char *op1 = eval_node(n->left, interpreter);
+        char *op2 = eval_node(n->right, interpreter);
         char *result = ast_mult(op1, op2);
         free(op1);
         free(op2);
         return result;
     } else if (n->type == AST_Div) {
-        char *op1 = eval_node(n->left);
-        char *op2 = eval_node(n->right);
+        char *op1 = eval_node(n->left, interpreter);
+        char *op2 = eval_node(n->right, interpreter);
         char *result = ast_div(op1, op2);
         free(op1);
         free(op2);
         return result;
-    } else ERR("unknown node type `%s`\n", find_ast_type(n->type));
+    } else if (n->type == AST_Identifier) {
+        char *var_name = format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
+        Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+        free(var_name);
+        return strdup(var.value);
+    } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return "unreachable";
 }
 
-void do_statement(Node *n) {
+void do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
         case AST_Print:;
-            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type)), "Can't print `%s`\n", find_ast_type(n->left->type));
-            char *print = eval_node(n->left);
+            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier), "Can't print `%s`\n", find_ast_type(n->left->type));
+            char *print = eval_node(n->left, interpreter);
             printf("%s\n", print);
             free(print);
+            break;
+        case AST_Var_Assign:;
+
+            //NODE has value with var name, left has top of value
+            char *var_name = format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
+            char *var_val = eval_node(n->left, interpreter);
+            Variable var = { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
+            interpreter->vars[interpreter->vars_index] = var;
+            interpreter->vars_index++;
             break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }
 }
 
-void interpret(Node **nodes, int stmts_size) {
-    for (int i = 0; i < stmts_size; i++) {
-        do_statement(nodes[i]);
+void interpret(Interpreter *interpreter) {
+    for (int i = 0; i < interpreter->stmts_size; i++) {
+        do_statement(interpreter->nodes[i], interpreter);
     }
 }
-
-//char *parse_math_op(Node *n) {
-//    if (n->type == AST_Literal) {
-//        char *s = malloc(n->value->length + 1);
-//        if (n->value->type == Tok_String) snprintf(s, n->value->length, "%.*s", n->value->length - 1, n->value->start + 1);
-//        else snprintf(s, n->value->length, "%.*s", n->value->length, n->value->start);
-//        return s;
-//    }
-//    char *op1, *op2;
-//    int op1_len, op2_len;
-//    op1 = parse_math_op(n->left);
-//    op1_len = strlen(op1);
-//    op2 = parse_math_op(n->right);
-//    op2_len = strlen(op2);
-//    //if (n->left->type != AST_Literal) {op1 = parse_math_op(n->left); op1_len = strlen(op1);} else {op1 = strdup(n->left->value->start); op1_len = n->left->value->length;}
-//    //if (n->right->type != AST_Literal) {op2 = parse_math_op(n->right); op2_len = strlen(op2);} else {op2 = strdup(n->right->value->start); op2_len = n->right->value->length;}
-//    char *result = malloc(op1_len + op2_len + 1);
-//    switch (n->type) {
-//        case AST_Add:
-//            if (is_num(op1[0]) && is_num(op2[0])) snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) + strtofloat(op2, op2_len));
-//            else snprintf(result, op1_len + op2_len, "%.*s%.*s", op1_len, op1, op2_len, op2);
-//            break;
-//        case AST_Sub:
-//            if (is_num(op1[0]) && is_num(op2[0])) snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) - strtofloat(op2, op2_len));
-//            break;
-//        case AST_Mult:
-//            if (is_num(op1[0]) && is_num(op2[0])) snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) * strtofloat(op2, op2_len));
-//            break;
-//        case AST_Div:
-//            if (is_num(op1[0]) && is_num(op2[0])) snprintf(result, op1_len + op2_len, "%g", strtofloat(op1, op1_len) / strtofloat(op2, op2_len));
-//            break;
-//        default:
-//            return "unreachable";
-//    }
-//    free(op1);
-//    free(op2);
-//    return result;
-//}

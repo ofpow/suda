@@ -13,9 +13,19 @@
 
 void free_mem(int exit_val);
 
+char *format_str(int strlen, const char *format, ...) {
+    char *result = malloc(strlen + 1);
+    va_list args;
+    va_start(args, format);
+    vsnprintf(result, strlen, format, args);
+    va_end(args);
+    return result;
+}
+
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
 
+#include "variable.h"
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
@@ -26,6 +36,7 @@ char *program;
 Parser p;
 Node **nodes;
 int nodes_index;
+Interpreter interpreter;
 
 void free_mem(int exit_val) {
 
@@ -34,6 +45,8 @@ void free_mem(int exit_val) {
     free(tokens);
     for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
     free(nodes);
+    for (int i = 0; i < interpreter.vars_index; i++) { free(interpreter.vars[i].name); free(interpreter.vars[i].value); }
+    free(interpreter.vars);
     free(program);
     exit(exit_val);
 }
@@ -113,7 +126,11 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n");
 
-    interpret(nodes, nodes_index);
+    interpreter.nodes = nodes;
+    interpreter.stmts_size = nodes_index;
+    interpreter.vars_index = 0;
+    interpreter.vars = calloc(10, sizeof(struct Variable));
+    interpret(&interpreter);
 
     free_mem(0);
 }

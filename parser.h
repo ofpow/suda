@@ -29,6 +29,8 @@ typedef enum {
     AST_Mult,
     AST_Div,
     AST_Print,
+    AST_Var_Assign,
+    AST_Identifier,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -40,6 +42,8 @@ char *find_ast_type(int type) {
         case AST_Mult: return "AST_Mult";
         case AST_Div: return "AST_Div";
         case AST_Print: return "AST_Print";
+        case AST_Var_Assign: return "AST_Var_Assign";
+        case AST_Identifier: return "AST_Identifier";
         default: return "unreachable";
     }
 }
@@ -104,6 +108,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, &LAST_TOK));
             return new_node(AST_Literal, &LAST_TOK);
+        case Tok_Identifier: p->tok_index++; return new_node(AST_Identifier, &LAST_TOK);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
@@ -137,35 +142,16 @@ Node *expr(Parser *p, Node *child) {
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
-        //case Tok_Sub:
-        //    n = new_node(AST_Sub, NULL);
-        //    p->tok_index++;
-        //    n->left = expr(p, child);
-        //    n->right = expr(p, child);
-        //    return n;
-        //case Tok_Mult:
-        //    n = new_node(AST_Mult, NULL);
-        //    p->tok_index++;
-        //    n->left = expr(p, child);
-        //    n->right = expr(p, child);
-        //    return n;
-        //case Tok_Div:
-        //    n = new_node(AST_Div, NULL);
-        //    p->tok_index++;
-        //    n->left = expr(p, child);
-        //    n->right = expr(p, child);
-        //    return n;
-        //case Tok_Right_Paren:
-        //    break;
         default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
     }
     return (Node*) {0};
 }
 
 Node *statement(Parser *p) {
+    Node *n;
     switch (CURRENT_TOK.type) {
         case Tok_Print:;
-            Node *n = new_node(AST_Print, NULL);
+            n = new_node(AST_Print, NULL);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;        
@@ -173,6 +159,24 @@ Node *statement(Parser *p) {
         case Tok_Eof:
             return new_node(AST_End, NULL);
             break;
+        case Tok_Str:
+            n = new_node(AST_Var_Assign, NULL);
+            p->tok_index++;
+            n->value = &CURRENT_TOK;
+            p->tok_index++;
+            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
+        case Tok_Num:
+            n = new_node(AST_Var_Assign, NULL);
+            p->tok_index++;
+            n->value = &CURRENT_TOK;
+            p->tok_index++;
+            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
         default: return expr(p, NULL); 
     }
     return (Node*) {0};
