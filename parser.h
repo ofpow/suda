@@ -12,14 +12,8 @@
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
-#define NEXT_TOK p->tokens[p->tok_index + 1]
 #define LAST_TOK p->tokens[p->tok_index - 1]
-#define CURRENT_NODE p->nodes[p->node_index]
-#define LAST_NODE p->nodes[p->node_index - 1]
-#define NO_TOK (Token) {0}
-#define NO_NODE (Node) {0}
-#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div))
-#define IS_TERMINAL(expr) ((expr == AST_Literal))
+#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal))
 
 typedef enum {
     AST_End,
