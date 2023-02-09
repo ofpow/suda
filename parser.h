@@ -125,7 +125,7 @@ Node *expr(Parser *p, Node *child) {
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; 
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length, "%.*s", LAST_TOK.length, LAST_TOK.start + 1))));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1))));
             return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)));
         case Tok_Number:
             p->tok_index++;

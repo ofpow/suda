@@ -21,34 +21,43 @@ float strtofloat(const char *str, int len) {
     return total;
 }
 
-char *ast_add(char *op1, char *op2, int is_string){
-    if (!is_string) {
-        int op1_len = strlen(op1);
-        int op2_len = strlen(op2);
-        return format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1, op2_len, op2);
+AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
     } else {
-        int op1_len = strlen(op1);
-        int op2_len = strlen(op2);
-        return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) + strtofloat(op2, op2_len));
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value));
     }
 }
 
-char *ast_sub(char *op1, char *op2){
-    int op1_len = strlen(op1);
-    int op2_len = strlen(op2);
-    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) - strtofloat(op2, op2_len));
+AST_Value *ast_sub(AST_Value *op1, AST_Value *op2){
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
+    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
 }
 
-char *ast_mult(char *op1, char *op2){
-    int op1_len = strlen(op1);
-    int op2_len = strlen(op2);
-    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) * strtofloat(op2, op2_len));
+AST_Value *ast_mult(AST_Value *op1, AST_Value *op2){
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
+    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
 }
 
-char *ast_div(char *op1, char *op2){
-    int op1_len = strlen(op1);
-    int op2_len = strlen(op2);
-    return format_str(op1_len + op2_len, "%g", strtofloat(op1, op1_len) / strtofloat(op2, op2_len));
+AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
+    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
 }
 
 AST_Value *eval_node(Node *n, Interpreter *interpreter) {
@@ -56,34 +65,42 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         ERR("can't evaluate null node\n");
     } else if (n->type == AST_Literal) {
         return n->value;
-    //} else if (n->type == AST_Add) {
-    //    char *op1 = eval_node(n->left, interpreter);
-    //    char *op2 = eval_node(n->right, interpreter);
-    //    char *result = ast_add(op1, op2, (is_num(op1[0]) && is_num(op2[0])));
-    //    free(op1);
-    //    free(op2);
-    //    return result;
-    //} else if (n->type == AST_Sub) {
-    //    char *op1 = eval_node(n->left, interpreter);
-    //    char *op2 = eval_node(n->right, interpreter);
-    //    char *result = ast_sub(op1, op2);
-    //    free(op1);
-    //    free(op2);
-    //    return result;
-    //} else if (n->type == AST_Mult) {
-    //    char *op1 = eval_node(n->left, interpreter);
-    //    char *op2 = eval_node(n->right, interpreter);
-    //    char *result = ast_mult(op1, op2);
-    //    free(op1);
-    //    free(op2);
-    //    return result;
-    //} else if (n->type == AST_Div) {
-    //    char *op1 = eval_node(n->left, interpreter);
-    //    char *op2 = eval_node(n->right, interpreter);
-    //    char *result = ast_div(op1, op2);
-    //    free(op1);
-    //    free(op2);
-    //    return result;
+    } else if (n->type == AST_Add) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_add(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Sub) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_sub(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Mult) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_mult(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Div) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_div(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
     //} else if (n->type == AST_Identifier) {
     //    char *var_name = format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
     //    Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
