@@ -19,4 +19,5 @@ Variable get_var(const char *var_name, Variable *vars, int vars_index) {
         }
     }
     ERR("variable `%s` not found\n", var_name);
+    return (Variable) {0};
 }
