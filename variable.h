@@ -1,5 +1,24 @@
 #pragma once
 
+typedef enum {
+    Value_String,
+    Value_Number,
+} AST_Value_Type;
+
+char *find_ast_value_type(int type) {
+    switch (type) {
+        case Value_Number: return "Value_Number";
+        case Value_String: return "Value_String";
+        default: ERR("unknown ast value type `%d`", type);
+    }
+    return "unreachable";
+}
+
+typedef struct AST_Value {
+    int type;
+    char *value;
+} AST_Value;
+
 typedef enum{
     Var_Str,
     Var_Num,
@@ -8,7 +27,7 @@ typedef enum{
 typedef struct Variable {
     Var_Type type;
     char *name;
-    char *value;
+    AST_Value *value;
     int index;
 } Variable;
 

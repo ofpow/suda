@@ -101,11 +101,11 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         free(op1);
         free(op2);
         return result;
-    //} else if (n->type == AST_Identifier) {
-    //    char *var_name = format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
-    //    Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
-    //    free(var_name);
-    //    return strdup(var.value);
+    } else if (n->type == AST_Identifier) {
+        char *var_name = strdup(n->value->value);
+        Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+        free(var_name);
+        return new_ast_value(var.value->type, strdup(var.value->value));
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
 }
@@ -119,15 +119,13 @@ void do_statement(Node *n, Interpreter *interpreter) {
             free(print->value);
             free(print);
             break;
-        //case AST_Var_Assign:;
-
-        //    //NODE has value with var name, left has top of value
-        //    char *var_name = format_str(n->value->length + 1, "%.*s", n->value->length, n->value->start);
-        //    char *var_val = eval_node(n->left, interpreter);
-        //    Variable var = { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
-        //    interpreter->vars[interpreter->vars_index] = var;
-        //    interpreter->vars_index++;
-        //    break;
+        case AST_Var_Assign:;
+            char *var_name = n->value->value;
+            AST_Value *var_val = eval_node(n->left, interpreter);
+            Variable var = { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
+            interpreter->vars[interpreter->vars_index] = var;
+            interpreter->vars_index++;
+            break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }
 }
