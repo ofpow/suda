@@ -80,24 +80,22 @@ Node *new_node(AST_Type type, AST_Value *value) {
     return node;
 }
 
-Node *dup_node(Node *n) {
-    debug("DUP NODE ( `%s` )\n", find_ast_type(n->type));
-
-    Node *new_n = new_node(n->type, NULL);
-    if (n->value != NULL) new_n->value = n->value;
-    if (n->left != NULL) new_n->left = dup_node(n->left);
-    if (n->right != NULL) new_n->right = dup_node(n->right);
-    return new_n;    
-}
-
 void free_node(Node *n) {
 
     debug("FREE NODE `%s`\n", find_ast_type(n->type));
 
     if (n == NULL) return;
+    if (n->value != NULL) {
+        if (n->value->value != NULL) {
+            free(n->value->value);
+            n->value->value = NULL;
+        }
+        free(n->value);
+        n->value = NULL;
+    }
     if (n->left != NULL) {free_node(n->left); n->left = NULL;}
     if (n->right != NULL) {free_node(n->right); n->right = NULL;}
-    if (n->left == NULL && n->right == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
+    if (n->left == NULL && n->right == NULL && n->value == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
 }
 
 Node *expr(Parser *p, Node *child) {
@@ -147,7 +145,7 @@ Node *expr(Parser *p, Node *child) {
             return n;
         default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
     }
-    return (Node*) {0};
+    return NULL;
 }
 
 Node *statement(Parser *p) {
@@ -165,7 +163,7 @@ Node *statement(Parser *p) {
         case Tok_Str:
             n = new_node(AST_Var_Assign, NULL);
             p->tok_index++;
-            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
+            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 2, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
             p->tok_index++;
             ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
             p->tok_index++;
@@ -182,5 +180,5 @@ Node *statement(Parser *p) {
             return n;
         default: return expr(p, NULL); 
     }
-    return (Node*) {0};
+    return NULL;
 }

@@ -1,5 +1,5 @@
 str var_one = "hello world"
-num var_two = 69
+num var_two = 69420
 
 print var_one
 print var_two
