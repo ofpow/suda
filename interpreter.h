@@ -1,8 +1,5 @@
 #pragma once
 
-#define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div))
-#define VARS interpreter->vars, interpreter->vars_index
-
 typedef struct {
     Node **nodes;
     int stmts_size;
@@ -38,7 +35,7 @@ AST_Value *ast_sub(AST_Value *op1, AST_Value *op2){
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
         return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
-    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    } else ERR("cant subtract types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
 
@@ -47,7 +44,7 @@ AST_Value *ast_mult(AST_Value *op1, AST_Value *op2){
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
         return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
-    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    } else ERR("cant multiply types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
 
@@ -56,7 +53,7 @@ AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
         return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
-    } else ERR("cant add types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    } else ERR("cant divide types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
 
@@ -64,13 +61,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
     if (n == NULL) {
         ERR("can't evaluate null node\n");
     } else if (n->type == AST_Literal) {
-        return n->value;
+        return new_ast_value(n->value->type, n->value->value);
     } else if (n->type == AST_Add) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_add(op1, op2);
-        free(op1->value);
-        free(op2->value);
+        //free(op1->value);
+        //free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -78,8 +75,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_sub(op1, op2);
-        free(op1->value);
-        free(op2->value);
+        //free(op1->value);
+        //free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -87,8 +84,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_mult(op1, op2);
-        free(op1->value);
-        free(op2->value);
+        //free(op1->value);
+        //free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -96,8 +93,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_div(op1, op2);
-        free(op1->value);
-        free(op2->value);
+        //free(op1->value);
+        //free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -122,8 +119,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
         case AST_Var_Assign:;
             char *var_name = n->value->value;
             AST_Value *var_val = eval_node(n->left, interpreter);
-            Variable var = { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
-            interpreter->vars[interpreter->vars_index] = var;
+            interpreter->vars[interpreter->vars_index] = (Variable) { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
             break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));

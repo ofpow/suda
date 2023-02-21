@@ -15,6 +15,7 @@
 #define CURRENT_TOK p->tokens[p->tok_index]
 #define LAST_TOK p->tokens[p->tok_index - 1]
 #define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal))
+#define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div))
 
 typedef enum {
     AST_End,
@@ -95,7 +96,7 @@ void free_node(Node *n) {
     }
     if (n->left != NULL) {free_node(n->left); n->left = NULL;}
     if (n->right != NULL) {free_node(n->right); n->right = NULL;}
-    if (n->left == NULL && n->right == NULL && n->value == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
+    if (n->left == NULL && n->right == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
 }
 
 Node *expr(Parser *p, Node *child) {
