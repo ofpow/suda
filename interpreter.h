@@ -61,13 +61,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
     if (n == NULL) {
         ERR("can't evaluate null node\n");
     } else if (n->type == AST_Literal) {
-        return new_ast_value(n->value->type, n->value->value);
+        return new_ast_value(n->value->type, strdup(n->value->value));
     } else if (n->type == AST_Add) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_add(op1, op2);
-        //free(op1->value);
-        //free(op2->value);
+        free(op1->value);
+        free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -75,8 +75,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_sub(op1, op2);
-        //free(op1->value);
-        //free(op2->value);
+        free(op1->value);
+        free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -84,8 +84,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_mult(op1, op2);
-        //free(op1->value);
-        //free(op2->value);
+        free(op1->value);
+        free(op2->value);
         free(op1);
         free(op2);
         return result;
@@ -93,8 +93,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_div(op1, op2);
-        //free(op1->value);
-        //free(op2->value);
+        free(op1->value);
+        free(op2->value);
         free(op1);
         free(op2);
         return result;
