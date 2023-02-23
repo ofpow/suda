@@ -57,6 +57,48 @@ AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
     return NULL;
 }
 
+AST_Value *ast_less(AST_Value *op1, AST_Value *op2) {
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)));
+    } else ERR("cant do less than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
+}
+
+AST_Value *ast_less_equal(AST_Value *op1, AST_Value *op2) {
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)));
+    } else ERR("cant do less or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
+}
+ 
+AST_Value *ast_greater(AST_Value *op1, AST_Value *op2) {
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)));
+    } else ERR("cant do greater than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
+}
+
+AST_Value *ast_greater_equal(AST_Value *op1, AST_Value *op2) {
+    if (op1->type == Value_Number && op2->type == Value_Number) {
+        int op1_len = strlen(op1->value);
+        int op2_len = strlen(op2->value);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)));
+    } else ERR("cant do greater or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
+    return NULL;
+}
+
+AST_Value *ast_equal(AST_Value *op1, AST_Value *op2) {
+    int op1_len = strlen(op1->value);
+    int op2_len = strlen(op2->value);
+    return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)));
+}
+
 AST_Value *eval_node(Node *n, Interpreter *interpreter) {
     if (n == NULL) {
         ERR("can't evaluate null node\n");
@@ -103,6 +145,51 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
         free(var_name);
         return new_ast_value(var.value->type, strdup(var.value->value));
+    } else if (n->type == AST_Less) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_less(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Less_Equal) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_less_equal(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Greater) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_greater(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Greater_Equal) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_greater_equal(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
+    } else if (n->type == AST_Equal) {
+        AST_Value *op1 = eval_node(n->left, interpreter);
+        AST_Value *op2 = eval_node(n->right, interpreter);
+        AST_Value *result = ast_equal(op1, op2);
+        free(op1->value);
+        free(op2->value);
+        free(op1);
+        free(op2);
+        return result;
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
 }
