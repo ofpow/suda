@@ -1,5 +1,3 @@
-print(34 > 35)
-print(420 >= 421)
-print(3 = 3)
-print(15 < 30)
-print(18 <= 18)
+if (34 < 35) 
+    print "hello"
+;

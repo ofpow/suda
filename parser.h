@@ -3,8 +3,10 @@
 /* 
  * SUDA EBNF
  *
+ * <statement> : <print statement> | <variable assignment> | <if statement>
  * <print statement> : "print" <paren expr> | <terminal>
  * <variable assignment> : "str" | "num" var_name "=" <expr>
+ * <if statement> : "if" <expr> <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
  * <expr> : <terminal> | <math_expr>
@@ -32,6 +34,8 @@ typedef enum {
     AST_Less,
     AST_Less_Equal,
     AST_Equal,
+    AST_If,
+    AST_Semicolon,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -50,6 +54,8 @@ char *find_ast_type(int type) {
         case AST_Less: return "AST_Less";
         case AST_Less_Equal: return "AST_Less_Equal";
         case AST_Equal: return "AST_Equal";
+        case AST_If: return "AST_If";
+        case AST_Semicolon: return "AST_Semicolon";
         default: return "ast type not found";
     }
 }
@@ -60,6 +66,8 @@ typedef struct Node {
 
     struct Node *right;
     struct Node *left;
+
+    int jump_index;
 } Node;
 
 typedef struct Parser {
@@ -68,6 +76,10 @@ typedef struct Parser {
 
     Node **nodes;
     int node_index;
+
+    int *jump_indices;
+    int jumps_capacity;
+    int jumps_index;
 } Parser;
 
 AST_Value *new_ast_value(int type, char *value) {
@@ -79,13 +91,14 @@ AST_Value *new_ast_value(int type, char *value) {
     return val;
 }
 
-Node *new_node(AST_Type type, AST_Value *value) {
+Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
 
     debug("NODE ( `%s` )\n", find_ast_type(type));
 
     Node *node = calloc(1, sizeof(struct Node));
     node->type = type;
     node->value = value;
+    node->jump_index = jump_index;
     node->left = NULL;
     node->right = NULL;
     return node;
@@ -114,13 +127,13 @@ Node *expr(Parser *p, Node *child) {
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; 
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1))));
-            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1));
+            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1);
         case Tok_Number:
             p->tok_index++;
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start))));
-            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)));
-        case Tok_Identifier: p->tok_index++; return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1));
+            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+        case Tok_Identifier: p->tok_index++; return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
@@ -131,55 +144,55 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             return n;
         case Tok_Add:
-            n = new_node(AST_Add, NULL);
+            n = new_node(AST_Add, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Sub:
-            n = new_node(AST_Sub, NULL);
+            n = new_node(AST_Sub, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Mult:
-            n = new_node(AST_Mult, NULL);
+            n = new_node(AST_Mult, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Div:
-            n = new_node(AST_Div, NULL);
+            n = new_node(AST_Div, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Greater:
-            n = new_node(AST_Greater, NULL);
+            n = new_node(AST_Greater, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Greater_Equal:
-            n = new_node(AST_Greater_Equal, NULL);
+            n = new_node(AST_Greater_Equal, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Less:
-            n = new_node(AST_Less, NULL);
+            n = new_node(AST_Less, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Less_Equal:
-            n = new_node(AST_Less_Equal, NULL);
+            n = new_node(AST_Less_Equal, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
         case Tok_Equal:
-            n = new_node(AST_Equal, NULL);
+            n = new_node(AST_Equal, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
@@ -193,16 +206,16 @@ Node *statement(Parser *p) {
     Node *n;
     switch (CURRENT_TOK.type) {
         case Tok_Print:;
-            n = new_node(AST_Print, NULL);
+            n = new_node(AST_Print, NULL, -1);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;        
             break;
         case Tok_Eof:
-            return new_node(AST_End, NULL);
+            return new_node(AST_End, NULL, -1);
             break;
         case Tok_Str:
-            n = new_node(AST_Var_Assign, NULL);
+            n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
             n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 2, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
             p->tok_index++;
@@ -211,13 +224,22 @@ Node *statement(Parser *p) {
             n->left = expr(p, NULL);
             return n;
         case Tok_Num:
-            n = new_node(AST_Var_Assign, NULL);
+            n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
             n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
             p->tok_index++;
             ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
             p->tok_index++;
             n->left = expr(p, NULL);
+            return n;
+        case Tok_If:
+            n = new_node(AST_If, NULL, -1);
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
+        case Tok_Semicolon:
+            n = new_node(AST_Semicolon, NULL, -1);
+            p->tok_index++;
             return n;
         default: return expr(p, NULL); 
     }

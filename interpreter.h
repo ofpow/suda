@@ -2,7 +2,9 @@
 
 typedef struct {
     Node **nodes;
-    int stmts_size;
+    int stmts_capacity;
+    
+    int program_counter;
 
     Variable *vars;
     int vars_index;
@@ -209,12 +211,26 @@ void do_statement(Node *n, Interpreter *interpreter) {
             interpreter->vars[interpreter->vars_index] = (Variable) { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
             break;
+        case AST_If:;
+            AST_Value *expr = eval_node(n->left, interpreter);
+            if (!strncmp(expr->value, "0", 1)) {
+                interpreter->program_counter = n->jump_index;
+            }
+            free(expr->value);
+            free(expr);
+            break;
+        case AST_Semicolon:
+            break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }
 }
 
 void interpret(Interpreter *interpreter) {
-    for (int i = 0; i < interpreter->stmts_size; i++) {
-        do_statement(interpreter->nodes[i], interpreter);
+    while (interpreter->program_counter < interpreter->stmts_capacity) {
+        do_statement(interpreter->nodes[interpreter->program_counter], interpreter);
+        interpreter->program_counter++;
     }
+    //for (int i = 0; i < interpreter->stmts_capacity; i++) {
+    //    do_statement(interpreter->nodes[i], interpreter, &i);
+    //}
 }
