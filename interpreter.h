@@ -230,7 +230,4 @@ void interpret(Interpreter *interpreter) {
         do_statement(interpreter->nodes[interpreter->program_counter], interpreter);
         interpreter->program_counter++;
     }
-    //for (int i = 0; i < interpreter->stmts_capacity; i++) {
-    //    do_statement(interpreter->nodes[i], interpreter, &i);
-    //}
 }
