@@ -1,10 +1,5 @@
-if 1
+if 0
     print "hello"
-    if 0
-        print "world"
-        print "world"
-        print "world"
-        print "world"
-    ;
+else
+    print "goodbye"
 ;
-

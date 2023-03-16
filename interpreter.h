@@ -219,6 +219,9 @@ void do_statement(Node *n, Interpreter *interpreter) {
             free(expr->value);
             free(expr);
             break;
+        case AST_Else:
+            interpreter->program_counter = n->jump_index;
+            break;
         case AST_Semicolon:
             break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));

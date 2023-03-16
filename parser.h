@@ -36,6 +36,7 @@ typedef enum {
     AST_Equal,
     AST_If,
     AST_Semicolon,
+    AST_Else,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -56,6 +57,7 @@ char *find_ast_type(int type) {
         case AST_Equal: return "AST_Equal";
         case AST_If: return "AST_If";
         case AST_Semicolon: return "AST_Semicolon";
+        case AST_Else: return "AST_Else";
         default: return "ast type not found";
     }
 }
@@ -239,6 +241,10 @@ Node *statement(Parser *p) {
             return n;
         case Tok_Semicolon:
             n = new_node(AST_Semicolon, NULL, -1);
+            p->tok_index++;
+            return n;
+        case Tok_Else:
+            n = new_node(AST_Else, NULL, -1);
             p->tok_index++;
             return n;
         default: return expr(p, NULL); 

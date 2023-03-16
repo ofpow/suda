@@ -8,3 +8,8 @@ if 1
     ;
 ;
 
+if 0
+    print "thursday"
+else
+    print "goodbye"
+;

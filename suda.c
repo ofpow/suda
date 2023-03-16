@@ -129,8 +129,17 @@ int main(int argc, char *argv[]) {
         Node *n = statement(&p);
         if (n->type == AST_End) {
             free_node(n);
+            if (p.jumps_index > 0) {
+                ERR("unclosed block\n")
+            }
             break;
         } else if (n->type == AST_If) {
+            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
+            append(nodes, n, nodes_index, nodes_capacity);
+        } else if (n->type == AST_Else) {
+            nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = nodes_index;
+            n->jump_index = p.jump_indices[p.jumps_index - 1];
+            p.jumps_index--;
             append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
             append(nodes, n, nodes_index, nodes_capacity);
         } else if (n->type == AST_Semicolon) {
