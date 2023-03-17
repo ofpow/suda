@@ -297,12 +297,3 @@ Token scan_token(Lexer *l) {
     ERR("Unknown character on line %d:   %c\n", l->line, c);
     exit(1);
 }
-//print out tokens
-//if (tok.line != line) {
-//    printf("%4d ", tok.line);
-//    line = tok.line;
-//} else {
-//    printf("   | ");
-//}
-//printf("%2d '%.*s' %d\n", tok.type, tok.length, tok.start, tok.jump_index);
-//
