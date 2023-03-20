@@ -232,15 +232,6 @@ Node *statement(Parser *p) {
             return new_node(AST_End, NULL, -1);
             break;
         //TODO: check for if variable already exists before making
-        //case Tok_Str:
-        //    n = new_node(AST_Var_Assign, NULL, -1);
-        //    p->tok_index++;
-        //    n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 2, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
-        //    p->tok_index++;
-        //    ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
-        //    p->tok_index++;
-        //    n->left = expr(p, NULL);
-        //    return n;
         case Tok_Let:
             n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
