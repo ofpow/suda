@@ -110,37 +110,29 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_add(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Sub) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_sub(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Mult) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_mult(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Div) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_div(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Identifier) {
         char *var_name = strdup(n->value->value);
@@ -151,46 +143,36 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_less(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Less_Equal) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_less_equal(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Greater) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_greater(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Greater_Equal) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_greater_equal(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else if (n->type == AST_Equal) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
         AST_Value *result = ast_equal(op1, op2);
-        free(op1->value);
-        free(op2->value);
-        free(op1);
-        free(op2);
+        free_ast_value(op1);
+        free_ast_value(op2);
         return result;
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
@@ -224,6 +206,15 @@ void do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Semicolon:
             break;
+        case AST_Identifier:;{
+            AST_Value *new_val = eval_node(n->left, interpreter);
+            char *var_name = strdup(n->value->value);
+            Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+            free(var_name);
+            free(interpreter->vars[var.index].value->value);
+            free(interpreter->vars[var.index].value);
+            interpreter->vars[var.index].value = new_val;
+            break;}
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }
 }

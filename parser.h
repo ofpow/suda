@@ -93,6 +93,11 @@ AST_Value *new_ast_value(int type, char *value) {
     return val;
 }
 
+void free_ast_value(AST_Value *value) {
+    free(value->value);
+    free(value);
+}
+
 Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
 
     debug("NODE ( `%s` )\n", find_ast_type(type));
@@ -135,7 +140,15 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1));
             return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
-        case Tok_Identifier: p->tok_index++; return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+        case Tok_Identifier: 
+            p->tok_index++; 
+            if (CURRENT_TOK.type == Tok_Equal) {
+                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+                p->tok_index++;
+                n->left = expr(p, NULL);
+                return n;
+            }
+            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
@@ -199,6 +212,8 @@ Node *expr(Parser *p, Node *child) {
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
+        case Tok_Eof:
+            break;
         default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
     }
     return NULL;
