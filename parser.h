@@ -216,6 +216,7 @@ Node *statement(Parser *p) {
         case Tok_Eof:
             return new_node(AST_End, NULL, -1);
             break;
+        //TODO: check for if variable already exists before making
         case Tok_Str:
             n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;

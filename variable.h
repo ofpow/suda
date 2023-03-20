@@ -31,6 +31,7 @@ typedef struct Variable {
     int index;
 } Variable;
 
+//TODO: variables as a hashmap
 Variable get_var(const char *var_name, Variable *vars, int vars_index) {
     for (int i = 0; i < vars_index; i++) {
         if (!strcmp(var_name, vars[i].name)) {
