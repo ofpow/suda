@@ -1,5 +1,5 @@
-str var_one = "hello world"
-num var_two = 69
+let var_one = "hello world"
+let var_two = 69
 
 print var_one
 print var_two
