@@ -25,7 +25,6 @@ typedef enum{
 } Var_Type;
 
 typedef struct Variable {
-    Var_Type type;
     char *name;
     AST_Value *value;
     int index;

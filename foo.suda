@@ -1,5 +1,5 @@
-num var_one = 1
+let var_one = "hello"
 
-var_one = (var_one + 3)
+var_one = "world"
 
 print var_one

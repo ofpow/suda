@@ -16,7 +16,7 @@ typedef enum {
     Tok_Identifier,
     //tokens for literals
     Tok_String,
-    Tok_Number,
+    Tok_Letber,
     Tok_And,
     Tok_If,
     Tok_Else,
@@ -29,11 +29,7 @@ typedef enum {
     Tok_Sub,
     Tok_Mult,
     Tok_Div,
-    //tokens for variable type
-    Tok_Num,
-    Tok_Str,
-    Tok_Arr,
-    Tok_Set,
+    Tok_Let,
     Tok_Continue,
     Tok_Break,
     Tok_Comment,
@@ -55,7 +51,7 @@ char *find_tok_type(int type) {
         case Tok_Right_Paren: return "Tok_Right_Paren";
         case Tok_Identifier: return "Tok_Identifier";
         case Tok_String: return "Tok_String";
-        case Tok_Number: return "Tok_Number";
+        case Tok_Letber: return "Tok_Letber";
         case Tok_And: return "Tok_And";
         case Tok_If: return "Tok_If";
         case Tok_Else: return "Tok_Else";
@@ -68,10 +64,7 @@ char *find_tok_type(int type) {
         case Tok_Sub: return "Tok_Sub";
         case Tok_Mult: return "Tok_Mult";
         case Tok_Div: return "Tok_Div";
-        case Tok_Num: return "Tok_Num";
-        case Tok_Str: return "Tok_Str";
-        case Tok_Arr: return "Tok_Arr";
-        case Tok_Set:return "Tok_Set";
+        case Tok_Let: return "Tok_Let";
         case Tok_Continue: return "Tok_Continue";
         case Tok_Break: return "Tok_Break";
         case Tok_Comment: return "Tok_Comment";
@@ -182,15 +175,7 @@ static Token_Type check_keyword(int start, int length, const char *rest, Token_T
 static Token_Type id_type(Lexer *l) {
     switch (l->start[0]) {
         case 'a':
-            if (l->current - l->start > 1) {
-                switch (l->start[1]) {
-                    case 'n':
-                        return check_keyword(2, 1, "d", Tok_And, l);
-                    case 'r':
-                        return check_keyword(2, 1, "r", Tok_Arr, l);
-                }
-            }
-            break;
+            return check_keyword(1, 2, "nd", Tok_And, l);
         case 'b':
             return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':
@@ -201,24 +186,14 @@ static Token_Type id_type(Lexer *l) {
             return check_keyword(1, 3, "unc", Tok_Func, l);
         case 'i':
             return check_keyword(1, 1, "f", Tok_If, l);
-        case 'n':
-            return check_keyword(1, 2, "um", Tok_Num, l);
+        case 'l':
+            return check_keyword(1, 2, "et", Tok_Let, l);
         case 'o':
             return check_keyword(1, 1, "r", Tok_Or, l);
         case 'p':
             return check_keyword(1, 4, "rint", Tok_Print, l);
         case 'r':
             return check_keyword(1, 5, "eturn", Tok_Return, l);
-        case 's':
-            if (l->current - l->start > 1) {
-                switch (l->start[1]) {
-                    case 'e':
-                        return check_keyword(2, 1, "t", Tok_Set, l);
-                    case 't':
-                        return check_keyword(2, 1, "r", Tok_Str, l);
-                }
-            }
-            break;
         case 'w':
             return check_keyword(1, 4, "hile", Tok_While, l);
 
@@ -233,7 +208,7 @@ static Token lex_number(Lexer *l) {
         advance(l);
         while (is_num(peek(l))) advance(l);
     }
-    return make_token(Tok_Number, l);
+    return make_token(Tok_Letber, l);
 }
 
 static Token lex_identifier(Lexer *l) {

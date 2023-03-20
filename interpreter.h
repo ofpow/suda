@@ -190,7 +190,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
         case AST_Var_Assign:;
             char *var_name = n->value->value;
             AST_Value *var_val = eval_node(n->left, interpreter);
-            interpreter->vars[interpreter->vars_index] = (Variable) { (n->left->value->type == Tok_Str) ? Var_Str : Var_Num, var_name, var_val, interpreter->vars_index };
+            interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
             break;
         case AST_If:;

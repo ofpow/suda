@@ -136,7 +136,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++; 
             if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1));
             return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1);
-        case Tok_Number:
+        case Tok_Letber:
             p->tok_index++;
             if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1));
             return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
@@ -232,16 +232,16 @@ Node *statement(Parser *p) {
             return new_node(AST_End, NULL, -1);
             break;
         //TODO: check for if variable already exists before making
-        case Tok_Str:
-            n = new_node(AST_Var_Assign, NULL, -1);
-            p->tok_index++;
-            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 2, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
-            p->tok_index++;
-            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Num:
+        //case Tok_Str:
+        //    n = new_node(AST_Var_Assign, NULL, -1);
+        //    p->tok_index++;
+        //    n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 2, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
+        //    p->tok_index++;
+        //    ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
+        //    p->tok_index++;
+        //    n->left = expr(p, NULL);
+        //    return n;
+        case Tok_Let:
             n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
             n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
