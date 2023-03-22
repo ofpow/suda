@@ -24,7 +24,7 @@ AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
     } else {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
@@ -36,7 +36,7 @@ AST_Value *ast_sub(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
     } else ERR("cant subtract types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
@@ -45,7 +45,7 @@ AST_Value *ast_mult(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
     } else ERR("cant multiply types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
@@ -54,7 +54,7 @@ AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
     } else ERR("cant divide types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type));
     return NULL;
 }
@@ -205,6 +205,9 @@ void do_statement(Node *n, Interpreter *interpreter) {
             interpreter->program_counter = n->jump_index;
             break;
         case AST_Semicolon:
+            if (interpreter->nodes[n->jump_index]->type == AST_While) {
+                interpreter->program_counter = n->jump_index - 1;
+            }
             break;
         case AST_Identifier:;{
             AST_Value *new_val = eval_node(n->left, interpreter);
@@ -214,6 +217,13 @@ void do_statement(Node *n, Interpreter *interpreter) {
             free(interpreter->vars[var.index].value->value);
             free(interpreter->vars[var.index].value);
             interpreter->vars[var.index].value = new_val;
+            break;}
+        case AST_While:;{
+            AST_Value *expr = eval_node(n->left, interpreter);
+            if (!strncmp(expr->value, "0", 1)) {
+                interpreter->program_counter = n->jump_index;
+            }
+            free_ast_value(expr);
             break;}
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type));
     }

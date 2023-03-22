@@ -14,7 +14,6 @@ typedef enum {
     Tok_Left_Paren,
     Tok_Right_Paren,
     Tok_Identifier,
-    //tokens for literals
     Tok_String,
     Tok_Letber,
     Tok_And,

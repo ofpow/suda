@@ -136,6 +136,9 @@ int main(int argc, char *argv[]) {
         } else if (n->type == AST_If) {
             append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
             append(nodes, n, nodes_index, nodes_capacity);
+        } else if (n->type == AST_While) {
+            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
+            append(nodes, n, nodes_index, nodes_capacity);
         } else if (n->type == AST_Else) {
             nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = nodes_index;
             n->jump_index = p.jump_indices[p.jumps_index - 1];
@@ -143,9 +146,9 @@ int main(int argc, char *argv[]) {
             append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
             append(nodes, n, nodes_index, nodes_capacity);
         } else if (n->type == AST_Semicolon) {
-            nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = nodes_index;
-            n->jump_index = p.jump_indices[p.jumps_index - 1];
             p.jumps_index--;
+            nodes[p.jump_indices[p.jumps_index]]->jump_index = nodes_index;
+            n->jump_index = p.jump_indices[p.jumps_index];
             append(nodes, n, nodes_index, nodes_capacity);
         } else {
             append(nodes, n, nodes_index, nodes_capacity);
