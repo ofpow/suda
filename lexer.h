@@ -15,7 +15,7 @@ typedef enum {
     Tok_Right_Paren,
     Tok_Identifier,
     Tok_String,
-    Tok_Letber,
+    Tok_Number,
     Tok_And,
     Tok_If,
     Tok_Else,
@@ -50,7 +50,7 @@ char *find_tok_type(int type) {
         case Tok_Right_Paren: return "Tok_Right_Paren";
         case Tok_Identifier: return "Tok_Identifier";
         case Tok_String: return "Tok_String";
-        case Tok_Letber: return "Tok_Letber";
+        case Tok_Number: return "Tok_Number";
         case Tok_And: return "Tok_And";
         case Tok_If: return "Tok_If";
         case Tok_Else: return "Tok_Else";
@@ -207,7 +207,7 @@ static Token lex_number(Lexer *l) {
         advance(l);
         while (is_num(peek(l))) advance(l);
     }
-    return make_token(Tok_Letber, l);
+    return make_token(Tok_Number, l);
 }
 
 static Token lex_identifier(Lexer *l) {
