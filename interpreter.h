@@ -189,6 +189,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Var_Assign:;
             char *var_name = n->value->value;
+            if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) ERR("cant assign `%s` multiple times\n", var_name);
             AST_Value *var_val = eval_node(n->left, interpreter);
             interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
@@ -214,8 +215,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = strdup(n->value->value);
             Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
-            free(interpreter->vars[var.index].value->value);
-            free(interpreter->vars[var.index].value);
+            free_ast_value(interpreter->vars[var.index].value);
             interpreter->vars[var.index].value = new_val;
             break;}
         case AST_While:;{
