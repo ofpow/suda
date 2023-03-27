@@ -5,7 +5,7 @@
  *
  * <statement> : <print statement> | <variable assignment> | <if statement>
  * <print statement> : "print" <paren expr> | <terminal>
- * <variable assignment> : "str" | "num" var_name "=" <expr>
+ * <variable assignment> : "let" var_name "=" <expr>
  * <if statement> : "if" <expr> <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
