@@ -12,12 +12,9 @@ typedef struct {
 
 char *format_array(AST_Value *array_pointer) {
     if (!array_pointer) ERR("cant format null array\n")
-    //return "[1, 2, 3, \"hello\", \"world\"]";
     int array_len = 2 + strlen(array_pointer->value);
     char *array = malloc(array_len);
     array = format_str(array_len + 1, "[%s", array_pointer->value);
-    //strcpy(array, "[");
-    //strcpy(array, array_pointer->value);
     array_pointer = array_pointer->next;
     while (array_pointer != NULL) {
         int value_len = strlen(array_pointer->value) + 1;
@@ -34,7 +31,6 @@ char *format_array(AST_Value *array_pointer) {
         array_pointer = array_pointer->next;
     }
     array = format_str(array_len + 1, "%.*s]", array_len, array);
-    //ERR("%s\n", array);
     return array;
 }
 

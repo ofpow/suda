@@ -306,29 +306,3 @@ Node *statement(Parser *p) {
     }
     return NULL;
 }
-    //switch (CURRENT_TOK.type) {
-    //    case Tok_Number:
-    //        p->tok_index++;
-    //        parent->next = new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL);
-    //        printf("STR %s\n", parent->next->value);
-    //        parent->next->next = parse_array(p, parent->next);
-    //        break;
-    //    case Tok_String:
-    //        p->tok_index++;
-    //        parent->next = new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL);
-    //        printf("NUM %s\n", parent->next->value);
-    //        parent->next->next = parse_array(p, parent->next);
-    //        break;
-    //    case Tok_Comma:
-    //        p->tok_index++;
-    //        parent = parse_array(p, parent);
-    //        break;
-    //    case Tok_Right_Bracket:
-    //        p->tok_index++;
-    //        //return NULL;
-    //        break;
-    //    case Tok_Eof:
-    //        ERR("unclosed array\n");
-    //    default: ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type));
-    //}
-    //return NULL;
