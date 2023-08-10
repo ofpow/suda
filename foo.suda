@@ -1,7 +1,2 @@
-let var_one = 0
-
-while (var_one < 10)
-    let var_two = (var_one * 2)
-    print var_two
-    var_one = (var_one + 1)
-;
+let var_one = [1, 2, 3, "hello", "world"]
+print var_one

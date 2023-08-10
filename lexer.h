@@ -13,6 +13,9 @@ typedef enum {
     Tok_Semicolon,
     Tok_Left_Paren,
     Tok_Right_Paren,
+    Tok_Left_Bracket,
+    Tok_Right_Bracket,
+    Tok_Comma,
     Tok_Identifier,
     Tok_String,
     Tok_Number,
@@ -48,6 +51,9 @@ char *find_tok_type(int type) {
         case Tok_Semicolon: return "Tok_Semicolon";
         case Tok_Left_Paren: return "Tok_Left_Paren";
         case Tok_Right_Paren: return "Tok_Right_Paren";
+        case Tok_Left_Bracket: return "Tok_Left_Bracket";
+        case Tok_Right_Bracket: return "Tok_Right_Bracket";
+        case Tok_Comma: return "Tok_Comma";
         case Tok_Identifier: return "Tok_Identifier";
         case Tok_String: return "Tok_String";
         case Tok_Number: return "Tok_Number";
@@ -67,7 +73,7 @@ char *find_tok_type(int type) {
         case Tok_Continue: return "Tok_Continue";
         case Tok_Break: return "Tok_Break";
         case Tok_Comment: return "Tok_Comment";
-        default: ERR("unreachable\n");
+        default: ERR("unknown token type `%d`\n", type);
     }
     return "unreachable";
 }
@@ -265,6 +271,12 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_Left_Paren, l);
         case ')':
             return make_token(Tok_Right_Paren, l);
+        case '[':
+            return make_token(Tok_Left_Bracket, l);
+        case ']':
+            return make_token(Tok_Right_Bracket, l);
+        case ',':
+            return make_token(Tok_Comma, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c);
     }

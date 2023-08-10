@@ -3,13 +3,15 @@
 typedef enum {
     Value_String,
     Value_Number,
-} AST_Value_Type;
+    Value_Array,
+} Variable_Type;
 
-char *find_ast_value_type(int type) {
+char *find_ast_value_type(Variable_Type type) {
     switch (type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";
-        default: ERR("unknown ast value type `%d`", type);
+        case Value_Array: return "Value_Array";
+        default: ERR("unknown value type `%d`", type);
     }
     return "unreachable";
 }
@@ -17,6 +19,8 @@ char *find_ast_value_type(int type) {
 typedef struct AST_Value {
     int type;
     char *value;
+
+    struct AST_Value *next;
 } AST_Value;
 
 typedef enum{

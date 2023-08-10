@@ -9,7 +9,8 @@
  * <if statement> : "if" <expr> <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
- * <expr> : <terminal> | <math_expr>
+ * <expr> : <terminal> | <math_expr> | <array>
+ * <array> : "[" <expr> "," <expr> "," ... "]"
  * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "=" "<expr>"
  * <terminal> : <literal>
  */
@@ -18,6 +19,7 @@
 #define LAST_TOK p->tokens[p->tok_index - 1]
 #define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal))
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Equal))
+
 
 typedef enum {
     AST_End,
@@ -38,6 +40,7 @@ typedef enum {
     AST_Semicolon,
     AST_Else,
     AST_While,
+    AST_Array,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -60,6 +63,7 @@ char *find_ast_type(int type) {
         case AST_Semicolon: return "AST_Semicolon";
         case AST_Else: return "AST_Else";
         case AST_While: return "AST_While";
+        case AST_Array: return "AST_Array";
         default: return "ast type not found";
     }
 }
@@ -86,12 +90,17 @@ typedef struct Parser {
     int jumps_index;
 } Parser;
 
-AST_Value *new_ast_value(int type, char *value) {
+AST_Value *new_ast_value(int type, char *value, AST_Value *next) {
     debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value);
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
     val->type = type;
     val->value = value;
+    if (next != NULL) {
+        val->next = new_ast_value(next->type, next->value, next->next);
+    } else {
+        val->next = NULL;
+    }
     return val;
 }
 
@@ -131,26 +140,53 @@ void free_node(Node *n) {
     if (n->left == NULL && n->right == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
 }
 
+AST_Value *parse_array(Parser *p, AST_Value *parent) {
+    debug("parse array\n");
+    switch (CURRENT_TOK.type) {
+        case Tok_Number:
+            p->tok_index++;
+            parent = new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL);
+            parent->next = parse_array(p, parent);
+            break;
+        case Tok_String:
+            p->tok_index++;
+            parent = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), NULL);
+            parent->next = parse_array(p, parent);
+            break;
+        case Tok_Comma:
+            p->tok_index++;
+            parent = parse_array(p, parent);
+            break;
+        case Tok_Right_Bracket:
+            p->tok_index++;
+            return NULL;
+            break;
+        case Tok_Eof:
+            ERR("unclosed array\n");
+        default: ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type));
+    }
+}
+
 Node *expr(Parser *p, Node *child) {
     Node *n;
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; 
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1));
-            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1);
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL), -1));
+            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL), -1);
         case Tok_Number:
             p->tok_index++;
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1));
-            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1));
+            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
         case Tok_Identifier: 
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Equal) {
-                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 return n;
             }
-            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
@@ -216,6 +252,12 @@ Node *expr(Parser *p, Node *child) {
             return n;
         case Tok_Eof:
             break;
+        case Tok_Left_Bracket:
+            n = new_node(AST_Array, NULL, -1);
+            p->tok_index++;
+            n->value = new_ast_value(Value_Array, NULL, NULL);
+            n->value->next = parse_array(p, n->value);
+            return n;
         default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
     }
     return NULL;
@@ -236,7 +278,7 @@ Node *statement(Parser *p) {
         case Tok_Let:
             n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
-            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
+            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), NULL);
             p->tok_index++;
             ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
             p->tok_index++;
@@ -264,3 +306,29 @@ Node *statement(Parser *p) {
     }
     return NULL;
 }
+    //switch (CURRENT_TOK.type) {
+    //    case Tok_Number:
+    //        p->tok_index++;
+    //        parent->next = new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL);
+    //        printf("STR %s\n", parent->next->value);
+    //        parent->next->next = parse_array(p, parent->next);
+    //        break;
+    //    case Tok_String:
+    //        p->tok_index++;
+    //        parent->next = new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL);
+    //        printf("NUM %s\n", parent->next->value);
+    //        parent->next->next = parse_array(p, parent->next);
+    //        break;
+    //    case Tok_Comma:
+    //        p->tok_index++;
+    //        parent = parse_array(p, parent);
+    //        break;
+    //    case Tok_Right_Bracket:
+    //        p->tok_index++;
+    //        //return NULL;
+    //        break;
+    //    case Tok_Eof:
+    //        ERR("unclosed array\n");
+    //    default: ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type));
+    //}
+    //return NULL;
