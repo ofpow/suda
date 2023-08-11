@@ -142,25 +142,25 @@ void free_node(Node *n) {
 
 AST_Value *parse_array(Parser *p, AST_Value *parent) {
     debug("parse array\n");
+    AST_Value *value;
     switch (CURRENT_TOK.type) {
         case Tok_Number:
             p->tok_index++;
-            parent = new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL);
-            parent->next = parse_array(p, parent);
-            break;
+            value = new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL);
+            value->next = parse_array(p, value);
+            return value;
         case Tok_String:
             p->tok_index++;
-            parent = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), NULL);
-            parent->next = parse_array(p, parent);
-            break;
+            value = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), NULL);
+            value->next = parse_array(p, value);
+            return value;
         case Tok_Comma:
             p->tok_index++;
-            parent = parse_array(p, parent);
-            break;
+            value = parse_array(p, value);
+            return value;
         case Tok_Right_Bracket:
             p->tok_index++;
             return NULL;
-            break;
         case Tok_Eof:
             ERR("unclosed array\n");
         default: ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type));
