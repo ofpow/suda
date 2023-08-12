@@ -197,6 +197,18 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         return result;
     } else if (n->type == AST_Array) {
         return new_ast_value(n->value->type, NULL, n->value->next);
+    } else if (n->type == AST_At) {
+        int index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+        Variable var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
+        AST_Value *array_pointer = var.value;
+        for (int i = 0; i < index; i++) {
+            array_pointer = array_pointer->next;
+        }
+        if (array_pointer->type == Value_String) {
+            int len = strlen(array_pointer->value);
+            return new_ast_value(array_pointer->type, format_str(len - 1, "%.*s", len, array_pointer->value + 1), NULL);
+        }
+        else if (array_pointer->type == Value_Number) return new_ast_value(array_pointer->type, strdup(array_pointer->value), NULL);
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
 }
@@ -205,7 +217,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
         case AST_Print:;
             if (!n->left) ERR("need something to print\n");
-            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier), "Can't print `%s`\n", find_ast_type(n->left->type));
+            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At), "Can't print `%s`\n", find_ast_type(n->left->type));
             AST_Value *print = eval_node(n->left, interpreter);
             if (print->type == Value_Array) {
                 char *array = format_array(print->next);

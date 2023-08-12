@@ -111,7 +111,7 @@ static bool is_num(char c) {
 }
 
 static bool is_alphabet(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '@';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
 static char peek(Lexer *l) {
@@ -277,6 +277,8 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_Right_Bracket, l);
         case ',':
             return make_token(Tok_Comma, l);
+        case '@':
+            return make_token(Tok_At, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c);
     }

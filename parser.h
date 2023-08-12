@@ -41,6 +41,7 @@ typedef enum {
     AST_Else,
     AST_While,
     AST_Array,
+    AST_At,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -64,6 +65,7 @@ char *find_ast_type(int type) {
         case AST_Else: return "AST_Else";
         case AST_While: return "AST_While";
         case AST_Array: return "AST_Array";
+        case AST_At: return "AST_At";
         default: return "ast type not found";
     }
 }
@@ -149,7 +151,6 @@ void free_node(Node *n) {
 }
 
 AST_Value *parse_array(Parser *p) {
-    debug("parse array\n");
     AST_Value *value;
     switch (CURRENT_TOK.type) {
         case Tok_Number:
@@ -193,6 +194,11 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Equal) {
                 n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
+                p->tok_index++;
+                n->left = expr(p, NULL);
+                return n;
+            } else if (CURRENT_TOK.type == Tok_At) {
+                n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 return n;
