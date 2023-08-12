@@ -13,24 +13,20 @@ typedef struct {
 char *format_array(AST_Value *array_pointer) {
     if (!array_pointer) ERR("cant format null array\n")
     int array_len = 2 + strlen(array_pointer->value);
-    char *array = malloc(array_len);
-    array = format_str(array_len + 1, "[%s", array_pointer->value);
+    char *array = format_str(array_len + 1, "[%s", array_pointer->value);
     array_pointer = array_pointer->next;
     while (array_pointer != NULL) {
-        int value_len = strlen(array_pointer->value) + 1;
+        int value_len = strlen(array_pointer->value) + 2;
 
         array = realloc(array, value_len + array_len);
-        if (array_pointer->type == Value_String) {
-            array = format_str(value_len + array_len + 3, "%.*s, %.*s", array_len, array, value_len, array_pointer->value);
-        } else {
-            array = format_str(value_len + array_len + 3, "%.*s, %.*s", array_len, array, value_len, array_pointer->value);
-        }
+        strcat(array, ", ");
+        strcat(array, array_pointer->value);
 
         array_len += (value_len + 2);
         
         array_pointer = array_pointer->next;
     }
-    array = format_str(array_len + 1, "%.*s]", array_len, array);
+    strcat(array, "]");
     return array;
 }
 
@@ -201,7 +197,6 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         return result;
     } else if (n->type == AST_Array) {
         return new_ast_value(n->value->type, NULL, n->value->next);
-        //return new_ast_value(n->value->type, strdup(n->value->value), NULL);
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
 }
@@ -213,7 +208,10 @@ void do_statement(Node *n, Interpreter *interpreter) {
             ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier), "Can't print `%s`\n", find_ast_type(n->left->type));
             AST_Value *print = eval_node(n->left, interpreter);
             if (print->type == Value_Array) {
-                printf("%s\n", format_array(print->next));
+                char *array = format_array(print->next);
+                printf("%s\n", array);
+                free(array);
+                free_array(print->next);
             } else {
                 printf("%s\n", print->value);
             }

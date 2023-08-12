@@ -54,7 +54,15 @@ void free_mem(int exit_val) {
     for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
     free(nodes);
     free(p.jump_indices);
-    for (int i = 0; i < interpreter.vars_index; i++) { free(interpreter.vars[i].value->value); free(interpreter.vars[i].value); }
+    for (int i = 0; i < interpreter.vars_index; i++) {
+        if (interpreter.vars[i].value->type == Value_Array) {
+            free(interpreter.vars[i].value->value);
+            free_array(interpreter.vars[i].value);
+        } else {
+            free(interpreter.vars[i].value->value);
+            free(interpreter.vars[i].value);
+        }
+    }
     free(interpreter.vars);
     free(program);
     exit(exit_val);
