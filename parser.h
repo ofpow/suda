@@ -17,7 +17,8 @@
 
 #define CURRENT_TOK p->tokens[p->tok_index]
 #define LAST_TOK p->tokens[p->tok_index - 1]
-#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal))
+#define NEXT_TOK p->tokens[p->tok_index + 1]
+#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Equal))
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Equal))
 
 
@@ -125,8 +126,14 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
 }
 
 void free_array(AST_Value *array_pointer) {
-    if (array_pointer->next) {free_array(array_pointer->next); array_pointer->next = NULL;}
-    if (array_pointer->value) {free(array_pointer->value); array_pointer->value = NULL; }
+    if (array_pointer->next) {
+        free_array(array_pointer->next);
+        array_pointer->next = NULL;
+    }
+    if (array_pointer->value) {
+        free(array_pointer->value);
+        array_pointer->value = NULL;
+    }
     free(array_pointer);
     array_pointer = NULL;
 }
@@ -141,13 +148,25 @@ void free_node(Node *n) {
             free(n->value->value);
             n->value->value = NULL;
         }
-        if (n->value->next) {free_array(n->value->next); n->value->next = NULL;}
+        if (n->value->next != NULL) {
+            free_array(n->value->next);
+            n->value->next = NULL;
+        }
         free(n->value);
         n->value = NULL;
     }
-    if (n->left != NULL) {free_node(n->left); n->left = NULL;}
-    if (n->right != NULL) {free_node(n->right); n->right = NULL;}
-    if (n->left == NULL && n->right == NULL) free(n); else {fprintf(stderr, "not everything freed correctly\n"); exit(-1);}
+    if (n->left != NULL) {
+        free_node(n->left);
+        n->left = NULL;
+    }
+    if (n->right != NULL) {
+        free_node(n->right);
+        n->right = NULL;
+    }
+    if (n->left == NULL && n->right == NULL) 
+        free(n);
+    else
+        ERR("not everything freed correctly\n");
 }
 
 AST_Value *parse_array(Parser *p) {
@@ -184,11 +203,13 @@ Node *expr(Parser *p, Node *child) {
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; 
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL), -1));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type))
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL), -1));
             return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), NULL), -1);
         case Tok_Number:
             p->tok_index++;
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type)) return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type))
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1));
             return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
         case Tok_Identifier: 
             p->tok_index++; 
@@ -199,6 +220,7 @@ Node *expr(Parser *p, Node *child) {
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
                 n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
+                //TODO: print array@x + array@y segfaults, print((array@x) + (array@y)) doesnt
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 return n;

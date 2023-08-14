@@ -31,6 +31,8 @@ char *format_array(AST_Value *array_pointer) {
 }
 
 float strtofloat(const char *str, int len) {
+    if (!str) ERR("need something to convert\n");
+    if (!len) ERR("need length to convert\n");
     float total = 0;
     for (int i = 0; i < len - 1; i++) {
         total += str[i] - '0';
@@ -158,7 +160,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         char *var_name = strdup(n->value->value);
         Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
         free(var_name);
-        if (var.value->type == Value_Array) return new_ast_value(var.value->type, NULL, var.value->next);
+        if (var.value->type == Value_Array) 
+            return new_ast_value(var.value->type, NULL, var.value->next);
         return new_ast_value(var.value->type, strdup(var.value->value), NULL);
     } else if (n->type == AST_Less) {
         AST_Value *op1 = eval_node(n->left, interpreter);
@@ -201,14 +204,16 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         int index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
         Variable var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
         AST_Value *array_pointer = var.value;
+
         for (int i = 0; i < index; i++) {
             array_pointer = array_pointer->next;
         }
+
         if (array_pointer->type == Value_String) {
             int len = strlen(array_pointer->value);
             return new_ast_value(array_pointer->type, format_str(len - 1, "%.*s", len, array_pointer->value + 1), NULL);
-        }
-        else if (array_pointer->type == Value_Number) return new_ast_value(array_pointer->type, strdup(array_pointer->value), NULL);
+        } else if (array_pointer->type == Value_Number) 
+            return new_ast_value(array_pointer->type, strdup(array_pointer->value), NULL);
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type));
     return NULL;
 }
@@ -219,6 +224,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
             if (!n->left) ERR("need something to print\n");
             ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At), "Can't print `%s`\n", find_ast_type(n->left->type));
             AST_Value *print = eval_node(n->left, interpreter);
+
             if (print->type == Value_Array) {
                 char *array = format_array(print->next);
                 printf("%s\n", array);
@@ -227,12 +233,14 @@ void do_statement(Node *n, Interpreter *interpreter) {
             } else {
                 printf("%s\n", print->value);
             }
+
             free(print->value);
             free(print);
             break;
         case AST_Var_Assign:;
             char *var_name = n->value->value;
-            if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) ERR("cant assign `%s` multiple times\n", var_name);
+            if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
+                ERR("cant assign `%s` multiple times\n", var_name);
             AST_Value *var_val = eval_node(n->left, interpreter);
             interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
