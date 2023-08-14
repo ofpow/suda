@@ -73,7 +73,7 @@ char *find_tok_type(int type) {
         case Tok_Continue: return "Tok_Continue";
         case Tok_Break: return "Tok_Break";
         case Tok_Comment: return "Tok_Comment";
-        default: ERR("unknown token type `%d`\n", type);
+        default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
 }
@@ -164,7 +164,7 @@ static Token lex_string(Lexer *l) {
         advance(l);
     }
     if (at_end(l)) {
-        ERR("Unclosed string on line %d\n", l->line);
+        ERR("Unclosed string on line %d\n", l->line)
     }
     advance(l);
     return make_token(Tok_String, l);
@@ -280,8 +280,8 @@ Token scan_token(Lexer *l) {
         case '@':
             return make_token(Tok_At, l);
         default:
-            ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c);
+            ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c)
     }
-    ERR("Unknown character on line %d:   %c\n", l->line, c);
+    ERR("Unknown character on line %d:   %c\n", l->line, c)
     exit(1);
 }

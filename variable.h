@@ -11,7 +11,7 @@ char *find_ast_value_type(Variable_Type type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";
         case Value_Array: return "Value_Array";
-        default: ERR("unknown value type `%d`", type);
+        default: ERR("unknown value type `%d`", type)
     }
     return "unreachable";
 }
@@ -41,7 +41,7 @@ Variable get_var(const char *var_name, Variable *vars, int vars_index) {
             return vars[i];
         }
     }
-    ERR("variable `%s` not found\n", var_name);
+    ERR("variable `%s` not found\n", var_name)
     return (Variable) {0};
 }
 

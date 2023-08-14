@@ -23,7 +23,7 @@ char *format_str(int strlen, const char *format, ...) {
 }
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
-#define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0)
+#define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
 #define append(array, element, index, capacity) do {            \
     if (index >= capacity) {                                    \
         capacity *= 2;                                          \
@@ -48,7 +48,7 @@ Interpreter interpreter;
 
 void free_mem(int exit_val) {
 
-    debug("\n----------\nFREEING\n");
+    debug("\n----------\nFREEING\n")
 
     free(tokens);
     for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
@@ -71,13 +71,13 @@ void free_mem(int exit_val) {
 int main(int argc, char *argv[]) {
     //read input file
     if (argc != 2) {
-        ERR("ERROR: invalid arguments\nUsage: suda [script]\n");
+        ERR("ERROR: invalid arguments\nUsage: suda [script]\n")
         exit(1);
     }
 
     FILE* file = fopen(argv[1], "rb");
     if (!file) {
-        ERR("ERROR: could not open file %s\n", argv[1]);
+        ERR("ERROR: could not open file %s\n", argv[1])
         exit(1);
     }
     fseek(file, 0L, SEEK_END);
@@ -112,10 +112,10 @@ int main(int argc, char *argv[]) {
             tokens[tokens_index] = tok;
             tokens_index++;
         }
-        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start);
+        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start)
     }
 
-    debug("\n----------\nPARSING\n");
+    debug("\n----------\nPARSING\n")
 
     //parse tokens
     p.tokens = tokens;
@@ -142,28 +142,28 @@ int main(int argc, char *argv[]) {
             }
             break;
         } else if (n->type == AST_If) {
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
-            append(nodes, n, nodes_index, nodes_capacity);
+            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
+            append(nodes, n, nodes_index, nodes_capacity)
         } else if (n->type == AST_While) {
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
-            append(nodes, n, nodes_index, nodes_capacity);
+            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
+            append(nodes, n, nodes_index, nodes_capacity)
         } else if (n->type == AST_Else) {
             nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = nodes_index;
             n->jump_index = p.jump_indices[p.jumps_index - 1];
             p.jumps_index--;
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity);
-            append(nodes, n, nodes_index, nodes_capacity);
+            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
+            append(nodes, n, nodes_index, nodes_capacity)
         } else if (n->type == AST_Semicolon) {
             p.jumps_index--;
             nodes[p.jump_indices[p.jumps_index]]->jump_index = nodes_index;
             n->jump_index = p.jump_indices[p.jumps_index];
-            append(nodes, n, nodes_index, nodes_capacity);
+            append(nodes, n, nodes_index, nodes_capacity)
         } else {
-            append(nodes, n, nodes_index, nodes_capacity);
+            append(nodes, n, nodes_index, nodes_capacity)
         }
     }
 
-    debug("\n----------\nINTERPRETING\n");
+    debug("\n----------\nINTERPRETING\n")
 
     interpreter.nodes = nodes;
     interpreter.stmts_capacity = nodes_index;

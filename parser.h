@@ -94,7 +94,7 @@ typedef struct Parser {
 } Parser;
 
 AST_Value *new_ast_value(int type, char *value, AST_Value *next) {
-    debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value);
+    debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value)
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
     val->type = type;
@@ -114,7 +114,7 @@ void free_ast_value(AST_Value *value) {
 
 Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
 
-    debug("NODE ( `%s` )\n", find_ast_type(type));
+    debug("NODE ( `%s` )\n", find_ast_type(type))
 
     Node *node = calloc(1, sizeof(struct Node));
     node->type = type;
@@ -140,7 +140,7 @@ void free_array(AST_Value *array_pointer) {
 
 void free_node(Node *n) {
 
-    debug("FREE NODE `%s`\n", find_ast_type(n->type));
+    debug("FREE NODE `%s`\n", find_ast_type(n->type))
 
     if (n == NULL) return;
     if (n->value != NULL) {
@@ -166,7 +166,7 @@ void free_node(Node *n) {
     if (n->left == NULL && n->right == NULL) 
         free(n);
     else
-        ERR("not everything freed correctly\n");
+        ERR("not everything freed correctly\n")
 }
 
 AST_Value *parse_array(Parser *p) {
@@ -190,10 +190,10 @@ AST_Value *parse_array(Parser *p) {
             p->tok_index++;
             return NULL;
         case Tok_Eof:
-            ERR("unclosed array\n");
+            ERR("unclosed array\n")
             break;
         default: 
-            ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type));
+            ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
 }
@@ -230,7 +230,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n = expr(p, NULL);
             while (CURRENT_TOK.type != Tok_Right_Paren) {
-                if (CURRENT_TOK.type == Tok_Eof) ERR("Require closing parenthese\n");
+                if (CURRENT_TOK.type == Tok_Eof) ERR("Require closing parenthese\n")
                 n = expr(p, n);
             }
             p->tok_index++;
@@ -297,7 +297,7 @@ Node *expr(Parser *p, Node *child) {
             n->value = new_ast_value(Value_Array, NULL, NULL);
             n->value->next = parse_array(p);
             return n;
-        default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type));
+        default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
 }
@@ -319,7 +319,7 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), NULL);
             p->tok_index++;
-            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n");
+            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n")
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
