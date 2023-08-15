@@ -46,6 +46,7 @@ AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
+        //TODO: with values over 1,000,000, %g goes to scientific notation
         return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)), NULL);
     } else {
         int op1_len = strlen(op1->value);
