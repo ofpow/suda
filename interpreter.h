@@ -118,7 +118,7 @@ AST_Value *ast_greater_equal(AST_Value *op1, AST_Value *op2) {
     return NULL;
 }
 
-AST_Value *ast_equal(AST_Value *op1, AST_Value *op2) {
+AST_Value *ast_is_equal(AST_Value *op1, AST_Value *op2) {
     int op1_len = strlen(op1->value);
     int op2_len = strlen(op2->value);
     return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)), NULL);
@@ -192,10 +192,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         free_ast_value(op1);
         free_ast_value(op2);
         return result;
-    } else if (n->type == AST_Equal) {
+    } else if (n->type == AST_Is_Equal) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_equal(op1, op2);
+        AST_Value *result = ast_is_equal(op1, op2);
         free_ast_value(op1);
         free_ast_value(op2);
         return result;

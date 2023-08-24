@@ -35,6 +35,7 @@ typedef enum {
     Tok_Continue,
     Tok_Break,
     Tok_Comment,
+    Tok_Is_Equal,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -73,6 +74,7 @@ char *find_tok_type(int type) {
         case Tok_Continue: return "Tok_Continue";
         case Tok_Break: return "Tok_Break";
         case Tok_Comment: return "Tok_Comment";
+        case Tok_Is_Equal: return "Tok_Is_Equal";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -248,7 +250,8 @@ Token scan_token(Lexer *l) {
             while (!at_end(l) && *l->current != '\n') advance(l);
             return make_token(Tok_Comment, l);
         case '=':
-            return make_token(Tok_Equal, l);
+            return make_token(match('=', l) ? Tok_Is_Equal : Tok_Equal, l);
+            //return make_token(Tok_Equal, l);
         case '+':
             return make_token(Tok_Add, l);
         case '-':

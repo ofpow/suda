@@ -1,3 +1,1 @@
-let var_one = [1, 2, 3, "hello", "world"]
-print var_one@3
-print var_one@5
+print(30 == 30)

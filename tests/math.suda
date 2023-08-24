@@ -4,6 +4,6 @@ print((17 + 18) + (2 * 17))
 
 print(34 > 35)
 print(420 >= 421)
-print(3 = 3)
+print(3 == 3)
 print(15 < 30)
 print(18 <= 18)
