@@ -2,7 +2,7 @@
 
 typedef enum {
     Tok_Eof,
-    Tok_Equal,
+    Tok_Assign,
     Tok_Bang,
     Tok_Bang_Equal,
     Tok_Greater,
@@ -41,7 +41,7 @@ typedef enum {
 char *find_tok_type(int type) {
     switch (type) {
         case Tok_Eof: return "Tok_Eof";
-        case Tok_Equal: return "Tok_Equal";
+        case Tok_Assign: return "Tok_Assign";
         case Tok_Bang: return "Tok_Bang";
         case Tok_Bang_Equal: return "Tok_Bang_Equal";
         case Tok_Greater: return "Tok_Greater";
@@ -250,8 +250,7 @@ Token scan_token(Lexer *l) {
             while (!at_end(l) && *l->current != '\n') advance(l);
             return make_token(Tok_Comment, l);
         case '=':
-            return make_token(match('=', l) ? Tok_Is_Equal : Tok_Equal, l);
-            //return make_token(Tok_Equal, l);
+            return make_token(match('=', l) ? Tok_Is_Equal : Tok_Assign, l);
         case '+':
             return make_token(Tok_Add, l);
         case '-':

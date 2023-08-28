@@ -36,7 +36,7 @@ typedef enum {
     AST_Greater_Equal,
     AST_Less,
     AST_Less_Equal,
-    AST_Equal,
+    AST_Assign,
     AST_If,
     AST_Semicolon,
     AST_Else,
@@ -61,7 +61,7 @@ char *find_ast_type(int type) {
         case AST_Greater_Equal: return "AST_Greater_Equal";
         case AST_Less: return "AST_Less";
         case AST_Less_Equal: return "AST_Less_Equal";
-        case AST_Equal: return "AST_Equal";
+        case AST_Assign: return "AST_Assign";
         case AST_If: return "AST_If";
         case AST_Semicolon: return "AST_Semicolon";
         case AST_Else: return "AST_Else";
@@ -215,7 +215,7 @@ Node *expr(Parser *p, Node *child) {
             return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
         case Tok_Identifier: 
             p->tok_index++; 
-            if (CURRENT_TOK.type == Tok_Equal) {
+            if (CURRENT_TOK.type == Tok_Assign) {
                 n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);
                 p->tok_index++;
                 n->left = expr(p, NULL);
@@ -321,7 +321,7 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), NULL);
             p->tok_index++;
-            ASSERT((CURRENT_TOK.type = Tok_Equal), "Require `=` to assign to variable\n")
+            ASSERT((CURRENT_TOK.type = Tok_Assign), "Require `=` to assign to variable\n")
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
