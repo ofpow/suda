@@ -279,6 +279,12 @@ void do_statement(Node *n, Interpreter *interpreter) {
             break;}
         case AST_At:;{
             AST_Value *new_val = eval_node(n->right, interpreter);
+            if (new_val->type == Value_String && new_val->value[0] != '"') {
+                char *temp = strdup(new_val->value);
+                free(new_val->value);
+                new_val->value = format_str((strlen(temp) + 3), "\"%s\"", temp);
+                free(temp);
+            }
             char *var_name = strdup(n->value->value);
             Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
