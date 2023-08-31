@@ -57,7 +57,7 @@ void free_mem(int exit_val) {
     for (int i = 0; i < interpreter.vars_index; i++) {
         if (interpreter.vars[i].value->type == Value_Array) {
             free(interpreter.vars[i].value->value);
-            free_array(interpreter.vars[i].value);
+            free_ast_value(interpreter.vars[i].value);
         } else {
             free(interpreter.vars[i].value->value);
             free(interpreter.vars[i].value);

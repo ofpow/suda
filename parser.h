@@ -110,6 +110,7 @@ AST_Value *new_ast_value(int type, char *value, AST_Value *next) {
 }
 
 void free_ast_value(AST_Value *value) {
+    if (value->next) free_ast_value(value->next);
     free(value->value);
     free(value);
 }
@@ -127,19 +128,6 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
     return node;
 }
 
-void free_array(AST_Value *array_pointer) {
-    if (array_pointer->next) {
-        free_array(array_pointer->next);
-        array_pointer->next = NULL;
-    }
-    if (array_pointer->value) {
-        free(array_pointer->value);
-        array_pointer->value = NULL;
-    }
-    free(array_pointer);
-    array_pointer = NULL;
-}
-
 void free_node(Node *n) {
 
     debug("FREE NODE `%s`\n", find_ast_type(n->type))
@@ -151,7 +139,7 @@ void free_node(Node *n) {
             n->value->value = NULL;
         }
         if (n->value->next != NULL) {
-            free_array(n->value->next);
+            free_ast_value(n->value->next);
             n->value->next = NULL;
         }
         free(n->value);

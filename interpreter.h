@@ -230,7 +230,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
                 char *array = format_array(print->next);
                 printf("%s\n", array);
                 free(array);
-                free_array(print->next);
+                free_ast_value(print->next);
             } else {
                 printf("%s\n", print->value);
             }
@@ -295,6 +295,7 @@ void do_statement(Node *n, Interpreter *interpreter) {
                 array_pointer = array_pointer->next;
             }
             new_val->next = array_pointer->next->next;
+            array_pointer->next->next = NULL;
             free_ast_value(array_pointer->next);
             array_pointer->next = new_val;
             break;}
