@@ -212,6 +212,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         AST_Value *array_pointer = var.value;
 
         for (int i = 0; i < index; i++) {
+            if (!array_pointer->next) ERR("Index %d is out of bounds for array %s\n", index, var.name)
             array_pointer = array_pointer->next;
         }
 
