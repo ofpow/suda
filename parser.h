@@ -225,6 +225,10 @@ Node *expr(Parser *p, Node *child) {
                 //TODO: print array@x + array@y segfaults, print((array@x) + (array@y)) doesnt
                 p->tok_index++;
                 n->left = expr(p, NULL);
+                if (CURRENT_TOK.type == Tok_Assign) {
+                    p->tok_index++;
+                    n->right = expr(p, NULL);
+                }
                 return n;
             }
             return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), NULL), -1);

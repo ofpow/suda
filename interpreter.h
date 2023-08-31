@@ -277,6 +277,21 @@ void do_statement(Node *n, Interpreter *interpreter) {
             }
             free_ast_value(expr);
             break;}
+        case AST_At:;{
+            AST_Value *new_val = eval_node(n->right, interpreter);
+            char *var_name = strdup(n->value->value);
+            Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+            free(var_name);
+            int index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+            AST_Value *array_pointer = var.value;
+
+            for (int i = 0; i < index - 1; i++) {
+                array_pointer = array_pointer->next;
+            }
+            new_val->next = array_pointer->next->next;
+            free_ast_value(array_pointer->next);
+            array_pointer->next = new_val;
+            break;}
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type))
     }
 }
