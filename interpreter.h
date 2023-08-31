@@ -202,7 +202,12 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
     } else if (n->type == AST_Array) {
         return new_ast_value(n->value->type, NULL, n->value->next);
     } else if (n->type == AST_At) {
-        int index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+        int index = 0;
+        if (n->left->type != AST_Literal) {
+            AST_Value *val = eval_node(n->left, interpreter);
+            index = strtofloat(val->value, strlen(val->value));
+            free_ast_value(val);
+        } else index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
         Variable var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
         AST_Value *array_pointer = var.value;
 

@@ -1,8 +1,8 @@
 #pragma once
 
 typedef enum {
-    Value_String,
     Value_Number,
+    Value_String,
     Value_Array,
 } Variable_Type;
 
