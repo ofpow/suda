@@ -1,3 +1,5 @@
-let var_one = [1, 2, 3, "hello", "world"]
-let index = 4
-print var_one@(index + 10)
+let index = 2
+
+let var_one = "hello"
+var_one@index = "3"
+print var_one

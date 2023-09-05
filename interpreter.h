@@ -208,7 +208,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
             index = strtofloat(val->value, strlen(val->value));
             free_ast_value(val);
         } else index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+
         Variable var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
+
+        if (var.value->type == Value_String) {
+            return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), NULL);
+        }
+
         AST_Value *array_pointer = var.value;
 
         for (int i = 0; i < index; i++) {
@@ -284,17 +290,35 @@ void do_statement(Node *n, Interpreter *interpreter) {
             free_ast_value(expr);
             break;}
         case AST_At:;{
-            AST_Value *new_val = eval_node(n->right, interpreter);
-            if (new_val->type == Value_String && new_val->value[0] != '"') {
+            AST_Value *new_val;
+            int index;
+            if (n->right) {
+                new_val = eval_node(n->right, interpreter);
+                index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+            } else {
+                new_val = eval_node(n->left->left, interpreter);
+                AST_Value *i = eval_node(n->left, interpreter);
+                index = (int)strtofloat(i->value, strlen(i->value));
+                free_ast_value(i);
+            }
+
+            char *var_name = strdup(n->value->value);
+            Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+            free(var_name);
+
+            //if it was assigned after array was created, add quotes around value
+            if (new_val->type == Value_String && new_val->value[0] != '"' && var.value->type == Value_Array) {
                 char *temp = strdup(new_val->value);
                 free(new_val->value);
                 new_val->value = format_str((strlen(temp) + 3), "\"%s\"", temp);
                 free(temp);
             }
-            char *var_name = strdup(n->value->value);
-            Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
-            free(var_name);
-            int index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+
+            if (var.value->type == Value_String) {
+                var.value->value[index - 1] = new_val->value[0];
+                free_ast_value(new_val);
+                break;
+            }
             AST_Value *array_pointer = var.value;
 
             for (int i = 0; i < index - 1; i++) {
