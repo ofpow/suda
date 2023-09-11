@@ -3,16 +3,18 @@
 /* 
  * SUDA EBNF
  *
- * <statement> : <print statement> | <variable assignment> | <if statement>
- * <print statement> : "print" <paren expr> | <terminal>
+ * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement>
+ * <print statement> : "print" <expr>
  * <variable assignment> : "let" var_name "=" <expr>
- * <if statement> : "if" <expr> <statements> ";"
+ * <if statement> : "if" <expr> <statements> ";" | "if" <expr> <statements> "else" <statements>
+ * <while statement> : "while" <expr> <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
- * <expr> : <terminal> | <math_expr> | <array>
+ * <expr> : <terminal> | <math_expr> | <array> | <array access>
  * <array> : "[" <expr> "," <expr> "," ... "]"
- * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "=" "<expr>"
+ * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "==" "<expr>"
  * <terminal> : <literal>
+ * <array access> : <array variable> "@" <expr>
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
