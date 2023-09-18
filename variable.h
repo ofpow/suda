@@ -19,8 +19,6 @@ char *find_ast_value_type(Variable_Type type) {
 typedef struct AST_Value {
     int type;
     char *value;
-
-    struct AST_Value *next;
 } AST_Value;
 
 typedef enum{

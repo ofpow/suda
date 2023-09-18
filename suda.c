@@ -13,15 +13,6 @@
 
 void free_mem(int exit_val);
 
-char *format_str(int strlen, const char *format, ...) {
-    char *result = malloc(strlen + 1);
-    va_list args;
-    va_start(args, format);
-    vsnprintf(result, strlen, format, args);
-    va_end(args);
-    return result;
-}
-
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
 #define append(array, element, index, capacity) do {            \
@@ -32,6 +23,27 @@ char *format_str(int strlen, const char *format, ...) {
                                                                 \
     array[index++] = element;                                   \
 } while (0);                                                    \
+
+char *format_str(int strlen, const char *format, ...) {
+    char *result = malloc(strlen + 1);
+    va_list args;
+    va_start(args, format);
+    vsnprintf(result, strlen, format, args);
+    va_end(args);
+    return result;
+}
+
+float strtofloat(const char *str, int len) {
+    if (!str) ERR("need something to convert\n")
+    if (!len) ERR("need length to convert\n")
+    float total = 0;
+    for (int i = 0; i < len - 1; i++) {
+        total += str[i] - '0';
+        total *= 10;
+    }
+    total += str[len - 1] - '0';
+    return total;
+}
 
 #include "variable.h"
 #include "lexer.h"
@@ -51,19 +63,26 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     free(tokens);
-    for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
-    free(nodes);
     free(p.jump_indices);
     for (int i = 0; i < interpreter.vars_index; i++) {
         if (interpreter.vars[i].value->type == Value_Array) {
-            free(interpreter.vars[i].value->value);
-            free_ast_value(interpreter.vars[i].value);
+            int arr_len = (int)strtofloat(interpreter.vars[i].value[0].value, strlen(interpreter.vars[i].value[0].value));
+            for (int j = 0; j < arr_len; j++) {
+                if (interpreter.vars[i].value[j].value != NULL) free(interpreter.vars[i].value[j].value);
+                interpreter.vars[i].value[j].value = NULL;
+            }
+            free(interpreter.vars[i].value);
+            interpreter.vars[i].value = NULL;
         } else {
             free(interpreter.vars[i].value->value);
+            interpreter.vars[i].value->value = NULL;
             free(interpreter.vars[i].value);
+            interpreter.vars[i].value = NULL;
         }
     }
     free(interpreter.vars);
+    for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
+    free(nodes);
     free(program);
     exit(exit_val);
 }

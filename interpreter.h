@@ -10,36 +10,19 @@ typedef struct {
     int vars_index;
 } Interpreter;
 
-char *format_array(AST_Value *array_pointer) {
-    if (!array_pointer) ERR("cant format null array\n")
-    int array_len = 2 + strlen(array_pointer->value);
-    char *array = format_str(array_len + 1, "[%s", array_pointer->value);
-    array_pointer = array_pointer->next;
-    while (array_pointer != NULL) {
-        int value_len = strlen(array_pointer->value) + 2;
-
-        array = realloc(array, value_len + array_len);
-        strcat(array, ", ");
-        strcat(array, array_pointer->value);
-
-        array_len += (value_len + 2);
-        
-        array_pointer = array_pointer->next;
+char *format_array(AST_Value *array) {
+    int arr_size = (int)strtofloat(array[0].value, strlen(array[0].value));
+    int str_len = 3 + strlen(array[1].value);
+    char *array_str = format_str(str_len, "[%s", array[1].value);
+    for (int i = 2; i < arr_size; i++) {
+        if (!array[i].value) ERR("array has null value\n")
+        str_len += (strlen(array[i].value) + 2);
+        array_str = realloc(array_str, str_len);
+        strcat(array_str, ", ");
+        strcat(array_str, array[i].value);
     }
-    strcat(array, "]");
-    return array;
-}
-
-float strtofloat(const char *str, int len) {
-    if (!str) ERR("need something to convert\n")
-    if (!len) ERR("need length to convert\n")
-    float total = 0;
-    for (int i = 0; i < len - 1; i++) {
-        total += str[i] - '0';
-        total *= 10;
-    }
-    total += str[len - 1] - '0';
-    return total;
+    strcat(array_str, "]");
+    return array_str;
 }
 
 AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
@@ -47,11 +30,11 @@ AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
         //TODO: with values over 1,000,000, %g goes to scientific notation
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
     } else {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value), NULL);
+        return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value));
     }
 }
 
@@ -59,7 +42,7 @@ AST_Value *ast_sub(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
     } else ERR("cant subtract types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -68,7 +51,7 @@ AST_Value *ast_mult(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
     } else ERR("cant multiply types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -77,7 +60,7 @@ AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
     } else ERR("cant divide types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -86,7 +69,7 @@ AST_Value *ast_less(AST_Value *op1, AST_Value *op2) {
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)));
     } else ERR("cant do less than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -95,7 +78,7 @@ AST_Value *ast_less_equal(AST_Value *op1, AST_Value *op2) {
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)));
     } else ERR("cant do less or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -104,7 +87,7 @@ AST_Value *ast_greater(AST_Value *op1, AST_Value *op2) {
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)));
     } else ERR("cant do greater than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -113,7 +96,7 @@ AST_Value *ast_greater_equal(AST_Value *op1, AST_Value *op2) {
     if (op1->type == Value_Number && op2->type == Value_Number) {
         int op1_len = strlen(op1->value);
         int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)), NULL);
+        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)));
     } else ERR("cant do greater or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
     return NULL;
 }
@@ -121,14 +104,14 @@ AST_Value *ast_greater_equal(AST_Value *op1, AST_Value *op2) {
 AST_Value *ast_is_equal(AST_Value *op1, AST_Value *op2) {
     int op1_len = strlen(op1->value);
     int op2_len = strlen(op2->value);
-    return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)), NULL);
+    return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)));
 }
 
 AST_Value *eval_node(Node *n, Interpreter *interpreter) {
     if (n == NULL) {
         ERR("can't evaluate null node\n")
     } else if (n->type == AST_Literal) {
-        return new_ast_value(n->value->type, strdup(n->value->value), NULL);
+        return new_ast_value(n->value->type, strdup(n->value->value));
     } else if (n->type == AST_Add) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
@@ -161,9 +144,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         char *var_name = strdup(n->value->value);
         Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
         free(var_name);
-        if (var.value->type == Value_Array) 
-            return new_ast_value(var.value->type, NULL, var.value->next);
-        return new_ast_value(var.value->type, strdup(var.value->value), NULL);
+        if (var.value->type == Value_Array) {
+            int arr_len = (int)strtofloat(var.value->value, strlen(var.value->value));
+            AST_Value *array = calloc(arr_len + 1, sizeof(var.value[0]));
+            memcpy(array, var.value, (arr_len * sizeof(var.value[0])));
+            return array;
+        }
+        return new_ast_value(var.value->type, strdup(var.value->value));
     } else if (n->type == AST_Less) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
@@ -200,7 +187,14 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         free_ast_value(op2);
         return result;
     } else if (n->type == AST_Array) {
-        return new_ast_value(n->value->type, NULL, n->value->next);
+        int arr_len = (int)strtofloat(n->value->value, strlen(n->value->value));
+        AST_Value *array = calloc(arr_len + 1, sizeof(n->value[0]));
+        for (int i = 0; i < arr_len; i++) {
+            array[i].type = n->value[i].type;
+            array[i].value = strdup(n->value[i].value);
+        }
+        //memcpy(array, n->value, (arr_len * sizeof(n->value[0])));
+        return array;
     } else if (n->type == AST_At) {
         int index = 0;
         if (n->left->type != AST_Literal) {
@@ -212,21 +206,17 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         Variable var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
 
         if (var.value->type == Value_String) {
-            return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), NULL);
+            return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]));
         }
+        int arr_len = (int)strtofloat(var.value[0].value, strlen(var.value[0].value));
+        if (index >= arr_len) ERR("Index %d is out of bounds for array %s, length %d\n", index, var.name, arr_len)
 
-        AST_Value *array_pointer = var.value;
-
-        for (int i = 0; i < index; i++) {
-            if (!array_pointer->next) ERR("Index %d is out of bounds for array %s\n", index, var.name)
-            array_pointer = array_pointer->next;
-        }
-
-        if (array_pointer->type == Value_String) {
-            int len = strlen(array_pointer->value);
-            return new_ast_value(array_pointer->type, format_str(len - 1, "%.*s", len, array_pointer->value + 1), NULL);
-        } else if (array_pointer->type == Value_Number) 
-            return new_ast_value(array_pointer->type, strdup(array_pointer->value), NULL);
+        if (var.value[index].type == Value_String) {
+            int len = strlen(var.value[index].value);
+            return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, var.value[index].value + 1));
+        } else if (var.value[index].type == Value_Number) {
+            return new_ast_value(var.value[index].type, strdup(var.value[index].value));
+        } else ERR("Can't evalulate %s as part of array\n", find_ast_value_type(var.value[index].type))
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type))
     return NULL;
 }
@@ -239,16 +229,16 @@ void do_statement(Node *n, Interpreter *interpreter) {
             AST_Value *print = eval_node(n->left, interpreter);
 
             if (print->type == Value_Array) {
-                char *array = format_array(print->next);
+                char *array = format_array(print);
                 printf("%s\n", array);
                 free(array);
-                free_ast_value(print->next);
+                free(print);
             } else {
                 printf("%s\n", print->value);
+                free_ast_value(print);
             }
+            //printf("%s\n", print->value);
 
-            free(print->value);
-            free(print);
             break;
         case AST_Var_Assign:;
             char *var_name = n->value->value;
@@ -279,7 +269,10 @@ void do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = strdup(n->value->value);
             Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
-            free_ast_value(interpreter->vars[var.index].value);
+            if (new_val->type == Value_Array) 
+                free(interpreter->vars[var.index].value);
+            else
+                free_ast_value(interpreter->vars[var.index].value);
             interpreter->vars[var.index].value = new_val;
             break;}
         case AST_While:;{
@@ -319,15 +312,10 @@ void do_statement(Node *n, Interpreter *interpreter) {
                 free_ast_value(new_val);
                 break;
             }
-            AST_Value *array_pointer = var.value;
+            free(var.value[index].value);
+            interpreter->vars[var.index].value[index] = *new_val;
+            free(new_val);
 
-            for (int i = 0; i < index - 1; i++) {
-                array_pointer = array_pointer->next;
-            }
-            new_val->next = array_pointer->next->next;
-            array_pointer->next->next = NULL;
-            free_ast_value(array_pointer->next);
-            array_pointer->next = new_val;
             break;}
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type))
     }
