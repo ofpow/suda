@@ -147,7 +147,11 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         if (var.value->type == Value_Array) {
             int arr_len = (int)strtofloat(var.value->value, strlen(var.value->value));
             AST_Value *array = calloc(arr_len + 1, sizeof(var.value[0]));
-            memcpy(array, var.value, (arr_len * sizeof(var.value[0])));
+            //memcpy(array, var.value, (arr_len * sizeof(var.value[0])));
+            for (int i = 0; i < arr_len; i++) {
+                array[i].type = var.value[i].type;
+                array[i].value = strdup(var.value[i].value);
+            }
             return array;
         }
         return new_ast_value(var.value->type, strdup(var.value->value));
@@ -231,11 +235,11 @@ void do_statement(Node *n, Interpreter *interpreter) {
             if (print->type == Value_Array) {
                 char *array = format_array(print);
                 printf("%s\n", array);
-                //int arr_len = (int)strtofloat(print[0].value, strlen(print[0].value));
-                //for (int i = 0; i < arr_len; i++) {
-                //    if (print[i].value != NULL) free(print[i].value);
-                //    print[i].value = NULL;
-                //}
+                int arr_len = (int)strtofloat(print[0].value, strlen(print[0].value));
+                for (int i = 0; i < arr_len; i++) {
+                    if (print[i].value != NULL) free(print[i].value);
+                    print[i].value = NULL;
+                }
                 free(print);
                 free(array);
                 //free_ast_value(print);
