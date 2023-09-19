@@ -1,5 +1,7 @@
 #pragma once
 
+#define OPERATOR(op) (op)
+
 typedef struct {
     Node **nodes;
     int stmts_capacity;
@@ -25,86 +27,48 @@ char *format_array(AST_Value *array) {
     return array_str;
 }
 
-AST_Value *ast_add(AST_Value *op1, AST_Value *op2){
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        //TODO: with values over 1,000,000, %g goes to scientific notation
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
-    } else {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value));
-    }
-}
-
-AST_Value *ast_sub(AST_Value *op1, AST_Value *op2){
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
-    } else ERR("cant subtract types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_mult(AST_Value *op1, AST_Value *op2){
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
-    } else ERR("cant multiply types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_div(AST_Value *op1, AST_Value *op2){
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
-    } else ERR("cant divide types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_less(AST_Value *op1, AST_Value *op2) {
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)));
-    } else ERR("cant do less than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_less_equal(AST_Value *op1, AST_Value *op2) {
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)));
-    } else ERR("cant do less or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
- 
-AST_Value *ast_greater(AST_Value *op1, AST_Value *op2) {
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)));
-    } else ERR("cant do greater than on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_greater_equal(AST_Value *op1, AST_Value *op2) {
-    if (op1->type == Value_Number && op2->type == Value_Number) {
-        int op1_len = strlen(op1->value);
-        int op2_len = strlen(op2->value);
-        return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)));
-    } else ERR("cant do greater or equal to on types `%s` and `%s`\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-    return NULL;
-}
-
-AST_Value *ast_is_equal(AST_Value *op1, AST_Value *op2) {
+AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
     int op1_len = strlen(op1->value);
     int op2_len = strlen(op2->value);
-    return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)));
+    switch (op) {
+        case AST_Add:
+            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)));
+            else return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value));
+            break;
+        case AST_Sub:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant subtract type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Mult:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant multiply type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Div:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant divide type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Less:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Less_Equal:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Greater:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Greater_Equal:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)));
+            break;
+        case AST_Is_Equal:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant is equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)));
+            break;
+    }
+    return NULL;
 }
 
 AST_Value *eval_node(Node *n, Interpreter *interpreter) {
@@ -112,31 +76,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         ERR("can't evaluate null node\n")
     } else if (n->type == AST_Literal) {
         return new_ast_value(n->value->type, strdup(n->value->value));
-    } else if (n->type == AST_Add) {
+    } else if (IS_AST_MATH_OP(n->type)) {
         AST_Value *op1 = eval_node(n->left, interpreter);
         AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_add(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Sub) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_sub(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Mult) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_mult(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Div) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_div(op1, op2);
+        AST_Value *result = ast_math(op1, op2, n->type);
         free_ast_value(op1);
         free_ast_value(op2);
         return result;
@@ -147,7 +90,6 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         if (var.value->type == Value_Array) {
             int arr_len = (int)strtofloat(var.value->value, strlen(var.value->value));
             AST_Value *array = calloc(arr_len + 1, sizeof(var.value[0]));
-            //memcpy(array, var.value, (arr_len * sizeof(var.value[0])));
             for (int i = 0; i < arr_len; i++) {
                 array[i].type = var.value[i].type;
                 array[i].value = strdup(var.value[i].value);
@@ -155,45 +97,9 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
             return array;
         }
         return new_ast_value(var.value->type, strdup(var.value->value));
-    } else if (n->type == AST_Less) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_less(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Less_Equal) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_less_equal(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Greater) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_greater(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Greater_Equal) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_greater_equal(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
-    } else if (n->type == AST_Is_Equal) {
-        AST_Value *op1 = eval_node(n->left, interpreter);
-        AST_Value *op2 = eval_node(n->right, interpreter);
-        AST_Value *result = ast_is_equal(op1, op2);
-        free_ast_value(op1);
-        free_ast_value(op2);
-        return result;
     } else if (n->type == AST_Array) {
         int arr_len = (int)strtofloat(n->value->value, strlen(n->value->value));
         AST_Value *array = calloc(arr_len, sizeof(n->value[0]));
-        //memcpy(array, n->value, (arr_len * sizeof(n->value[0])));
         for (int i = 0; i < arr_len; i++) {
             array[i].type = n->value[i].type;
             array[i].value = strdup(n->value[i].value);
@@ -242,12 +148,10 @@ void do_statement(Node *n, Interpreter *interpreter) {
                 }
                 free(print);
                 free(array);
-                //free_ast_value(print);
             } else {
                 printf("%s\n", print->value);
                 free_ast_value(print);
             }
-            //printf("%s\n", print->value);
 
             break;
         case AST_Var_Assign:;
