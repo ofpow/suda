@@ -64,7 +64,6 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
             return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)));
             break;
         case AST_Is_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant is equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)));
             break;
     }
