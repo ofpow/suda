@@ -188,12 +188,12 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter) {
         return result;
     } else if (n->type == AST_Array) {
         int arr_len = (int)strtofloat(n->value->value, strlen(n->value->value));
-        AST_Value *array = calloc(arr_len + 1, sizeof(n->value[0]));
+        AST_Value *array = calloc(arr_len, sizeof(n->value[0]));
+        //memcpy(array, n->value, (arr_len * sizeof(n->value[0])));
         for (int i = 0; i < arr_len; i++) {
             array[i].type = n->value[i].type;
             array[i].value = strdup(n->value[i].value);
         }
-        //memcpy(array, n->value, (arr_len * sizeof(n->value[0])));
         return array;
     } else if (n->type == AST_At) {
         int index = 0;
@@ -231,8 +231,14 @@ void do_statement(Node *n, Interpreter *interpreter) {
             if (print->type == Value_Array) {
                 char *array = format_array(print);
                 printf("%s\n", array);
-                free(array);
+                //int arr_len = (int)strtofloat(print[0].value, strlen(print[0].value));
+                //for (int i = 0; i < arr_len; i++) {
+                //    if (print[i].value != NULL) free(print[i].value);
+                //    print[i].value = NULL;
+                //}
                 free(print);
+                free(array);
+                //free_ast_value(print);
             } else {
                 printf("%s\n", print->value);
                 free_ast_value(print);
@@ -269,10 +275,17 @@ void do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = strdup(n->value->value);
             Variable var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
-            if (new_val->type == Value_Array) 
+            if (new_val->type == Value_Array) {
+                int arr_len = (int)strtofloat(interpreter->vars[var.index].value[0].value, strlen(interpreter->vars[var.index].value[0].value));
+                for (int i = 0; i < arr_len; i++) {
+                    if (interpreter->vars[var.index].value[i].value != NULL) free(interpreter->vars[var.index].value[i].value);
+                    interpreter->vars[var.index].value[i].value = NULL;
+                }
                 free(interpreter->vars[var.index].value);
-            else
+                interpreter->vars[var.index].value = NULL;
+            } else {
                 free_ast_value(interpreter->vars[var.index].value);
+            }
             interpreter->vars[var.index].value = new_val;
             break;}
         case AST_While:;{
