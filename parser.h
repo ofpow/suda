@@ -97,12 +97,13 @@ typedef struct Parser {
     int jumps_index;
 } Parser;
 
-AST_Value *new_ast_value(int type, char *value) {
+AST_Value *new_ast_value(int type, char *value, int mutable) {
     debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value)
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
     val->type = type;
     val->value = value;
+    val->mutable = mutable;
     return val;
 }
 
@@ -167,11 +168,11 @@ AST_Value *parse_array(Parser *p) {
         switch (CURRENT_TOK.type) {
             case Tok_Number:
                 p->tok_index++;
-                append(array, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start) }), arr_index, arr_capacity)
+                append(array, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), arr_index, arr_capacity)
                 break;
             case Tok_String:
                 p->tok_index++;
-                append(array, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1) }), arr_index, arr_capacity)
+                append(array, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1 }), arr_index, arr_capacity)
                 break;
             case Tok_Comma:
                 p->tok_index++;
@@ -197,22 +198,22 @@ Node *expr(Parser *p, Node *child) {
         case Tok_String:
             p->tok_index++; 
             if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1));
-            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1)), -1);
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1), -1));
+            return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1), -1);
         case Tok_Number:
             p->tok_index++;
             if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1));
-            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1));
+            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
         case Tok_Identifier: 
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Assign) {
-                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
-                n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+                n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
                 //TODO: print array@x + array@y segfaults, print((array@x) + (array@y)) doesnt
                 p->tok_index++;
                 n->left = expr(p, NULL);
@@ -222,7 +223,7 @@ Node *expr(Parser *p, Node *child) {
                 }
                 return n;
             }
-            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start)), -1);
+            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
@@ -313,7 +314,7 @@ Node *statement(Parser *p) {
         case Tok_Let:
             n = new_node(AST_Var_Assign, NULL, -1);
             p->tok_index++;
-            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start));
+            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), 1);
             p->tok_index++;
             ASSERT((CURRENT_TOK.type = Tok_Assign), "Require `=` to assign to variable\n")
             p->tok_index++;

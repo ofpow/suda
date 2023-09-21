@@ -19,6 +19,7 @@ char *find_ast_value_type(Variable_Type type) {
 typedef struct AST_Value {
     int type;
     char *value;
+    int mutable;
 } AST_Value;
 
 typedef enum{
