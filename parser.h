@@ -183,10 +183,10 @@ AST_Value *parse_array(Parser *p) {
                 array[0].value = format_str(snprintf(NULL, 0, "%d", arr_index) + 1, "%d", arr_index);
                 return array;
             case Tok_Eof:
-                ERR("unclosed array\n")
+                ERR("ERROR on line %d: unclosed array\n", CURRENT_TOK.line)
                 break;
             default: 
-                ERR("cant parse %s as part of array\n", find_tok_type(CURRENT_TOK.type))
+                ERR("ERR on line %d: cant parse %s as part of array\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
         }
     }
     return NULL;
@@ -228,7 +228,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n = expr(p, NULL);
             while (CURRENT_TOK.type != Tok_Right_Paren) {
-                if (CURRENT_TOK.type == Tok_Eof) ERR("Require closing parenthese\n")
+                if (CURRENT_TOK.type == Tok_Eof) ERR("ERROR on line %d: Require closing parenthese\n", CURRENT_TOK.line)
                 n = expr(p, n);
             }
             p->tok_index++;
@@ -294,7 +294,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n->value = parse_array(p);
             return n;
-        default: ERR("Unsupported token type for expr %s\n", find_tok_type(CURRENT_TOK.type))
+        default: ERR("ERROR on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
 }
