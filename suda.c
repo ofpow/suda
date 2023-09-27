@@ -54,8 +54,8 @@ float strtofloat(const char *str, int len) {
 Token *tokens;
 char *program;
 Parser p;
-Node **nodes;
-int nodes_index;
+//Node **nodes;
+//int nodes_index;
 Interpreter interpreter;
 
 void free_mem(int exit_val) {
@@ -81,8 +81,10 @@ void free_mem(int exit_val) {
         }
     }
     free(interpreter.vars);
-    for (int i = 0; i < nodes_index; i++) free_node(nodes[i]);
-    free(nodes);
+    for (int i = 0; i < p.funcs_index; i++) free_function(p.funcs[i]);
+    free(p.funcs);
+    for (int i = 0; i < p.nodes_index; i++) free_node(p.nodes[i]);
+    free(p.nodes);
     free(program);
     exit(exit_val);
 }
@@ -143,15 +145,25 @@ int main(int argc, char *argv[]) {
     p.jumps_capacity = 10;
     p.jump_indices = calloc(10, sizeof(int));
 
-    nodes_index = 0;
-    int nodes_capacity = 10;
+    p.nodes_index = 0;
+    p.nodes_capacity = 10;
 
-    nodes = calloc(nodes_capacity, sizeof(Node*));
+    p.nodes = calloc(p.nodes_capacity, sizeof(Node*));
+    
+    p.funcs_index = 0;
+    p.funcs_capacity = 10;
+    p.funcs = calloc(p.funcs_capacity, sizeof(Function*));
+
+    //variables to store main state when parsing a function
+    Function *func;
+    int temp_nodes_capacity;
+    int temp_nodes_index;
+    Node **temp_nodes = NULL;
 
     while (1) {
-        if (nodes_index >= nodes_capacity) {
-            nodes_capacity *= 2;
-            nodes = realloc(nodes, nodes_capacity * sizeof(Node*));
+        if (p.nodes_index >= p.nodes_capacity) {
+            p.nodes_capacity *= 2;
+            p.nodes = realloc(p.nodes, p.nodes_capacity * sizeof(Node*));
         }
         Node *n = statement(&p);
         if (n->type == AST_End) {
@@ -161,31 +173,81 @@ int main(int argc, char *argv[]) {
             }
             break;
         } else if (n->type == AST_If) {
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
-            append(nodes, n, nodes_index, nodes_capacity)
+            append(p.jump_indices, p.nodes_index, p.jumps_index, p.jumps_capacity)
+            append(p.nodes, n, p.nodes_index, p.nodes_capacity)
         } else if (n->type == AST_While) {
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
-            append(nodes, n, nodes_index, nodes_capacity)
+            append(p.jump_indices, p.nodes_index, p.jumps_index, p.jumps_capacity)
+            append(p.nodes, n, p.nodes_index, p.nodes_capacity)
         } else if (n->type == AST_Else) {
-            nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = nodes_index;
+            p.nodes[p.jump_indices[p.jumps_index - 1]]->jump_index = p.nodes_index;
             n->jump_index = p.jump_indices[p.jumps_index - 1];
             p.jumps_index--;
-            append(p.jump_indices, nodes_index, p.jumps_index, p.jumps_capacity)
-            append(nodes, n, nodes_index, nodes_capacity)
+            append(p.jump_indices, p.nodes_index, p.jumps_index, p.jumps_capacity)
+            append(p.nodes, n, p.nodes_index, p.nodes_capacity)
         } else if (n->type == AST_Semicolon) {
+            if (p.parsing_function && p.jumps_index <= 0) {
+                free_node(n);
+                func->nodes = p.nodes;
+                append(p.funcs, func, p.funcs_index, p.funcs_capacity);
+
+                p.nodes = temp_nodes;
+                p.nodes_index = temp_nodes_index;
+                p.nodes_capacity = temp_nodes_capacity;
+                temp_nodes = NULL;
+                continue;
+            }
+
             p.jumps_index--;
-            nodes[p.jump_indices[p.jumps_index]]->jump_index = nodes_index;
+            p.nodes[p.jump_indices[p.jumps_index]]->jump_index = p.nodes_index;
             n->jump_index = p.jump_indices[p.jumps_index];
-            append(nodes, n, nodes_index, nodes_capacity)
+            append(p.nodes, n, p.nodes_index, p.nodes_capacity)
+        } else if (n->type == AST_Function) {
+            free_node(n);
+            func = calloc(1, sizeof(Function));
+            func->name = format_str(p.tokens[p.tok_index].length + 1, "%.*s", p.tokens[p.tok_index].length, p.tokens[p.tok_index].start);
+
+            p.tok_index++;
+            ASSERT((p.jumps_index >= 0), "ERROR: unclosed block before function %s\n", func->name)
+            ASSERT((p.tokens[p.tok_index].type == Tok_Left_Paren), "ERROR on line %d: need left paren to open function arguments\n", p.tokens[p.tok_index].line)
+            p.tok_index++;
+
+            //switch parser to parse the function
+            if (temp_nodes != NULL) ERR("ERROR cant define functions inside other functions\n")
+            temp_nodes = p.nodes;
+            temp_nodes_index = p.nodes_index;
+            temp_nodes_capacity = p.nodes_capacity;
+            p.nodes = calloc(10, sizeof(Node*));
+            p.nodes_index = 0;
+            p.nodes_capacity = 10;
+            p.parsing_function = 1;
+
+            //parse arguments into func->args
+            int args_capacity = 1;
+            func->arity = 0;
+            func->args = calloc(args_capacity, sizeof(AST_Value*));
+            while (1) {
+                Node *n = expr(&p, NULL);
+                if (n->type == AST_Identifier) {
+                    append(func->args, n->value, func->arity, args_capacity)
+                    n->value = NULL;
+                    free_node(n);
+                } else if (n->type == AST_Comma) {
+                    free_node(n);
+                    continue;
+                } else if (n->type == AST_Right_Paren) {
+                    free_node(n);
+                    break;
+                } else ERR("ERROR on line %d: cant parse token type %s as part of function arguments\n", p.tokens[p.tok_index].line, find_tok_type(p.tokens[p.tok_index].type))
+            }
         } else {
-            append(nodes, n, nodes_index, nodes_capacity)
+            append(p.nodes, n, p.nodes_index, p.nodes_capacity)
         }
     }
 
     debug("\n----------\nINTERPRETING\n")
 
-    interpreter.nodes = nodes;
-    interpreter.stmts_capacity = nodes_index;
+    interpreter.nodes = p.nodes;
+    interpreter.stmts_capacity = p.nodes_index;
     interpreter.vars_index = 0;
     interpreter.vars = calloc(10, sizeof(struct Variable));
     interpret(&interpreter);

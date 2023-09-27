@@ -22,7 +22,7 @@ typedef enum {
     Tok_And,
     Tok_If,
     Tok_Else,
-    Tok_Func,
+    Tok_Function,
     Tok_Or,
     Tok_Print,
     Tok_Return,
@@ -61,7 +61,7 @@ char *find_tok_type(int type) {
         case Tok_And: return "Tok_And";
         case Tok_If: return "Tok_If";
         case Tok_Else: return "Tok_Else";
-        case Tok_Func: return "Tok_Func";
+        case Tok_Function: return "Tok_Function";
         case Tok_Or: return "Tok_Or";
         case Tok_Print: return "Tok_Print";
         case Tok_Return: return "Tok_Return";
@@ -190,7 +190,7 @@ static Token_Type id_type(Lexer *l) {
         case 'e':
             return check_keyword(1, 3, "lse", Tok_Else, l);
         case 'f':
-            return check_keyword(1, 3, "unc", Tok_Func, l);
+            return check_keyword(1, 1, "n", Tok_Function, l);
         case 'i':
             return check_keyword(1, 1, "f", Tok_If, l);
         case 'l':

@@ -3,11 +3,12 @@
 /* 
  * SUDA EBNF
  *
- * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement>
+ * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition>
  * <print statement> : "print" <expr>
  * <variable assignment> : "let" var_name "=" <expr>
  * <if statement> : "if" <expr> <statements> ";" | "if" <expr> <statements> "else" <statements>
  * <while statement> : "while" <expr> <statements> ";"
+ * <function definition> : "fn" function_name "(" <identifier> "," <identifier> "," ...")" <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
  * <expr> : <terminal> | <math_expr> | <array> | <array access>
@@ -22,7 +23,6 @@
 #define NEXT_TOK p->tokens[p->tok_index + 1]
 #define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Is_Equal))
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal))
-
 
 typedef enum {
     AST_End,
@@ -46,6 +46,10 @@ typedef enum {
     AST_Array,
     AST_At,
     AST_Is_Equal,
+    AST_Function,
+    AST_Comma,
+    AST_Right_Paren,
+    AST_Return,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -71,6 +75,10 @@ char *find_ast_type(int type) {
         case AST_Array: return "AST_Array";
         case AST_At: return "AST_At";
         case AST_Is_Equal: return "AST_Is_Equal";
+        case AST_Function: return "AST_Function";
+        case AST_Comma: return "AST_Comma";
+        case AST_Right_Paren: return "AST_Right_Paren";
+        case AST_Return: return "AST_Return";
         default: return "ast type not found";
     }
 }
@@ -85,16 +93,30 @@ typedef struct Node {
     int jump_index;
 } Node;
 
+typedef struct Function {
+    char *name;
+    Node **nodes;
+
+    int arity;
+    AST_Value **args;
+} Function;
+
 typedef struct Parser {
     Token *tokens;
     int tok_index;
 
     Node **nodes;
-    int node_index;
+    int nodes_index;
+    int nodes_capacity;
 
     int *jump_indices;
     int jumps_capacity;
     int jumps_index;
+
+    Function **funcs;
+    int funcs_index;
+    int funcs_capacity;
+    int parsing_function;
 } Parser;
 
 AST_Value *new_ast_value(int type, char *value, int mutable) {
@@ -158,6 +180,15 @@ void free_node(Node *n) {
         free(n);
     else
         ERR("not everything freed correctly\n")
+}
+
+void free_function(Function *func) {
+    for (int i = 0; func->nodes[i] != NULL; i++) if (func->nodes) free_node(func->nodes[i]);
+    free(func->nodes);
+    for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
+    free(func->args);
+    free(func->name);
+    free(func);
 }
 
 AST_Value *parse_array(Parser *p) {
@@ -287,6 +318,15 @@ Node *expr(Parser *p, Node *child) {
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
+        case Tok_Comma:
+            p->tok_index++;
+            return new_node(AST_Comma, NULL, -1);
+            return &((Node) { AST_Comma, NULL, NULL, NULL, -1 });
+            break;
+        case Tok_Right_Paren:
+            p->tok_index++;
+            return new_node(AST_Right_Paren, NULL, -1);
+            return &((Node) { AST_Right_Paren, NULL, NULL, NULL, -1 });
         case Tok_Eof:
             break;
         case Tok_Left_Bracket:
@@ -335,6 +375,15 @@ Node *statement(Parser *p) {
             return n;
         case Tok_While:
             n = new_node(AST_While, NULL, -1);
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
+        case Tok_Function:
+            n = new_node(AST_Function, NULL, -1);
+            p->tok_index++;
+            return n;
+        case Tok_Return:
+            n = new_node(AST_Return, NULL, -1);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
