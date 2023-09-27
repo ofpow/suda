@@ -81,8 +81,8 @@ void free_mem(int exit_val) {
         }
     }
     free(interpreter.vars);
-    for (int i = 0; i < p.funcs_index; i++) free_function(p.funcs[i]);
-    free(p.funcs);
+    for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
+    free(interpreter.funcs);
     for (int i = 0; i < p.nodes_index; i++) free_node(p.nodes[i]);
     free(p.nodes);
     free(program);
@@ -250,6 +250,8 @@ int main(int argc, char *argv[]) {
     interpreter.stmts_capacity = p.nodes_index;
     interpreter.vars_index = 0;
     interpreter.vars = calloc(10, sizeof(struct Variable));
+    interpreter.funcs_capacity = p.funcs_index;
+    interpreter.funcs = p.funcs;
     interpret(&interpreter);
 
     free_mem(0);

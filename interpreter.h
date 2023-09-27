@@ -10,6 +10,9 @@ typedef struct {
 
     Variable *vars;
     int vars_index;
+
+    Function **funcs;
+    int funcs_capacity;
 } Interpreter;
 
 char *format_array(AST_Value *array) {
