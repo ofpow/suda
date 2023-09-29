@@ -1,4 +1,8 @@
-fn add(a, b)
-    return(a + b)
+fn hi()
+    print "in a function"
+    return "hello"
 ;
-print "functions!"
+print hi()
+print hi()
+print hi()
+print hi()

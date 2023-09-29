@@ -4,6 +4,7 @@ typedef enum {
     Value_Number,
     Value_String,
     Value_Array,
+    Value_Function_Args,
 } Variable_Type;
 
 char *find_ast_value_type(Variable_Type type) {
@@ -11,6 +12,7 @@ char *find_ast_value_type(Variable_Type type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";
         case Value_Array: return "Value_Array";
+        case Value_Function_Args: return "Value_Function_Args";
         default: ERR("unknown value type `%d`", type)
     }
     return "unreachable";

@@ -48,6 +48,7 @@ float strtofloat(const char *str, int len) {
 #include "variable.h"
 #include "lexer.h"
 #include "parser.h"
+#include "function.h"
 #include "interpreter.h"
 
 //global variables for access to freeing from anywhere
@@ -188,6 +189,7 @@ int main(int argc, char *argv[]) {
             if (p.parsing_function && p.jumps_index <= 0) {
                 free_node(n);
                 func->nodes = p.nodes;
+                func->nodes_size = p.nodes_index;
                 append(p.funcs, func, p.funcs_index, p.funcs_capacity);
 
                 p.nodes = temp_nodes;

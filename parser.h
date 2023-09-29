@@ -96,6 +96,7 @@ typedef struct Node {
 typedef struct Function {
     char *name;
     Node **nodes;
+    int nodes_size;
 
     int arity;
     AST_Value **args;
@@ -147,9 +148,22 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
     return node;
 }
 
+Node *dup_node(Node *n) {
+    if (n == NULL) return NULL;
+    Node *node = calloc(1, sizeof(Node));
+    node->type = n->type;
+    if (node->value) node->value = new_ast_value(n->value->type, strdup(n->value->value), 1);
+    node->left = dup_node(n->left);
+    node->right = dup_node(n->right);
+    node->jump_index = n->jump_index;
+    return node;
+}
+
 void free_node(Node *n) {
 
     debug("FREE NODE `%s`\n", find_ast_type(n->type))
+
+    if (n == NULL) return;
 
     if (n->type == AST_Array) {
         int size = (int)strtofloat(n->value->value, strlen(n->value->value));
@@ -158,10 +172,15 @@ void free_node(Node *n) {
             n->value[i].value = NULL;
         }
     }
+    
 
-    if (n == NULL) return;
     if (n->value != NULL) {
-        if (n->value->value != NULL) {
+        if (n->value->type == Value_Function_Args) {
+            int len = (int)strtofloat(n->value[0].value, strlen(n->value[0].value));
+            for (int i = 0; i < len; i++) {
+                free(n->value[i].value);
+            }
+        } else if (n->value->value != NULL) {
             free(n->value->value);
             n->value->value = NULL;
         }
@@ -191,33 +210,38 @@ void free_function(Function *func) {
     free(func);
 }
 
-AST_Value *parse_array(Parser *p) {
-    int arr_capacity = 2;
-    int arr_index = 1;
-    AST_Value *array = calloc(arr_capacity, sizeof(struct AST_Value));
+AST_Value *parse_list(Parser *p) {
+    int list_capacity = 2;
+    int list_index = 1;
+    AST_Value *list = calloc(list_capacity, sizeof(struct AST_Value));
     while (1) {
         switch (CURRENT_TOK.type) {
             case Tok_Number:
                 p->tok_index++;
-                append(array, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), arr_index, arr_capacity)
+                append(list, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
                 break;
             case Tok_String:
                 p->tok_index++;
-                append(array, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1 }), arr_index, arr_capacity)
+                append(list, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1 }), list_index, list_capacity)
                 break;
             case Tok_Comma:
                 p->tok_index++;
                 continue;
             case Tok_Right_Bracket:
                 p->tok_index++;
-                array[0].type = Value_Array;
-                array[0].value = format_str(snprintf(NULL, 0, "%d", arr_index) + 1, "%d", arr_index);
-                return array;
+                list[0].type = Value_Array;
+                list[0].value = format_str(snprintf(NULL, 0, "%d", list_index) + 1, "%d", list_index);
+                return list;
+            case Tok_Right_Paren:
+                p->tok_index++;
+                list[0].type = Value_Function_Args;
+                list[0].value = format_str(snprintf(NULL, 0, "%d", list_index) + 1, "%d", list_index);
+                return list;
             case Tok_Eof:
-                ERR("ERROR on line %d: unclosed array\n", CURRENT_TOK.line)
+                ERR("ERROR on line %d: unclosed list\n", CURRENT_TOK.line)
                 break;
             default: 
-                ERR("ERR on line %d: cant parse %s as part of array\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
+                ERR("ERR on line %d: cant parse %s as part of list\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
         }
     }
     return NULL;
@@ -253,6 +277,14 @@ Node *expr(Parser *p, Node *child) {
                     n->right = expr(p, NULL);
                 }
                 return n;
+            } else if (CURRENT_TOK.type == Tok_Left_Paren) {
+                n = new_node(AST_Function, NULL, -1);
+                n->value = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1);
+                p->tok_index++;
+                n->left = new_node(AST_Function, NULL, -1);
+                n->left->value = parse_list(p);
+                return n;
+                ERR("NONONONONOONNONONO\n")
             }
             return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
         case Tok_Left_Paren:
@@ -332,7 +364,7 @@ Node *expr(Parser *p, Node *child) {
         case Tok_Left_Bracket:
             n = new_node(AST_Array, NULL, -1);
             p->tok_index++;
-            n->value = parse_array(p);
+            n->value = parse_list(p);
             return n;
         default: ERR("ERROR on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
