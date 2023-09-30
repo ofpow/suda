@@ -1,8 +1,10 @@
-fn hi()
-    print "in a function"
-    return "hello"
+let arg = 3
+
+fn add(a, b)
+    return(a + b)
 ;
-print hi()
-print hi()
-print hi()
-print hi()
+print(add(arg, arg))
+print(add(arg, arg))
+print(add(arg, arg))
+print(add(arg, arg))
+print(add(arg, arg))

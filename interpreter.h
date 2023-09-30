@@ -145,7 +145,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("Can't evalulate %s as part of array\n", find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function) {
-        Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
+        Function *function = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
+        Function *func = dup_func(function);
+        for (int i = 0; i < func->nodes_size; i++) args_replace(func->nodes[i], func->args, n->left->value, func->arity);
+
         Interpreter intrprtr = {
             func->nodes,
             func->nodes_size,
@@ -159,7 +162,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         AST_Value *rtrn;
         while (intrprtr.program_counter < intrprtr.stmts_capacity) {
             rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
-            if (rtrn != NULL) return rtrn;
+            if (rtrn != NULL) {
+                free_function(func);
+                return rtrn;
+            }
             intrprtr.program_counter++;
         }
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type))

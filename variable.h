@@ -3,6 +3,7 @@
 typedef enum {
     Value_Number,
     Value_String,
+    Value_Identifier,
     Value_Array,
     Value_Function_Args,
 } Variable_Type;
@@ -11,6 +12,7 @@ char *find_ast_value_type(Variable_Type type) {
     switch (type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";
+        case Value_Identifier: return "Value_Identifier";
         case Value_Array: return "Value_Array";
         case Value_Function_Args: return "Value_Function_Args";
         default: ERR("unknown value type `%d`", type)
@@ -23,11 +25,6 @@ typedef struct AST_Value {
     char *value;
     int mutable;
 } AST_Value;
-
-typedef enum{
-    Var_Str,
-    Var_Num,
-} Var_Type;
 
 typedef struct Variable {
     char *name;

@@ -150,12 +150,10 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index) {
 
 Node *dup_node(Node *n) {
     if (n == NULL) return NULL;
-    Node *node = calloc(1, sizeof(Node));
-    node->type = n->type;
-    if (node->value) node->value = new_ast_value(n->value->type, strdup(n->value->value), 1);
-    node->left = dup_node(n->left);
+    Node *node = new_node(n->type, NULL, n->jump_index);
+    if (n->value) node->value = new_ast_value(n->value->type, strdup(n->value->value), n->value->mutable);
     node->right = dup_node(n->right);
-    node->jump_index = n->jump_index;
+    node->left = dup_node(n->left);
     return node;
 }
 
@@ -202,7 +200,7 @@ void free_node(Node *n) {
 }
 
 void free_function(Function *func) {
-    for (int i = 0; func->nodes[i] != NULL; i++) if (func->nodes) free_node(func->nodes[i]);
+    for (int i = 0; i < func->nodes_size; i++) if (func->nodes) free_node(func->nodes[i]);
     free(func->nodes);
     for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
     free(func->args);
@@ -223,6 +221,10 @@ AST_Value *parse_list(Parser *p) {
             case Tok_String:
                 p->tok_index++;
                 append(list, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1 }), list_index, list_capacity)
+                break;
+            case Tok_Identifier:
+                p->tok_index++;
+                append(list, ((AST_Value){ Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
                 break;
             case Tok_Comma:
                 p->tok_index++;
@@ -263,7 +265,7 @@ Node *expr(Parser *p, Node *child) {
         case Tok_Identifier: 
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Assign) {
-                n = new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
+                n = new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 return n;
@@ -286,7 +288,7 @@ Node *expr(Parser *p, Node *child) {
                 return n;
                 ERR("NONONONONOONNONONO\n")
             }
-            return new_node(AST_Identifier, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
+            return new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1);
         case Tok_Left_Paren:
             p->tok_index++;
             n = expr(p, NULL);
