@@ -3,19 +3,21 @@
 /* 
  * SUDA EBNF
  *
- * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition>
+ * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition> | <function call>
  * <print statement> : "print" <expr>
  * <variable assignment> : "let" var_name "=" <expr>
  * <if statement> : "if" <expr> <statements> ";" | "if" <expr> <statements> "else" <statements>
  * <while statement> : "while" <expr> <statements> ";"
  * <function definition> : "fn" function_name "(" <identifier> "," <identifier> "," ...")" <statements> ";"
+ * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
  *
  * <paren expr> : "(" <expr> ")"
- * <expr> : <terminal> | <math_expr> | <array> | <array access>
+ * <expr> : <terminal> | <math_expr> | <array> | <array access> | <function call>
  * <array> : "[" <expr> "," <expr> "," ... "]"
  * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "==" "<expr>"
  * <terminal> : <literal>
  * <array access> : <array variable> "@" <expr>
+ * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
@@ -50,6 +52,7 @@ typedef enum {
     AST_Comma,
     AST_Right_Paren,
     AST_Return,
+    AST_Function_Call,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -79,6 +82,7 @@ char *find_ast_type(int type) {
         case AST_Comma: return "AST_Comma";
         case AST_Right_Paren: return "AST_Right_Paren";
         case AST_Return: return "AST_Return";
+        case AST_Function_Call: return "AST_Function_Call";
         default: return "ast type not found";
     }
 }
@@ -176,7 +180,7 @@ void free_node(Node *n) {
         if (n->value->type == Value_Function_Args) {
             int len = (int)strtofloat(n->value[0].value, strlen(n->value[0].value));
             for (int i = 0; i < len; i++) {
-                free(n->value[i].value);
+                if (n->value[i].value) free(n->value[i].value);
             }
         } else if (n->value->value != NULL) {
             free(n->value->value);
@@ -280,7 +284,7 @@ Node *expr(Parser *p, Node *child) {
                 }
                 return n;
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
-                n = new_node(AST_Function, NULL, -1);
+                n = new_node(AST_Function_Call, NULL, -1);
                 n->value = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1);
                 p->tok_index++;
                 n->left = new_node(AST_Function, NULL, -1);

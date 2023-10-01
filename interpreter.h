@@ -144,7 +144,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             if (var.value[index].mutable <= 0) return &var.value[index];
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("Can't evalulate %s as part of array\n", find_ast_value_type(var.value[index].type))
-    } else if (n->type == AST_Function) {
+    } else if (n->type == AST_Function_Call) {
         Function *function = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
         Function *func = dup_func(function);
         for (int i = 0; i < func->nodes_size; i++) args_replace(func->nodes[i], func->args, n->left->value, func->arity);
@@ -176,7 +176,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
         case AST_Print:;
             if (!n->left) ERR("need something to print\n")
-            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At || n->left->type == AST_Function), "Can't print `%s`\n", find_ast_type(n->left->type))
+            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At || n->left->type == AST_Function || n->left->type == AST_Function_Call), "Can't print `%s`\n", find_ast_type(n->left->type))
             AST_Value *print = eval_node(n->left, interpreter, 0);
 
             if (print->type == Value_Array) {
@@ -276,6 +276,32 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;}
         case AST_Return:
             return eval_node(n->left, interpreter, 1);
+        case AST_Function_Call:;
+            Function *function = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
+            Function *func = dup_func(function);
+            for (int i = 0; i < func->nodes_size; i++) args_replace(func->nodes[i], func->args, n->left->value, func->arity);
+
+            Interpreter intrprtr = {
+                func->nodes,
+                func->nodes_size,
+                0,
+                interpreter->vars,
+                interpreter->vars_index,
+                interpreter->funcs,
+                interpreter->funcs_capacity
+            };
+
+            AST_Value *rtrn;
+            while (intrprtr.program_counter < intrprtr.stmts_capacity) {
+                rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
+                if (rtrn != NULL) {
+                    free_function(func);
+                    free_ast_value(rtrn);
+                    return NULL;
+                }
+                intrprtr.program_counter++;
+            }
+            break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type))
     }
     return NULL;

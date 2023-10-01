@@ -1,10 +1,6 @@
-let arg = 3
-
 fn add(a, b)
+    print(a + b)
     return(a + b)
 ;
-print(add(arg, arg))
-print(add(arg, arg))
-print(add(arg, arg))
-print(add(arg, arg))
-print(add(arg, arg))
+
+add(3, 3)
