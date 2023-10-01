@@ -10,6 +10,7 @@ typedef struct {
 
     Variable *vars;
     int vars_index;
+    int vars_capacity;
 
     Function **funcs;
     int funcs_capacity;
@@ -155,6 +156,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             0,
             interpreter->vars,
             interpreter->vars_index,
+            10,
             interpreter->funcs,
             interpreter->funcs_capacity
         };
@@ -195,8 +197,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
                 ERR("cant assign `%s` multiple times\n", var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
-            interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
-            interpreter->vars_index++;
+            append(interpreter->vars, ((Variable) { var_name, var_val, interpreter->vars_index }), interpreter->vars_index, interpreter->vars_capacity)
             break;
         case AST_If:;
             AST_Value *expr = eval_node(n->left, interpreter, 1);
@@ -287,6 +288,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 0,
                 interpreter->vars,
                 interpreter->vars_index,
+                10,
                 interpreter->funcs,
                 interpreter->funcs_capacity
             };

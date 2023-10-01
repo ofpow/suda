@@ -253,6 +253,7 @@ int main(int argc, char *argv[]) {
     interpreter.nodes = p->nodes;
     interpreter.stmts_capacity = p->nodes_index;
     interpreter.vars_index = 0;
+    interpreter.vars_capacity = 10;
     interpreter.vars = calloc(10, sizeof(struct Variable));
     interpreter.funcs_capacity = p->funcs_index;
     interpreter.funcs = p->funcs;
