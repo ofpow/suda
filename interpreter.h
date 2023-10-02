@@ -154,6 +154,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             func->nodes,
             func->nodes_size,
             0,
+            //calloc(10, sizeof(Variable)),
             interpreter->vars,
             interpreter->vars_index,
             10,
@@ -180,6 +181,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (!n->left) ERR("need something to print\n")
             ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At || n->left->type == AST_Function || n->left->type == AST_Function_Call), "Can't print `%s`\n", find_ast_type(n->left->type))
             AST_Value *print = eval_node(n->left, interpreter, 0);
+            if (print == NULL) ERR("ERROR: tried to print a node that evaluated to null\n")
 
             if (print->type == Value_Array) {
                 char *array = format_array(print);
@@ -197,7 +199,14 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
                 ERR("cant assign `%s` multiple times\n", var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
-            append(interpreter->vars, ((Variable) { var_name, var_val, interpreter->vars_index }), interpreter->vars_index, interpreter->vars_capacity)
+
+            if (interpreter->vars_index >= interpreter->vars_capacity) {
+                interpreter->vars_capacity *= 2;
+                interpreter->vars = realloc(interpreter->vars, sizeof(Variable) * interpreter->vars_capacity);
+            }
+            interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
+            interpreter->vars_index++;
+            //append(interpreter->vars, ((Variable) { var_name, var_val, interpreter->vars_index }), interpreter->vars_index, interpreter->vars_capacity)
             break;
         case AST_If:;
             AST_Value *expr = eval_node(n->left, interpreter, 1);
