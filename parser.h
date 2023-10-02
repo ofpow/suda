@@ -53,6 +53,7 @@ typedef enum {
     AST_Right_Paren,
     AST_Return,
     AST_Function_Call,
+    AST_Len,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -83,6 +84,7 @@ char *find_ast_type(int type) {
         case AST_Right_Paren: return "AST_Right_Paren";
         case AST_Return: return "AST_Return";
         case AST_Function_Call: return "AST_Function_Call";
+        case AST_Len: return "AST_Len";
         default: return "ast type not found";
     }
 }
@@ -371,6 +373,11 @@ Node *expr(Parser *p, Node *child) {
             n = new_node(AST_Array, NULL, -1);
             p->tok_index++;
             n->value = parse_list(p);
+            return n;
+        case Tok_Len:
+            n = new_node(AST_Len, NULL, -1);
+            p->tok_index++;
+            n->left = expr(p, NULL);
             return n;
         default: ERR("ERROR on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }

@@ -1,6 +1,6 @@
 #pragma once
 
-#define OPERATOR(op) (op)
+#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
 typedef struct {
     Node **nodes;
@@ -126,7 +126,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         int index = 0;
         if (n->left->type != AST_Literal) {
             AST_Value *val = eval_node(n->left, interpreter, 0);
-            index = strtofloat(val->value, strlen(val->value));
+            index = (int)strtofloat(val->value, strlen(val->value));
             if (val->mutable > 0) free_ast_value(val);
         } else index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
 
@@ -154,7 +154,6 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             func->nodes,
             func->nodes_size,
             0,
-            //calloc(10, sizeof(Variable)),
             interpreter->vars,
             interpreter->vars_index,
             10,
@@ -171,6 +170,20 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             }
             intrprtr.program_counter++;
         }
+    } else if (n->type == AST_Len) {
+        ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR: cant do len on value type %s\n", find_ast_value_type(n->left->value->type))
+        AST_Value *op = eval_node(n->left, interpreter, 0);
+        int len;
+        switch (op->type) {
+            case Value_String:
+                len = strlen(op->value);
+                return new_ast_value(Value_Number, format_str(snprintf(NULL, 0, "%d", len) + 1, "%d", len), 1);
+            case Value_Array:;
+                int str_len = strlen(op[0].value);
+                len = (int)strtofloat(op[0].value, str_len) - 1;
+                return new_ast_value(Value_Number, format_str(str_len + 1, "%d", len), 1);
+            default: ERR("ERROR: cant evaluate length of value type %s\n", find_ast_value_type(op->type))
+        }
     } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type))
     return NULL;
 }
@@ -179,7 +192,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
         case AST_Print:;
             if (!n->left) ERR("need something to print\n")
-            ASSERT((n->left->type == AST_Literal || IS_AST_MATH_OP(n->left->type) || n->left->type == AST_Identifier || n->left->type == AST_At || n->left->type == AST_Function || n->left->type == AST_Function_Call), "Can't print `%s`\n", find_ast_type(n->left->type))
+            ASSERT(AST_IS_EVALUATABLE(n->left->type), "Can't print `%s`\n", find_ast_type(n->left->type))
             AST_Value *print = eval_node(n->left, interpreter, 0);
             if (print == NULL) ERR("ERROR: tried to print a node that evaluated to null\n")
 
@@ -206,7 +219,6 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
             interpreter->vars_index++;
-            //append(interpreter->vars, ((Variable) { var_name, var_val, interpreter->vars_index }), interpreter->vars_index, interpreter->vars_capacity)
             break;
         case AST_If:;
             AST_Value *expr = eval_node(n->left, interpreter, 1);
