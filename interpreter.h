@@ -1,6 +1,6 @@
 #pragma once
 
-#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len) || (type == AST_And) || (type == AST_Or))
+#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
 typedef struct {
     Node **nodes;
@@ -36,8 +36,8 @@ char *format_array(AST_Value *array) {
 
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
     int op1_len = strlen(op1->value);
-    int op2_len = strlen(op2->value);
-    ASSERT((op1->type != AST_Array && op2->type != AST_Array), "ERROR: can't do math on array\n")
+    int op2_len;
+    if (op2 != NULL) op2_len = strlen(op2->value);
     switch (op) {
         case AST_Add:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)), 1);
@@ -53,24 +53,28 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)), 1);
         case AST_Less:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)), 1);
         case AST_Less_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)), 1);
         case AST_Greater:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)), 1);
         case AST_Greater_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)), 1);
         case AST_Is_Equal:
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len, "%d", !strcmp(op1->value, op2->value)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", !strcmp(op1->value, op2->value)), 1);
         case AST_And:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) && strtofloat(op2->value, op2_len)), 1);
-            else return new_ast_value(Value_String, format_str(2, "%d", op1->value && op2->value), 1);
+            else return new_ast_value(Value_Number, format_str(2, "%d", op1->value && op2->value), 1);
         case AST_Or:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) || strtofloat(op2->value, op2_len)), 1);
-            else return new_ast_value(Value_String, format_str(2, "%d", op1->value || op2->value), 1);
+            else return new_ast_value(Value_Number, format_str(2, "%d", op1->value || op2->value), 1);
+        case AST_Not:
+            return new_ast_value(Value_Number, format_str(2, "%d", !op1->value), 1);
+        case AST_Not_Equal:
+            return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
         default:
             ERR("ERROR: unknown math op %s\n", find_ast_type(op))
     }
@@ -79,7 +83,7 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
 
 AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
     if (n == NULL) {
-        ERR("can't evaluate null node\n")
+        return NULL;
     } else if (n->type == AST_Literal) {
         if (mutable <= 0) {
             AST_Value *new_val = n->value;
@@ -92,7 +96,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         AST_Value *op2 = eval_node(n->right, interpreter, 0);
         AST_Value *result = ast_math(op1, op2, n->type);
         if (op1->mutable > 0) free_ast_value(op1);
-        if (op2->mutable > 0) free_ast_value(op2);
+        if (op2 && op2->mutable > 0) free_ast_value(op2);
         return result;
     } else if (n->type == AST_Identifier) {
         char *var_name = strdup(n->value->value);

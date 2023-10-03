@@ -3,8 +3,8 @@
 typedef enum {
     Tok_Eof,
     Tok_Assign,
-    Tok_Bang,
-    Tok_Bang_Equal,
+    Tok_Not,
+    Tok_Not_Equal,
     Tok_Greater,
     Tok_Greater_Equal,
     Tok_Less,
@@ -44,8 +44,8 @@ char *find_tok_type(int type) {
     switch (type) {
         case Tok_Eof: return "Tok_Eof";
         case Tok_Assign: return "Tok_Assign";
-        case Tok_Bang: return "Tok_Bang";
-        case Tok_Bang_Equal: return "Tok_Bang_Equal";
+        case Tok_Not: return "Tok_Not";
+        case Tok_Not_Equal: return "Tok_Not_Equal";
         case Tok_Greater: return "Tok_Greater";
         case Tok_Greater_Equal: return "Tok_Greater_Equal";
         case Tok_Less: return "Tok_Less";
@@ -276,7 +276,7 @@ Token scan_token(Lexer *l) {
         case '/':
             return make_token(Tok_Div, l);
         case '!':
-            return make_token(match('=', l) ? Tok_Bang_Equal : Tok_Bang, l);
+            return make_token(match('=', l) ? Tok_Not_Equal : Tok_Not, l);
         case '>':
             return make_token(match('=', l) ? Tok_Greater_Equal : Tok_Greater, l);
         case '<':
