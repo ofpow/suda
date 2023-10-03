@@ -37,6 +37,7 @@ typedef enum {
     Tok_Comment,
     Tok_Is_Equal,
     Tok_Len,
+    Tok_Exit,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -77,6 +78,7 @@ char *find_tok_type(int type) {
         case Tok_Comment: return "Tok_Comment";
         case Tok_Is_Equal: return "Tok_Is_Equal";
         case Tok_Len: return "Tok_Len";
+        case Tok_Exit: return "Tok_Exit";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -190,7 +192,15 @@ static Token_Type id_type(Lexer *l) {
         case 'c':
             return check_keyword(1, 3, "ont", Tok_Continue, l);
         case 'e':
-            return check_keyword(1, 3, "lse", Tok_Else, l);
+            if (l->current - l->start > 1) {
+                switch (l->start[1]) {
+                    case 'x':
+                        return check_keyword(2, 2, "it", Tok_Exit, l);
+                    case 'l':
+                        return check_keyword(2, 2, "se", Tok_Else, l);
+                }
+            }
+            break;
         case 'f':
             return check_keyword(1, 1, "n", Tok_Function, l);
         case 'i':
@@ -205,7 +215,6 @@ static Token_Type id_type(Lexer *l) {
                 }
             }
             break;
-            //return check_keyword(1, 2, "et", Tok_Let, l);
         case 'o':
             return check_keyword(1, 1, "r", Tok_Or, l);
         case 'p':

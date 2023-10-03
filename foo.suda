@@ -1,9 +1,3 @@
-let count = 0
-while (count < 10)
-    if (count > 5)
-        break
-    ;
-    print count
-    count = (count + 1)
-;
-print "done"
+exit 1
+
+print "exit"

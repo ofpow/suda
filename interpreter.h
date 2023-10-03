@@ -333,6 +333,13 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 intrprtr.program_counter++;
             }
             break;
+        case AST_Exit:;
+            AST_Value *exit_val = eval_node(n->left, interpreter, 0);
+            ASSERT(exit_val->type == Value_Number, "ERROR: tried to exit with non-number code\n")
+            int val = (int)strtofloat(exit_val->value, strlen(exit_val->value));
+            if (exit_val->mutable > 0) free_ast_value(exit_val);
+            free_mem(val);
+            break;
         default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type))
     }
     return NULL;
