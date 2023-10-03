@@ -165,6 +165,9 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         while (intrprtr.program_counter < intrprtr.stmts_capacity) {
             rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
             if (rtrn != NULL) {
+                for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
+                    if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
+                }
                 free_function(func);
                 return rtrn;
             }
@@ -320,6 +323,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             while (intrprtr.program_counter < intrprtr.stmts_capacity) {
                 rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
                 if (rtrn != NULL) {
+                    for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
+                        if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
+                    }
                     free_function(func);
                     free_ast_value(rtrn);
                     return NULL;
