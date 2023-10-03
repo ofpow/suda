@@ -75,6 +75,9 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
             return new_ast_value(Value_Number, format_str(2, "%d", !op1->value), 1);
         case AST_Not_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
+        case AST_Modulo:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) % (int)strtofloat(op2->value, op2_len)), 1);
         default:
             ERR("ERROR: unknown math op %s\n", find_ast_type(op))
     }

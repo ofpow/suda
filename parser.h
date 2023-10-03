@@ -29,8 +29,8 @@
 #define CURRENT_TOK p->tokens[p->tok_index]
 #define LAST_TOK p->tokens[p->tok_index - 1]
 #define NEXT_TOK p->tokens[p->tok_index + 1]
-#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Is_Equal) || (expr == Tok_And) || (expr == Tok_Or) || (expr == Tok_Not) || (expr == Tok_Not_Equal))
-#define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal) || (expr == AST_And) || (expr == AST_Or) || (expr == AST_Not) || (expr == AST_Not_Equal))
+#define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Is_Equal) || (expr == Tok_And) || (expr == Tok_Or) || (expr == Tok_Not) || (expr == Tok_Not_Equal) || (expr == Tok_Modulo))
+#define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal) || (expr == AST_And) || (expr == AST_Or) || (expr == AST_Not) || (expr == AST_Not_Equal) || (expr == AST_Modulo))
 
 typedef enum {
     AST_End,
@@ -67,6 +67,7 @@ typedef enum {
     AST_Or,
     AST_Not,
     AST_Not_Equal,
+    AST_Modulo,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -105,6 +106,7 @@ char *find_ast_type(int type) {
         case AST_Or: return "AST_Or";
         case AST_Not: return "AST_Not";
         case AST_Not_Equal: return "AST_Not_Equal";
+        case AST_Modulo: return "AST_Modulo";
         default: return "ast type not found";
     }
 }
@@ -344,6 +346,12 @@ Node *expr(Parser *p, Node *child) {
             return n;
         case Tok_Div:
             n = new_node(AST_Div, NULL, -1);
+            p->tok_index++;
+            if (child != NULL) n->left = child; else n->left = expr(p, child);
+            n->right = expr(p, child);
+            return n;
+        case Tok_Modulo:
+            n = new_node(AST_Modulo, NULL, -1);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);

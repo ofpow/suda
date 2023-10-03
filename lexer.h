@@ -38,6 +38,7 @@ typedef enum {
     Tok_Is_Equal,
     Tok_Len,
     Tok_Exit,
+    Tok_Modulo,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -79,6 +80,7 @@ char *find_tok_type(int type) {
         case Tok_Is_Equal: return "Tok_Is_Equal";
         case Tok_Len: return "Tok_Len";
         case Tok_Exit: return "Tok_Exit";
+        case Tok_Modulo: return "Tok_Modulo";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -301,6 +303,8 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_And, l);
         case '|':
             return make_token(Tok_Or, l);
+        case '%':
+            return make_token(Tok_Modulo, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c)
     }
