@@ -18,6 +18,14 @@
  * <terminal> : <literal>
  * <array access> : <array variable> "@" <expr>
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
+ * 
+ * TODO:
+ *      else if
+ *      fix recursion
+ *      continue
+ *      import
+ *      bitwise
+ *      logical and/or/not
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
