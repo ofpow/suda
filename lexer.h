@@ -299,6 +299,8 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_At, l);
         case '&':
             return make_token(Tok_And, l);
+        case '|':
+            return make_token(Tok_Or, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c)
     }

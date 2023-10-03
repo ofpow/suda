@@ -1,6 +1,6 @@
 #pragma once
 
-#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len) || (type == AST_And))
+#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len) || (type == AST_And) || (type == AST_Or))
 
 typedef struct {
     Node **nodes;
@@ -68,6 +68,9 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
         case AST_And:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) && strtofloat(op2->value, op2_len)), 1);
             else return new_ast_value(Value_String, format_str(2, "%d", op1->value && op2->value), 1);
+        case AST_Or:
+            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) || strtofloat(op2->value, op2_len)), 1);
+            else return new_ast_value(Value_String, format_str(2, "%d", op1->value || op2->value), 1);
         default:
             ERR("ERROR: unknown math op %s\n", find_ast_type(op))
     }
