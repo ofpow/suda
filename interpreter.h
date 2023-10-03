@@ -261,6 +261,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
+        case AST_Break:
+            interpreter->program_counter = n->jump_index;
+            break;
         case AST_At:;{
             AST_Value *new_val;
             int index;

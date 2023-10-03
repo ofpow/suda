@@ -200,11 +200,24 @@ int main(int argc, char *argv[]) {
                 temp_nodes = NULL;
                 continue;
             }
-
             p->jumps_index--;
-            p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
-            n->jump_index = p->jump_indices[p->jumps_index];
+            if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
+                n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
+                p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
+            } else {
+                p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
+                n->jump_index = p->jump_indices[p->jumps_index];
+            }
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+        } else if (n->type == AST_Break) {
+            for (int i = p->jumps_index - 1; i > -1; i--) {
+                if (p->nodes[p->jump_indices[i]]->type == AST_While) {
+                    n->jump_index = p->jump_indices[i];
+                    p->jump_indices[i] = p->nodes_index;
+                    append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+                }
+            }
+            if (n->jump_index < 0) ERR("ERROR: tried to use break outside a while loop\n")
         } else if (n->type == AST_Function) {
             free_node(n);
             func = calloc(1, sizeof(Function));
