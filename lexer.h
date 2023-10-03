@@ -185,8 +185,6 @@ static Token_Type check_keyword(int start, int length, const char *rest, Token_T
 
 static Token_Type id_type(Lexer *l) {
     switch (l->start[0]) {
-        case 'a':
-            return check_keyword(1, 2, "nd", Tok_And, l);
         case 'b':
             return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':
@@ -215,8 +213,6 @@ static Token_Type id_type(Lexer *l) {
                 }
             }
             break;
-        case 'o':
-            return check_keyword(1, 1, "r", Tok_Or, l);
         case 'p':
             return check_keyword(1, 4, "rint", Tok_Print, l);
         case 'r':
@@ -301,6 +297,8 @@ Token scan_token(Lexer *l) {
             return make_token(Tok_Comma, l);
         case '@':
             return make_token(Tok_At, l);
+        case '&':
+            return make_token(Tok_And, l);
         default:
             ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c)
     }

@@ -1,8 +1,2 @@
-while 1 
-    if 1
-        continue
-    ;
-    break
-;
-
-print "done"
+print(1 & 0)
+print(1 & 1)
