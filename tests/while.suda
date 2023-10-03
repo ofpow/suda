@@ -1,6 +1,9 @@
 let count = 0
 
 while (count < 100)
+    if (count > 50)
+        break
+    ;
     count = (count + 1)
     print count
 ;
