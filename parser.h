@@ -22,7 +22,6 @@
  * TODO:
  *      else if
  *      fix recursion
- *      continue
  *      import
  *      bitwise
  *      logical and/or/not
