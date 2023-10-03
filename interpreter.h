@@ -221,12 +221,11 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             interpreter->vars_index++;
             break;
         case AST_If:;
-            AST_Value *expr = eval_node(n->left, interpreter, 1);
+            AST_Value *expr = eval_node(n->left, interpreter, 0);
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
             }
-            free(expr->value);
-            free(expr);
+            if (expr->mutable > 0) free_ast_value(expr);
             break;
         case AST_Else:
             interpreter->program_counter = n->jump_index;
@@ -255,7 +254,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             interpreter->vars[var.index].value = new_val;
             break;}
         case AST_While:;{
-            AST_Value *expr = eval_node(n->left, interpreter, 1);
+            AST_Value *expr = eval_node(n->left, interpreter, 0);
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
             }
