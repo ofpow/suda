@@ -190,7 +190,7 @@ static Token_Type id_type(Lexer *l) {
         case 'b':
             return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':
-            return check_keyword(1, 3, "ont", Tok_Continue, l);
+            return check_keyword(1, 7, "ontinue", Tok_Continue, l);
         case 'e':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {

@@ -218,6 +218,14 @@ int main(int argc, char *argv[]) {
                 }
             }
             if (n->jump_index < 0) ERR("ERROR: tried to use break outside a while loop\n")
+        } else if (n->type == AST_Continue) {
+            for (int i = p->jumps_index - 1; i > -1; i--) {
+                if (p->nodes[p->jump_indices[i]]->type == AST_While) {
+                    n->jump_index = p->jump_indices[i];
+                    append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+                }
+            }
+            if (n->jump_index < 0) ERR("ERROR: tried to use continue outside a while loop\n")
         } else if (n->type == AST_Function) {
             free_node(n);
             func = calloc(1, sizeof(Function));

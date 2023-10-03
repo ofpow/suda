@@ -64,6 +64,7 @@ typedef enum {
     AST_Len,
     AST_Break,
     AST_Exit,
+    AST_Continue,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -97,6 +98,7 @@ char *find_ast_type(int type) {
         case AST_Len: return "AST_Len";
         case AST_Break: return "AST_Break";
         case AST_Exit: return "AST_Exit";
+        case AST_Continue: return "AST_Continue";
         default: return "ast type not found";
     }
 }
@@ -452,6 +454,10 @@ Node *statement(Parser *p) {
             n = new_node(AST_Exit, NULL, -1);
             p->tok_index++;
             n->left = expr(p, NULL);
+            return n;
+        case Tok_Continue:
+            n = new_node(AST_Continue, NULL, -1);
+            p->tok_index++;
             return n;
         default: return expr(p, NULL); 
     }
