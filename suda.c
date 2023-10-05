@@ -190,8 +190,6 @@ int main(int argc, char *argv[]) {
         } else if (n->type == AST_Elif) {
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index;
             n->jump_index = p->jump_indices[p->jumps_index - 1];
-            p->jumps_index--;
-            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Semicolon) {
             if (p->parsing_function && p->jumps_index <= 0) {

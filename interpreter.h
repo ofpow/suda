@@ -1,5 +1,4 @@
 #pragma once
-#include <signal.h>
 
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
@@ -160,7 +159,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         } else if (var.value[index].type == Value_Number) {
             if (var.value[index].mutable <= 0) return &var.value[index];
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
-        } else ERR("Can't evalulate %s as part of array\n", find_ast_value_type(var.value[index].type))
+        } else ERR("Can't evaluate %s as part of array\n", find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
         Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
 
@@ -256,6 +255,13 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             if (expr->mutable > 0) free_ast_value(expr);
             break;
+        case AST_Elif:;{
+            AST_Value *expr = eval_node(n->left, interpreter, 0);
+            if (!strncmp(expr->value, "0", 1)) {
+                interpreter->program_counter = n->jump_index;
+            }
+            if (expr->mutable > 0) free_ast_value(expr);
+            break;}
         case AST_Else:
             interpreter->program_counter = n->jump_index;
             break;
