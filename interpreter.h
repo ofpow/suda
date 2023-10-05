@@ -371,6 +371,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 }
                 intrprtr.program_counter++;
             }
+            free(intrprtr.vars);
             break;
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
