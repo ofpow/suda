@@ -177,7 +177,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
 
         for (int i = 0; i < func->arity; i++) {
             if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
-                intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, &n->left->value[i + 1], intrprtr.vars_index };
+                intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.vars_index };
                 intrprtr.vars_index++;
             } else if (n->left->value[i + 1].type == Value_Identifier) {
                 Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
@@ -191,8 +191,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         while (intrprtr.program_counter < intrprtr.stmts_capacity) {
             rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
             if (rtrn != NULL) {
-                for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
-                    if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
+                for (int i = 0; i < intrprtr.vars_index; i++) {
+                    free_ast_value(intrprtr.vars[i].value);
                 }
                 free(intrprtr.vars);
                 return rtrn;
@@ -237,7 +237,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             break;
         case AST_Var_Assign:;
-            char *var_name = strdup(n->value->value);
+            char *var_name = n->value->value;
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
                 ERR("cant assign `%s` multiple times\n", var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
@@ -348,7 +348,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             for (int i = 0; i < func->arity; i++) {
                 if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
-                    intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, &n->left->value[i + 1], intrprtr.vars_index };
+                    intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.vars_index };
                     intrprtr.vars_index++;
                 } else if (n->left->value[i + 1].type == Value_Identifier) {
                     Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
@@ -362,8 +362,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             while (intrprtr.program_counter < intrprtr.stmts_capacity) {
                 rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
                 if (rtrn != NULL) {
-                    for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
-                        if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
+                    for (int i = 0; i < intrprtr.vars_index; i++) {
+                        free_ast_value(intrprtr.vars[i].value);
                     }
                     free(intrprtr.vars);
                     if (rtrn->mutable > 0) free_ast_value(rtrn);

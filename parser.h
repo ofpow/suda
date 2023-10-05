@@ -21,7 +21,6 @@
  * 
  * TODO:
  *      else if
- *      fix recursion
  *      import
  *      bitwise
  */

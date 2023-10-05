@@ -1,10 +1,12 @@
-fn factorial(n)
+fn fib(n)
     if (n < 2)
         return 1
     ;
 
     let n1 = (n - 1)
+    let n2 = (n - 2)
 
-    return (n * factorial(n1))
+    return (fib(n1) + fib(n2))
 ;
-print factorial(5)
+
+print fib(10)
