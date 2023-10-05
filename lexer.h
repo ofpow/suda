@@ -39,6 +39,7 @@ typedef enum {
     Tok_Len,
     Tok_Exit,
     Tok_Modulo,
+    Tok_Elif,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -81,6 +82,7 @@ char *find_tok_type(int type) {
         case Tok_Len: return "Tok_Len";
         case Tok_Exit: return "Tok_Exit";
         case Tok_Modulo: return "Tok_Modulo";
+        case Tok_Elif: return "Tok_Elif";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -197,6 +199,14 @@ static Token_Type id_type(Lexer *l) {
                     case 'x':
                         return check_keyword(2, 2, "it", Tok_Exit, l);
                     case 'l':
+                        if (l->current - l->start > 2) {
+                            switch (l->start[2]) {
+                                case 's':
+                                    return check_keyword(3, 1, "e", Tok_Else, l);
+                                case 'i':
+                                    return check_keyword(3, 1, "f", Tok_Elif, l);
+                            }
+                        }
                         return check_keyword(2, 2, "se", Tok_Else, l);
                 }
             }

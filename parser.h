@@ -20,7 +20,6 @@
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
  * 
  * TODO:
- *      else if
  *      import
  *      bitwise
  */
@@ -67,6 +66,7 @@ typedef enum {
     AST_Not,
     AST_Not_Equal,
     AST_Modulo,
+    AST_Elif,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -106,6 +106,7 @@ char *find_ast_type(int type) {
         case AST_Not: return "AST_Not";
         case AST_Not_Equal: return "AST_Not_Equal";
         case AST_Modulo: return "AST_Modulo";
+        case AST_Elif: return "AST_Elif";
         default: return "ast type not found";
     }
 }
@@ -494,6 +495,11 @@ Node *statement(Parser *p) {
         case Tok_Continue:
             n = new_node(AST_Continue, NULL, -1);
             p->tok_index++;
+            return n;
+        case Tok_Elif:
+            n = new_node(AST_Elif, NULL, -1);
+            p->tok_index++;
+            n->left = expr(p, NULL);
             return n;
         default: return expr(p, NULL); 
     }
