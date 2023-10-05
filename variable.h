@@ -6,9 +6,9 @@ typedef enum {
     Value_Identifier,
     Value_Array,
     Value_Function_Args,
-} Variable_Type;
+} Value_Type;
 
-char *find_ast_value_type(Variable_Type type) {
+char *find_ast_value_type(Value_Type type) {
     switch (type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";
@@ -21,7 +21,7 @@ char *find_ast_value_type(Variable_Type type) {
 }
 
 typedef struct AST_Value {
-    int type;
+    Value_Type type;
     char *value;
     int mutable;
 } AST_Value;
