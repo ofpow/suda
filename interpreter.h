@@ -1,4 +1,5 @@
 #pragma once
+#include <signal.h>
 
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
@@ -16,6 +17,13 @@ typedef struct {
     int funcs_capacity;
 } Interpreter;
 
+AST_Type value_to_ast_type(Value_Type type) {
+    if (type == Value_Number || type == Value_String) return AST_Literal;
+    else if (type == Value_Identifier) return AST_Identifier;
+    else if (type == Value_Array) return AST_Array;
+    else ERR("ERROR: value type %d has not AST type\n", type);
+    return -1;
+}
 
 AST_Value *do_statement(Node *n, Interpreter *interpreter);
 
@@ -38,30 +46,31 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
     int op1_len = strlen(op1->value);
     int op2_len;
     if (op2 != NULL) op2_len = strlen(op2->value);
+    ASSERT((op1 != NULL), "ERROR: cant do math with a null op\n")
     switch (op) {
         case AST_Add:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)), 1);
             else return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value), 1);
         case AST_Sub:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant subtract type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant subtract type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)), 1);
         case AST_Mult:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant multiply type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant multiply type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)), 1);
         case AST_Div:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant divide type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant divide type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)), 1);
         case AST_Less:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)), 1);
         case AST_Less_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)), 1);
         case AST_Greater:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)), 1);
         case AST_Greater_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)), 1);
         case AST_Is_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", !strcmp(op1->value, op2->value)), 1);
@@ -76,10 +85,10 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
         case AST_Not_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
         case AST_Modulo:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_type(op1->type), find_ast_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) % (int)strtofloat(op2->value, op2_len)), 1);
         default:
-            ERR("ERROR: unknown math op %s\n", find_ast_type(op))
+            ERR("ERROR: unknown math op %d\n", op)
     }
     return NULL;
 }
@@ -153,20 +162,30 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("Can't evalulate %s as part of array\n", find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
-        Function *function = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
-        Function *func = dup_func(function);
-        for (int i = 0; i < func->nodes_size; i++) args_replace(func->nodes[i], func->args, n->left->value, func->arity);
+        Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
 
         Interpreter intrprtr = {
             func->nodes,
             func->nodes_size,
             0,
-            interpreter->vars,
-            interpreter->vars_index,
+            calloc(10, sizeof(Variable)),
+            0,
             10,
             interpreter->funcs,
             interpreter->funcs_capacity
         };
+
+        for (int i = 0; i < func->arity; i++) {
+            if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
+                intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, &n->left->value[i + 1], intrprtr.vars_index };
+                intrprtr.vars_index++;
+            } else if (n->left->value[i + 1].type == Value_Identifier) {
+                Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
+                AST_Value *new_val = eval_node(&temp, interpreter, 1);
+                intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.vars_index };
+                intrprtr.vars_index++;
+            } else ERR("Cant add var type %s\n", find_ast_value_type(n->left->value[i + 1].type))
+        }
 
         AST_Value *rtrn;
         while (intrprtr.program_counter < intrprtr.stmts_capacity) {
@@ -175,7 +194,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
                     if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
                 }
-                free_function(func);
+                free(intrprtr.vars);
                 return rtrn;
             }
             intrprtr.program_counter++;
@@ -218,7 +237,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             break;
         case AST_Var_Assign:;
-            char *var_name = n->value->value;
+            char *var_name = strdup(n->value->value);
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
                 ERR("cant assign `%s` multiple times\n", var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
@@ -314,20 +333,30 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Return:
             return eval_node(n->left, interpreter, 1);
         case AST_Function_Call:;
-            Function *function = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
-            Function *func = dup_func(function);
-            for (int i = 0; i < func->nodes_size; i++) args_replace(func->nodes[i], func->args, n->left->value, func->arity);
+            Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
 
             Interpreter intrprtr = {
                 func->nodes,
                 func->nodes_size,
                 0,
-                interpreter->vars,
-                interpreter->vars_index,
+                calloc(10, sizeof(Variable)),
+                0,
                 10,
                 interpreter->funcs,
                 interpreter->funcs_capacity
             };
+
+            for (int i = 0; i < func->arity; i++) {
+                if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
+                    intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, &n->left->value[i + 1], intrprtr.vars_index };
+                    intrprtr.vars_index++;
+                } else if (n->left->value[i + 1].type == Value_Identifier) {
+                    Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
+                    AST_Value *new_val = eval_node(&temp, interpreter, 1);
+                    intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.vars_index };
+                    intrprtr.vars_index++;
+                } else ERR("Cant add var type %s\n", find_ast_value_type(n->left->value[i + 1].type))
+            }
 
             AST_Value *rtrn;
             while (intrprtr.program_counter < intrprtr.stmts_capacity) {
@@ -336,8 +365,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     for (int i = interpreter->vars_index; i < intrprtr.vars_index; i++) {
                         if (intrprtr.vars[i].value->mutable > 0) free_ast_value(intrprtr.vars[i].value);
                     }
-                    free_function(func);
-                    free_ast_value(rtrn);
+                    free(intrprtr.vars);
+                    if (rtrn->mutable > 0) free_ast_value(rtrn);
                     return NULL;
                 }
                 intrprtr.program_counter++;
