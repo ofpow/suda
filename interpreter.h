@@ -152,6 +152,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         }
         int arr_len = (int)strtofloat(var.value[0].value, strlen(var.value[0].value));
         if (index >= arr_len) ERR("ERROR on line %d: Index %d is out of bounds for array %s, length %d\n", n->line, index, var.name, arr_len)
+        else if (index < 1) ERR("ERROR on line %d: invalid index %d, it is less than 1\n", n->line, index)
 
         if (var.value[index].type == Value_String) {
             int len = strlen(var.value[index].value);
