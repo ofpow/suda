@@ -10,6 +10,14 @@ if 1
 
 if 0
     print "thursday"
+elif 1
+    print "thursday again"
 else
     print "goodbye"
+;
+
+if 0
+    print "e"
+elif 0
+    print "E"
 ;
