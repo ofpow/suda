@@ -151,7 +151,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), 1);
         }
         int arr_len = (int)strtofloat(var.value[0].value, strlen(var.value[0].value));
-        if (index >= arr_len) ERR("Index %d is out of bounds for array %s, length %d\n", index, var.name, arr_len)
+        if (index >= arr_len) ERR("ERROR on line %d: Index %d is out of bounds for array %s, length %d\n", n->line, index, var.name, arr_len)
 
         if (var.value[index].type == Value_String) {
             int len = strlen(var.value[index].value);
@@ -159,7 +159,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         } else if (var.value[index].type == Value_Number) {
             if (var.value[index].mutable <= 0) return &var.value[index];
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
-        } else ERR("Can't evaluate %s as part of array\n", find_ast_value_type(var.value[index].type))
+        } else ERR("ERROR on line %d: Can't evaluate %s as part of array\n", n->line, find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
         Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
 
@@ -179,11 +179,11 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.vars_index };
                 intrprtr.vars_index++;
             } else if (n->left->value[i + 1].type == Value_Identifier) {
-                Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
+                Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
                 AST_Value *new_val = eval_node(&temp, interpreter, 1);
                 intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.vars_index };
                 intrprtr.vars_index++;
-            } else ERR("Cant add var type %s\n", find_ast_value_type(n->left->value[i + 1].type))
+            } else ERR("ERROR on line %d: Cant add var type %s\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
         }
 
         AST_Value *rtrn;
@@ -210,19 +210,19 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 int str_len = strlen(op[0].value);
                 len = (int)strtofloat(op[0].value, str_len) - 1;
                 return new_ast_value(Value_Number, format_str(str_len + 1, "%d", len), 1);
-            default: ERR("ERROR: cant evaluate length of value type %s\n", find_ast_value_type(op->type))
+            default: ERR("ERROR on line %d: cant evaluate length of value type %s\n", n->line, find_ast_value_type(op->type))
         }
-    } else ERR("cant evaluate node type `%s`\n", find_ast_type(n->type))
+    } else ERR("ERROR on line %d: cant evaluate node type `%s`\n", n->line, find_ast_type(n->type))
     return NULL;
 }
 
 AST_Value *do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
         case AST_Print:;
-            if (!n->left) ERR("need something to print\n")
+            if (!n->left) ERR("ERROR on line %d: need something to print\n", n->line)
             ASSERT(AST_IS_EVALUATABLE(n->left->type), "Can't print `%s`\n", find_ast_type(n->left->type))
             AST_Value *print = eval_node(n->left, interpreter, 0);
-            if (print == NULL) ERR("ERROR: tried to print a node that evaluated to null\n")
+            if (print == NULL) ERR("ERROR on line %d: tried to print a node that evaluated to null\n", n->line)
 
             if (print->type == Value_Array) {
                 char *array = format_array(print);
@@ -238,7 +238,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Var_Assign:;
             char *var_name = n->value->value;
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
-                ERR("cant assign `%s` multiple times\n", var_name)
+                ERR("ERROR on line %d: cant assign `%s` multiple times\n", n->line, var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
 
             if (interpreter->vars_index >= interpreter->vars_capacity) {
@@ -357,11 +357,11 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.vars_index };
                     intrprtr.vars_index++;
                 } else if (n->left->value[i + 1].type == Value_Identifier) {
-                    Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1 };
+                    Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
                     AST_Value *new_val = eval_node(&temp, interpreter, 1);
                     intrprtr.vars[intrprtr.vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.vars_index };
                     intrprtr.vars_index++;
-                } else ERR("Cant add var type %s\n", find_ast_value_type(n->left->value[i + 1].type))
+                } else ERR("ERROR on line %d: Cant add arg type %s\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
             }
 
             AST_Value *rtrn;
@@ -386,7 +386,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (exit_val->mutable > 0) free_ast_value(exit_val);
             free_mem(val);
             break;
-        default: ERR("Unsupported statement type `%s`\n", find_ast_type(n->type))
+        default: ERR("ERROR on line %d: Unsupported statement type `%s`\n", n->line, find_ast_type(n->type))
     }
     return NULL;
 }
