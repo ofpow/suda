@@ -94,7 +94,7 @@ void free_mem(int exit_val) {
 int main(int argc, char *argv[]) {
     //read input file
     if (argc != 2) {
-        ERR("ERROR: invalid arguments\nUsage: suda [script]\n")
+        fprintf(stderr, "ERROR: invalid arguments\nUsage: suda [script]\n");
         exit(1);
     }
 
