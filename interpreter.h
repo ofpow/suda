@@ -263,10 +263,10 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Elif:;{
             if (interpreter->auto_jump == 1) {
-                while (interpreter->nodes[interpreter->program_counter]->type != AST_Semicolon) {
-                    interpreter->program_counter = interpreter->nodes[interpreter->program_counter]->jump_index;
-                }
-                interpreter->auto_jump = 0;
+                if (interpreter->nodes[n->jump_index]->type == AST_Else)
+                    interpreter->program_counter = n->jump_index - 1;
+                else
+                    interpreter->program_counter = n->jump_index;
                 break;
             }
             AST_Value *expr = eval_node(n->left, interpreter, 0);
@@ -275,12 +275,10 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             } else {
                 interpreter->auto_jump = 1;
             }
-            interpreter->auto_jump = 1;
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
         case AST_Else:
             interpreter->program_counter = n->jump_index;
-            interpreter->auto_jump = 0;
             break;
         case AST_Semicolon:
             if (interpreter->nodes[n->jump_index]->type == AST_While) {
