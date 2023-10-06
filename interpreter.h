@@ -256,8 +256,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             AST_Value *expr = eval_node(n->left, interpreter, 0);
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
+            } else {
+                interpreter->auto_jump = 1;
             }
-            interpreter->auto_jump = 1;
             if (expr->mutable > 0) free_ast_value(expr);
             break;
         case AST_Elif:;{
@@ -271,6 +272,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             AST_Value *expr = eval_node(n->left, interpreter, 0);
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
+            } else {
+                interpreter->auto_jump = 1;
             }
             interpreter->auto_jump = 1;
             if (expr->mutable > 0) free_ast_value(expr);
