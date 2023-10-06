@@ -14,6 +14,8 @@ typedef struct {
 
     Function **funcs;
     int funcs_capacity;
+
+    int auto_jump;
 } Interpreter;
 
 AST_Type value_to_ast_type(Value_Type type) {
@@ -172,7 +174,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             0,
             10,
             interpreter->funcs,
-            interpreter->funcs_capacity
+            interpreter->funcs_capacity,
+            0
         };
 
         for (int i = 0; i < func->arity; i++) {
@@ -254,22 +257,33 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
             }
+            interpreter->auto_jump = 1;
             if (expr->mutable > 0) free_ast_value(expr);
             break;
         case AST_Elif:;{
+            if (interpreter->auto_jump == 1) {
+                while (interpreter->nodes[interpreter->program_counter]->type != AST_Semicolon) {
+                    interpreter->program_counter = interpreter->nodes[interpreter->program_counter]->jump_index;
+                }
+                interpreter->auto_jump = 0;
+                break;
+            }
             AST_Value *expr = eval_node(n->left, interpreter, 0);
             if (!strncmp(expr->value, "0", 1)) {
                 interpreter->program_counter = n->jump_index;
             }
+            interpreter->auto_jump = 1;
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
         case AST_Else:
             interpreter->program_counter = n->jump_index;
+            interpreter->auto_jump = 0;
             break;
         case AST_Semicolon:
             if (interpreter->nodes[n->jump_index]->type == AST_While) {
                 interpreter->program_counter = n->jump_index - 1;
             }
+            interpreter->auto_jump = 0;
             break;
         case AST_Identifier:;{
             AST_Value *new_val = eval_node(n->left, interpreter, 1);
@@ -350,7 +364,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 0,
                 10,
                 interpreter->funcs,
-                interpreter->funcs_capacity
+                interpreter->funcs_capacity,
+                0
             };
 
             for (int i = 0; i < func->arity; i++) {
