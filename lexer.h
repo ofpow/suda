@@ -40,6 +40,12 @@ typedef enum {
     Tok_Exit,
     Tok_Modulo,
     Tok_Elif,
+    Tok_Bit_And,
+    Tok_Bit_Or,
+    Tok_Bit_Xor,
+    Tok_Bit_Not,
+    Tok_Lshift,
+    Tok_Rshift,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -83,6 +89,12 @@ char *find_tok_type(int type) {
         case Tok_Exit: return "Tok_Exit";
         case Tok_Modulo: return "Tok_Modulo";
         case Tok_Elif: return "Tok_Elif";
+        case Tok_Bit_And: return "Tok_Bit_And";
+        case Tok_Bit_Or: return "Tok_Bit_Or";
+        case Tok_Bit_Xor: return "Tok_Bit_Xor";
+        case Tok_Bit_Not: return "Tok_Bit_Not";
+        case Tok_Lshift: return "Tok_Lshift";
+        case Tok_Rshift: return "Tok_Rshift";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -290,9 +302,25 @@ Token scan_token(Lexer *l) {
         case '!':
             return make_token(match('=', l) ? Tok_Not_Equal : Tok_Not, l);
         case '>':
-            return make_token(match('=', l) ? Tok_Greater_Equal : Tok_Greater, l);
+            c = advance(l);
+            switch (c) {
+                case '=':
+                    return make_token(Tok_Greater_Equal, l);
+                case '>':
+                    return make_token(Tok_Rshift, l);
+                default:
+                    return make_token(Tok_Greater, l);
+            }
         case '<':
-            return make_token(match('=', l) ? Tok_Less_Equal : Tok_Less, l);
+            c = advance(l);
+            switch (c) {
+                case '=':
+                    return make_token(Tok_Less_Equal, l);
+                case '<':
+                    return make_token(Tok_Lshift, l);
+                default:
+                    return make_token(Tok_Less, l);
+            }
         case '"':
             return lex_string(l);
         case ';':
@@ -310,9 +338,13 @@ Token scan_token(Lexer *l) {
         case '@':
             return make_token(Tok_At, l);
         case '&':
-            return make_token(Tok_And, l);
+            return make_token(match('&', l) ? Tok_And : Tok_Bit_And, l);
         case '|':
-            return make_token(Tok_Or, l);
+            return make_token(match('|', l) ? Tok_Or : Tok_Bit_Or, l);
+        case '^':
+            return make_token(Tok_Bit_Xor, l);
+        case '~':
+            return make_token(Tok_Bit_Not, l);
         case '%':
             return make_token(Tok_Modulo, l);
         default:
