@@ -1,9 +1,7 @@
-let a = 5
-let b = 9
+let x = 42
 
-print(a & b)
-print(a | b)
-print(a ^ b)
-print(~a)
-print(b << 1)
-print(b >> 1)
+fn foo(a)
+    print(x)
+    return a
+;
+print foo(1)
