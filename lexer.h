@@ -46,6 +46,7 @@ typedef enum {
     Tok_Bit_Not,
     Tok_Lshift,
     Tok_Rshift,
+    Tok_Include,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -95,6 +96,7 @@ char *find_tok_type(int type) {
         case Tok_Bit_Not: return "Tok_Bit_Not";
         case Tok_Lshift: return "Tok_Lshift";
         case Tok_Rshift: return "Tok_Rshift";
+        case Tok_Include: return "Tok_Include";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -226,6 +228,15 @@ static Token_Type id_type(Lexer *l) {
         case 'f':
             return check_keyword(1, 1, "n", Tok_Function, l);
         case 'i':
+            if (l->current - l->start > 1) {
+                switch (l->start[1]) {
+                    case 'f':
+                        return Tok_If;
+                    case 'n':
+                    return check_keyword(2, 5, "clude", Tok_Include, l);
+                }
+            }
+            break;
             return check_keyword(1, 1, "f", Tok_If, l);
         case 'l':
             if (l->current - l->start > 2) {

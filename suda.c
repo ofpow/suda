@@ -45,6 +45,23 @@ float strtofloat(const char *str, int len) {
     return total;
 }
 
+char *read_file(const char *file_path) {
+    FILE* file = fopen(file_path, "rb");
+    if (!file) {
+        ERR("ERROR: could not open file %s\n", file_path)
+        exit(1);
+    }
+    fseek(file, 0L, SEEK_END);
+    size_t file_capacity = ftell(file);
+    rewind(file);
+
+    char *program = malloc(file_capacity + 1);
+    program[fread(program, 1, file_capacity, file)] = '\0';
+
+    fclose(file);
+    return program;
+}
+
 #include "variable.h"
 #include "lexer.h"
 #include "parser.h"
@@ -55,9 +72,11 @@ float strtofloat(const char *str, int len) {
 Token *tokens;
 char *program;
 Parser *p;
-//Node **nodes;
-//int nodes_index;
 Interpreter interpreter;
+
+char **include_paths;
+int include_paths_index;
+int include_paths_capacity;
 
 void free_mem(int exit_val) {
 
@@ -88,6 +107,8 @@ void free_mem(int exit_val) {
     free(p->nodes);
     free(p);
     free(program);
+    for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
+    free(include_paths);
     exit(exit_val);
 }
 
@@ -97,22 +118,13 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "ERROR: invalid arguments\nUsage: suda [script]\n");
         exit(1);
     }
-
-    FILE* file = fopen(argv[1], "rb");
-    if (!file) {
-        ERR("ERROR: could not open file %s\n", argv[1])
-        exit(1);
-    }
-    fseek(file, 0L, SEEK_END);
-    size_t file_capacity = ftell(file);
-    rewind(file);
-
-    program = malloc(file_capacity + 1);
-    program[fread(program, 1, file_capacity, file)] = '\0';
-
-    fclose(file);
     
     //tokenize program
+    include_paths = calloc(10, sizeof(char*));
+    include_paths_index = 0;
+    include_paths_capacity = 10;
+    
+    program = read_file(argv[1]);
     Lexer lexer = { program, program, 1 };
     int tokens_index = 0;
     int tokens_capacity = 10;
@@ -131,6 +143,41 @@ int main(int argc, char *argv[]) {
             tokens_index++;
             break;
         } else if (tok.type == Tok_Comment) {
+        } else if (tok.type == Tok_Include) {
+            tok = scan_token(&lexer);
+            char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
+            int included = 0;
+            for (int i = 0; i < include_paths_index; i++) {
+                if (!strcmp(include_path, include_paths[i])) {
+                    included = 1;
+                }
+            }
+            if (included) {
+                free(include_path);
+                continue;
+            }
+            append(include_paths, include_path, include_paths_index, include_paths_capacity);
+            char *include = read_file(include_path);
+            
+            //concatenate included file and current program
+            int new_program_len = strlen(program) + strlen(include) + 3;
+            char *new_program = calloc(new_program_len, sizeof(char));
+            strncat(new_program, include, strlen(include));
+            strncat(new_program, "\n\n", 3);
+            strncat(new_program, program, strlen(program));
+
+            free(program);
+            free(include);
+            program = new_program;
+            lexer.start = program;
+            lexer.current = program;
+            lexer.line = 1;
+            
+            //start lexing again from beginning of new program
+            free(tokens);
+            tokens = calloc(10, sizeof(struct Token));
+            tokens_index = 0;
+            tokens_capacity = 10;
         } else {
             tokens[tokens_index] = tok;
             tokens_index++;

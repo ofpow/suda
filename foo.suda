@@ -1,7 +1,3 @@
-let x = 42
+include "tests/functions.suda"
 
-fn foo(a)
-    print(x)
-    return a
-;
-print foo(1)
+print fib(10)
