@@ -13,5 +13,15 @@ print(18 <= 18)
 
 print(!1)
 print(12 % 5)
-print(1 | 0)
-print(1 & 1)
+print(1 || 0)
+print(1 && 1)
+
+let a = 5
+let b = 9
+
+print(a & b)
+print(a | b)
+print(a ^ b)
+print(~a)
+print(b << 1)
+print(b >> 1)
