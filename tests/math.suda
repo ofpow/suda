@@ -1,4 +1,4 @@
-print(("hel" + "lo ") + ("wo" + "rld"))
+print(("hel" + "lo ") + ("wo" + "rld\n"))
 
 print("hello" == "world")
 print("1" == 1)

@@ -1,5 +1,5 @@
 if 1
-    print "hello"
+    print "hello\n"
     if 0
         print "world"
         print "world"
@@ -11,7 +11,7 @@ if 1
 if 0
     print "thursday"
 elif 1
-    print "thursday again"
+    print "thursday again\n"
 else
     print "goodbye"
 ;

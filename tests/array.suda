@@ -3,6 +3,7 @@ print var_one
 
 print var_one@1
 print var_one@5
+print "\n"
 
 var_one@1 = 30
 var_one@3 = "good"
