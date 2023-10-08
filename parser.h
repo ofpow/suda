@@ -19,8 +19,6 @@
  * <array access> : <array variable> "@" <expr>
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
  * 
- * TODO:
- *      import
  */
 
 #define CURRENT_TOK p->tokens[p->tok_index]
