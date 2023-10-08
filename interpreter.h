@@ -149,6 +149,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         if (var.value->type == Value_Array) {
             int arr_len = (int)strtofloat(var.value->value, strlen(var.value->value));
             AST_Value *array = calloc(arr_len + 1, sizeof(var.value[0]));
+            array->mutable = 1;
             for (int i = 0; i < arr_len; i++) {
                 array[i].type = var.value[i].type;
                 array[i].value = strdup(var.value[i].value);
@@ -160,6 +161,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         if (mutable <= 0) return n->value;
         int arr_len = (int)strtofloat(n->value->value, strlen(n->value->value));
         AST_Value *array = calloc(arr_len, sizeof(n->value[0]));
+        array->mutable = 1;
         for (int i = 0; i < arr_len; i++) {
             array[i].type = n->value[i].type;
             array[i].value = strdup(n->value[i].value);
@@ -226,7 +228,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
             if (rtrn != NULL) {
                 for (int i = 0; i < intrprtr.local_vars_index; i++) {
-                    free_ast_value(intrprtr.local_vars[i].value);
+                    if (intrprtr.local_vars[i].value->type == Value_Array) {
+                        int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
+                        for (int j = 0; j < arr_len; j++) {
+                            free(intrprtr.local_vars[i].value[j].value);
+                        }
+                        free(intrprtr.local_vars[i].value);
+                    } else free_ast_value(intrprtr.local_vars[i].value);
                 }
                 free(intrprtr.local_vars);
                 return rtrn;
@@ -262,7 +270,13 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (print->type == Value_Array) {
                 char *array = format_array(print);
                 printf("%s\n", array);
-                if (print->mutable > 0) free(print);
+                if (print->mutable > 0) {
+                    int arr_len = (int)strtofloat(print->value, strlen(print->value));
+                    for (int j = 0; j < arr_len; j++) {
+                        free(print[j].value);
+                    }
+                    free(print);
+                }
                 free(array);
             } else {
                 if (print->type == Value_String) printf("%s", print->value);
@@ -436,15 +450,34 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
                 if (rtrn != NULL) {
                     for (int i = 0; i < intrprtr.local_vars_index; i++) {
-                        free_ast_value(intrprtr.local_vars[i].value);
+                        if (intrprtr.local_vars[i].value->type == Value_Array) {
+                            int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
+                            for (int j = 0; j < arr_len; j++) {
+                                if (intrprtr.local_vars[i].value[j].value != NULL) free(intrprtr.local_vars[i].value[j].value);
+                                intrprtr.local_vars[i].value[j].value = NULL;
+                            }
+                            free(intrprtr.local_vars[i].value);
+                            intrprtr.local_vars[i].value = NULL;
+                        } else free_ast_value(intrprtr.local_vars[i].value);
                     }
                     free(intrprtr.local_vars);
                     if (rtrn->mutable > 0) free_ast_value(rtrn);
                     return NULL;
                 }
+                for (int i = 0; i < intrprtr.local_vars_index; i++) {
+                    if (intrprtr.local_vars[i].value->type == Value_Array) {
+                        int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
+                        for (int j = 0; j < arr_len; j++) {
+                            if (intrprtr.local_vars[i].value[j].value != NULL) free(intrprtr.local_vars[i].value[j].value);
+                            intrprtr.local_vars[i].value[j].value = NULL;
+                        }
+                        free(intrprtr.local_vars[i].value);
+                        intrprtr.local_vars[i].value = NULL;
+                    } else free_ast_value(intrprtr.local_vars[i].value);
+                }
                 intrprtr.program_counter++;
             }
-            free(intrprtr.vars);
+            free(intrprtr.local_vars);
             break;
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
