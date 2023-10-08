@@ -265,7 +265,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 if (print->mutable > 0) free(print);
                 free(array);
             } else {
-                printf("%s\n", print->value);
+                if (print->type == Value_String) printf("%s", print->value);
+                else printf("%s\n", print->value);
                 if (print->mutable > 0) free_ast_value(print);
             }
 

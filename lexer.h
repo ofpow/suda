@@ -1,5 +1,13 @@
 #pragma once
 
+void shunt(char* dest, char* src) {
+  while (*dest) {
+    *dest = *src;
+    ++dest;
+    ++src;
+  }
+}
+
 typedef enum {
     Tok_Eof,
     Tok_Assign,
@@ -103,8 +111,8 @@ char *find_tok_type(int type) {
 }
 
 typedef struct Lexer {
-    const char *start;
-    const char *current;
+    char *start;
+    char *current;
     int line;
 } Lexer;
 
@@ -181,11 +189,31 @@ static void skip_whitespace(Lexer *l) {
 }
 
 static Token lex_string(Lexer *l) {
+    int i = 0;
     while (peek(l) != '"' && !at_end(l)) {
         if (peek(l) == '\n') {
             l->line++;
+        } else if (peek(l) == '\\') {
+            i++;
+            //l->start[i] = '\n';
+            switch (*(l->current + 1)) {
+                case 'a': l->start[i] = '\a'; break;
+                case 'b': l->start[i] = '\b'; break;
+                case 'f': l->start[i] = '\f'; break;
+                case 'n': l->start[i] = '\n'; break;
+                case 'r': l->start[i] = '\r'; break;
+                case 't': l->start[i] = '\t'; break;
+                case 'v': l->start[i] = '\v'; break;
+                case '\\': l->start[i] = '\\'; break;
+                case '\'': l->start[i] = '\''; break;
+                case '"': l->start[i] = '\"'; break;
+                case '?': l->start[i] = '\?'; break;
+            }
+            shunt(&l->start[i + 1], &l->start[i + 2]);
+            i--;
         }
         advance(l);
+        i++;
     }
     if (at_end(l)) {
         ERR("Unclosed string on line %d\n", l->line)
