@@ -227,15 +227,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         while (intrprtr.program_counter < intrprtr.stmts_capacity) {
             rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
             if (rtrn != NULL) {
-                for (int i = 0; i < intrprtr.local_vars_index; i++) {
-                    if (intrprtr.local_vars[i].value->type == Value_Array) {
-                        int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
-                        for (int j = 0; j < arr_len; j++) {
-                            free(intrprtr.local_vars[i].value[j].value);
-                        }
-                        free(intrprtr.local_vars[i].value);
-                    } else free_ast_value(intrprtr.local_vars[i].value);
-                }
+                for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
                 free(intrprtr.local_vars);
                 return rtrn;
             }
@@ -265,7 +257,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (!n->left) ERR("ERROR on line %d: need something to print\n", n->line)
             ASSERT(AST_IS_EVALUATABLE(n->left->type), "Can't print `%s`\n", find_ast_type(n->left->type))
             AST_Value *print = eval_node(n->left, interpreter, 0);
-            if (print == NULL) ERR("ERROR on line %d: tried to print a node that evaluated to null\n", n->line)
+            if (print == NULL) { printf("\n"); break; }
 
             if (print->type == Value_Array) {
                 char *array = format_array(print);
@@ -449,34 +441,14 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             while (intrprtr.program_counter < intrprtr.stmts_capacity) {
                 rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
                 if (rtrn != NULL) {
-                    for (int i = 0; i < intrprtr.local_vars_index; i++) {
-                        if (intrprtr.local_vars[i].value->type == Value_Array) {
-                            int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
-                            for (int j = 0; j < arr_len; j++) {
-                                if (intrprtr.local_vars[i].value[j].value != NULL) free(intrprtr.local_vars[i].value[j].value);
-                                intrprtr.local_vars[i].value[j].value = NULL;
-                            }
-                            free(intrprtr.local_vars[i].value);
-                            intrprtr.local_vars[i].value = NULL;
-                        } else free_ast_value(intrprtr.local_vars[i].value);
-                    }
+                    for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
                     free(intrprtr.local_vars);
                     if (rtrn->mutable > 0) free_ast_value(rtrn);
                     return NULL;
                 }
-                for (int i = 0; i < intrprtr.local_vars_index; i++) {
-                    if (intrprtr.local_vars[i].value->type == Value_Array) {
-                        int arr_len = (int)strtofloat(intrprtr.local_vars[i].value[0].value, strlen(intrprtr.local_vars[i].value[0].value));
-                        for (int j = 0; j < arr_len; j++) {
-                            if (intrprtr.local_vars[i].value[j].value != NULL) free(intrprtr.local_vars[i].value[j].value);
-                            intrprtr.local_vars[i].value[j].value = NULL;
-                        }
-                        free(intrprtr.local_vars[i].value);
-                        intrprtr.local_vars[i].value = NULL;
-                    } else free_ast_value(intrprtr.local_vars[i].value);
-                }
                 intrprtr.program_counter++;
             }
+            for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
             free(intrprtr.local_vars);
             break;
         case AST_Exit:;

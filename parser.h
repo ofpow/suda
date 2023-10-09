@@ -170,6 +170,14 @@ AST_Value *new_ast_value(int type, char *value, int mutable) {
 }
 
 void free_ast_value(AST_Value *value) {
+    if (value == NULL) return;
+    if (value->type == Value_Array) {
+        int arr_len = (int)strtofloat(value[0].value, strlen(value[0].value));
+        for (int j = 0; j < arr_len; j++) {
+            if (value[j].value != NULL) free(value[j].value);
+            value[j].value = NULL;
+        }
+    }
     free(value->value);
     free(value);
 }

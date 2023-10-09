@@ -84,22 +84,7 @@ void free_mem(int exit_val) {
 
     free(tokens);
     free(p->jump_indices);
-    for (int i = 0; i < interpreter.vars_index; i++) {
-        if (interpreter.vars[i].value->type == Value_Array) {
-            int arr_len = (int)strtofloat(interpreter.vars[i].value[0].value, strlen(interpreter.vars[i].value[0].value));
-            for (int j = 0; j < arr_len; j++) {
-                if (interpreter.vars[i].value[j].value != NULL) free(interpreter.vars[i].value[j].value);
-                interpreter.vars[i].value[j].value = NULL;
-            }
-            free(interpreter.vars[i].value);
-            interpreter.vars[i].value = NULL;
-        } else {
-            free(interpreter.vars[i].value->value);
-            interpreter.vars[i].value->value = NULL;
-            free(interpreter.vars[i].value);
-            interpreter.vars[i].value = NULL;
-        }
-    }
+    for (int i = 0; i < interpreter.vars_index; i++) free_ast_value(interpreter.vars[i].value);
     free(interpreter.vars);
     for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
     free(interpreter.funcs);
