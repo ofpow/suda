@@ -1,5 +1,7 @@
 #pragma once
 
+#include <signal.h>
+
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
 typedef struct {
@@ -183,7 +185,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), 1);
         }
         int arr_len = (int)strtofloat(var.value[0].value, strlen(var.value[0].value));
-        if (index >= arr_len) ERR("ERROR on line %d: Index %d is out of bounds for array %s, length %d\n", n->line, index, var.name, arr_len)
+        if (index >= arr_len) ERR("ERROR on line %d: Index %d is out of bounds for array %s, length %d\n", n->line, index, var.name, arr_len - 1)
         else if (index < 1) ERR("ERROR on line %d: invalid index %d, it is less than 1\n", n->line, index)
 
         if (var.value[index].type == Value_String) {
@@ -281,6 +283,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = n->value->value;
             if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
                 ERR("ERROR on line %d: cant assign `%s` multiple times\n", n->line, var_name)
+            else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) 
+                ERR("ERROR on line %d: cant assign `%s` multiple times\n", n->line, var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
 
             if (interpreter->local_vars != NULL) {
@@ -342,18 +346,14 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
             else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
-            if (new_val->type == Value_Array) {
-                int arr_len = (int)strtofloat(interpreter->vars[var.index].value[0].value, strlen(interpreter->vars[var.index].value[0].value));
-                for (int i = 0; i < arr_len; i++) {
-                    if (interpreter->vars[var.index].value[i].value != NULL) free(interpreter->vars[var.index].value[i].value);
-                    interpreter->vars[var.index].value[i].value = NULL;
-                }
-                free(interpreter->vars[var.index].value);
-                interpreter->vars[var.index].value = NULL;
+            
+            if (interpreter->local_vars != NULL) {
+                free_ast_value(interpreter->local_vars[var.index].value);
+                interpreter->local_vars[var.index].value = new_val;
             } else {
                 free_ast_value(interpreter->vars[var.index].value);
+                interpreter->vars[var.index].value = new_val;
             }
-            interpreter->vars[var.index].value = new_val;
             break;}
         case AST_While:;{
             AST_Value *expr = eval_node(n->left, interpreter, 0);
