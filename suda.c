@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
             free_node(n);
             func = calloc(1, sizeof(Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
-            if (check_func(p->funcs, p->funcs_index, func->name) < 0) ERR("ERROR on line %d: cant define function %s multiple times\n", CURRENT_TOK.line, func->name)
+            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR on line %d: cant define function %s multiple times\n", CURRENT_TOK.line, func->name)
 
             p->tok_index++;
             ASSERT((p->jumps_index >= 0), "ERROR: unclosed block before function %s\n", func->name)
