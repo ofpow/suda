@@ -147,9 +147,9 @@ int main(int argc, char *argv[]) {
             //concatenate included file and current program
             int new_program_len = strlen(program) + strlen(include) + 3;
             char *new_program = calloc(new_program_len, sizeof(char));
-            strncat(new_program, include, strlen(include));
-            strncat(new_program, "\n\n", 3);
-            strncat(new_program, program, strlen(program));
+            strcat(new_program, include);
+            strcat(new_program, "\n\n");
+            strcat(new_program, program);
 
             free(program);
             free(include);
