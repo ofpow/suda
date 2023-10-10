@@ -1,7 +1,5 @@
 #pragma once
 
-#include <signal.h>
-
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
 typedef struct {
