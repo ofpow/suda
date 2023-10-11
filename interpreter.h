@@ -150,7 +150,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         char *var_name = strdup(n->value->value);
 
         Variable var;
-        if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
+        if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
         else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
 
         free(var_name);
@@ -292,9 +292,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Var_Assign:;
             char *var_name = n->value->value;
-            if (check_variable(var_name, interpreter->vars, interpreter->vars_index)) 
-                ERR("ERROR on line %d: cant assign `%s` multiple times\n", n->line, var_name)
-            else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) 
+            if (check_variable(var_name, interpreter->vars, interpreter->vars_index) >= 0) 
+                ERR("ERROR on line %d: cant assign `%s` multiple times", n->line, var_name)
+            else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) 
                 ERR("ERROR on line %d: cant assign `%s` multiple times\n", n->line, var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
 
