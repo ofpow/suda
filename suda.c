@@ -129,6 +129,8 @@ int main(int argc, char *argv[]) {
             break;
         } else if (tok.type == Tok_Comment) {
         } else if (tok.type == Tok_Include) {
+            //TODO: including currently counts lines of included files, not just main file
+            // offset line based on number of lines in included file
             tok = scan_token(&lexer);
             char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
             int included = 0;
