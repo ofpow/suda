@@ -354,8 +354,14 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = strdup(n->value->value);
 
             Variable var;
-            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
-            else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+            int var_index;
+            var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
+            if (var_index >= 0) var = interpreter->vars[var_index];
+            else {
+                var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
+                if (var_index >= 0) var = interpreter->vars[var_index];
+                else ERR("ERROR on line %d: can't assign to undefined variable %s\n", n->line, var_name)
+            }
             free(var_name);
             
             if (interpreter->local_vars != NULL) {

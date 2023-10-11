@@ -46,8 +46,8 @@ Variable get_var(const char *var_name, Variable *vars, int vars_index) {
 int check_variable(const char *var_name, Variable *vars, int vars_index) {
     for (int i = 0; i < vars_index; i++) {
         if (!strcmp(var_name, vars[i].name)) {
-            return 1;
+            return i;
         }
     }
-    return 0;
+    return -1;
 }
