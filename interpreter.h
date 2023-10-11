@@ -33,7 +33,7 @@ AST_Type value_to_ast_type(Value_Type type) {
 AST_Value *do_statement(Node *n, Interpreter *interpreter);
 
 char *format_array(AST_Value *array) {
-    int arr_size = (int)strtofloat(array[0].value, strlen(array[0].value));
+    int arr_size = (int)strtoint(array[0].value, strlen(array[0].value));
     int str_len = 3 + strlen(array[1].value);
     char *array_str = format_str(str_len, "[%s", array[1].value);
     for (int i = 2; i < arr_size; i++) {
@@ -54,36 +54,36 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
     ASSERT((op1 != NULL), "ERROR: cant do math with a null op\n")
     switch (op) {
         case AST_Add:
-            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) + strtofloat(op2->value, op2_len)), 1);
+            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) + strtoint(op2->value, op2_len)), 1);
             else return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value), 1);
         case AST_Sub:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant subtract type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) - strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) - strtoint(op2->value, op2_len)), 1);
         case AST_Mult:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant multiply type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) * strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) * strtoint(op2->value, op2_len)), 1);
         case AST_Div:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant divide type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%g", strtofloat(op1->value, op1_len) / strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) / strtoint(op2->value, op2_len)), 1);
         case AST_Less:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) < strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) < strtoint(op2->value, op2_len)), 1);
         case AST_Less_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) <= strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) <= strtoint(op2->value, op2_len)), 1);
         case AST_Greater:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) > strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) > strtoint(op2->value, op2_len)), 1);
         case AST_Greater_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) >= strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) >= strtoint(op2->value, op2_len)), 1);
         case AST_Is_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", !strcmp(op1->value, op2->value)), 1);
         case AST_And:
-            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) && strtofloat(op2->value, op2_len)), 1);
+            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) && strtoint(op2->value, op2_len)), 1);
             else return new_ast_value(Value_Number, format_str(2, "%d", op1->value && op2->value), 1);
         case AST_Or:
-            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtofloat(op1->value, op1_len) || strtofloat(op2->value, op2_len)), 1);
+            if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) || strtoint(op2->value, op2_len)), 1);
             else return new_ast_value(Value_Number, format_str(2, "%d", op1->value || op2->value), 1);
         case AST_Not:
             return new_ast_value(Value_Number, format_str(2, "%d", !op1->value), 1);
@@ -91,25 +91,25 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
             return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
         case AST_Modulo:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) % (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) % (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Or:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise or type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) | (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) | (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_And:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise and type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) & (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) & (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Xor:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise xor type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) ^ (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) ^ (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Not:
             ASSERT((op1->type == Value_Number), "Cant bitwise not type %s\n", find_ast_value_type(op1->type))
-            return new_ast_value(Value_Number, format_str(op1_len + 2, "%d", ~(int)strtofloat(op1->value, op1_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + 2, "%d", ~(int)strtoint(op1->value, op1_len)), 1);
         case AST_Rshift:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant rshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) >> (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) >> (int)strtoint(op2->value, op2_len)), 1);
         case AST_Lshift:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant lshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtofloat(op1->value, op1_len) << (int)strtofloat(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) << (int)strtoint(op2->value, op2_len)), 1);
         default:
             ERR("ERROR: unknown math op %d\n", op)
     }
@@ -147,7 +147,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_val;
         }
         if (var.value->type == Value_Array) {
-            int arr_len = (int)strtofloat(var.value->value, strlen(var.value->value));
+            int arr_len = (int)strtoint(var.value->value, strlen(var.value->value));
             AST_Value *array = calloc(arr_len + 1, sizeof(var.value[0]));
             array->mutable = 1;
             for (int i = 0; i < arr_len; i++) {
@@ -159,7 +159,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         return new_ast_value(var.value->type, strdup(var.value->value), 1);
     } else if (n->type == AST_Array) {
         if (mutable <= 0) return n->value;
-        int arr_len = (int)strtofloat(n->value->value, strlen(n->value->value));
+        int arr_len = (int)strtoint(n->value->value, strlen(n->value->value));
         AST_Value *array = calloc(arr_len, sizeof(n->value[0]));
         array->mutable = 1;
         for (int i = 0; i < arr_len; i++) {
@@ -171,9 +171,9 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         int index = 0;
         if (n->left->type != AST_Literal) {
             AST_Value *val = eval_node(n->left, interpreter, 0);
-            index = (int)strtofloat(val->value, strlen(val->value));
+            index = (int)strtoint(val->value, strlen(val->value));
             if (val->mutable > 0) free_ast_value(val);
-        } else index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+        } else index = (int)strtoint(n->left->value->value, strlen(n->left->value->value));
     
         Variable var;
         if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index);
@@ -182,7 +182,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         if (var.value->type == Value_String) {
             return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), 1);
         }
-        int arr_len = (int)strtofloat(var.value[0].value, strlen(var.value[0].value));
+        int arr_len = (int)strtoint(var.value[0].value, strlen(var.value[0].value));
         if (index >= arr_len) ERR("ERROR on line %d: Index %d is out of bounds for array %s, length %d\n", n->line, index, var.name, arr_len - 1)
         else if (index < 1) ERR("ERROR on line %d: invalid index %d, it is less than 1\n", n->line, index)
 
@@ -243,7 +243,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 return new_ast_value(Value_Number, format_str(snprintf(NULL, 0, "%d", len) + 1, "%d", len), 1);
             case Value_Array:;
                 int str_len = strlen(op[0].value);
-                len = (int)strtofloat(op[0].value, str_len) - 1;
+                len = (int)strtoint(op[0].value, str_len) - 1;
                 return new_ast_value(Value_Number, format_str(str_len + 1, "%d", len), 1);
             default: ERR("ERROR on line %d: cant evaluate length of value type %s\n", n->line, find_ast_value_type(op->type))
         }
@@ -263,7 +263,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 char *array = format_array(print);
                 printf("%s\n", array);
                 if (print->mutable > 0) {
-                    int arr_len = (int)strtofloat(print->value, strlen(print->value));
+                    int arr_len = (int)strtoint(print->value, strlen(print->value));
                     for (int j = 0; j < arr_len; j++) {
                         free(print[j].value);
                     }
@@ -371,11 +371,11 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             int index;
             if (n->right) {
                 new_val = eval_node(n->right, interpreter, 1);
-                index = (int)strtofloat(n->left->value->value, strlen(n->left->value->value));
+                index = (int)strtoint(n->left->value->value, strlen(n->left->value->value));
             } else {
                 new_val = eval_node(n->left->left, interpreter, 1);
                 AST_Value *i = eval_node(n->left, interpreter, 1);
-                index = (int)strtofloat(i->value, strlen(i->value));
+                index = (int)strtoint(i->value, strlen(i->value));
                 if (i->mutable > 0) free_ast_value(i);
             }
 
@@ -452,7 +452,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
             ASSERT(exit_val->type == Value_Number, "ERROR: tried to exit with non-number code\n")
-            int val = (int)strtofloat(exit_val->value, strlen(exit_val->value));
+            int val = (int)strtoint(exit_val->value, strlen(exit_val->value));
             if (exit_val->mutable > 0) free_ast_value(exit_val);
             free_mem(val);
             break;

@@ -172,7 +172,7 @@ AST_Value *new_ast_value(int type, char *value, int mutable) {
 void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
     if (value->type == Value_Array) {
-        int arr_len = (int)strtofloat(value[0].value, strlen(value[0].value));
+        int arr_len = strtoint(value[0].value, strlen(value[0].value));
         for (int j = 0; j < arr_len; j++) {
             if (value[j].value != NULL) free(value[j].value);
             value[j].value = NULL;
@@ -212,7 +212,7 @@ void free_node(Node *n) {
     if (n == NULL) return;
 
     if (n->type == AST_Array) {
-        int size = (int)strtofloat(n->value->value, strlen(n->value->value));
+        int size = strtoint(n->value->value, strlen(n->value->value));
         for (int i = 0; i < size; i++) {
             if (n->value[i].value != 0) free(n->value[i].value);
             n->value[i].value = NULL;
@@ -222,7 +222,7 @@ void free_node(Node *n) {
 
     if (n->value != NULL) {
         if (n->value->type == Value_Function_Args) {
-            int len = (int)strtofloat(n->value[0].value, strlen(n->value[0].value));
+            int len = strtoint(n->value[0].value, strlen(n->value[0].value));
             for (int i = 0; i < len; i++) {
                 if (n->value[i].value) free(n->value[i].value);
             }

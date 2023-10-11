@@ -33,7 +33,7 @@ char *format_str(int strlen, const char *format, ...) {
     return result;
 }
 
-float strtofloat(const char *str, int len) {
+int strtoint(const char *str, int len) {
     if (!str) ERR("need something to convert\n")
     if (!len) ERR("need length to convert\n")
     float total = 0;
