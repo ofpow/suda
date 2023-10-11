@@ -2,6 +2,16 @@
 
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
 
+int exponentiate(int base, int power) {
+    int result = 1;
+
+    for (int i = 0; i < power; i++) {
+        result *= base;
+    }
+
+    return result;
+}
+
 typedef struct {
     Node **nodes;
     int stmts_capacity;
@@ -91,25 +101,28 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
             return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
         case AST_Modulo:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) % (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) % (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Or:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise or type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) | (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) | (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_And:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise and type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) & (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) & (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Xor:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise xor type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) ^ (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) ^ (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Not:
             ASSERT((op1->type == Value_Number), "Cant bitwise not type %s\n", find_ast_value_type(op1->type))
-            return new_ast_value(Value_Number, format_str(op1_len + 2, "%d", ~(int)strtoint(op1->value, op1_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + 2, "%d", ~strtoint(op1->value, op1_len)), 1);
         case AST_Rshift:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant rshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) >> (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) >> (int)strtoint(op2->value, op2_len)), 1);
         case AST_Lshift:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant lshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", (int)strtoint(op1->value, op1_len) << (int)strtoint(op2->value, op2_len)), 1);
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) << (int)strtoint(op2->value, op2_len)), 1);
+        case AST_Power:
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant exponentiate type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", exponentiate(strtoint(op1->value, op1_len), (int)strtoint(op2->value, op2_len))), 1);
         default:
             ERR("ERROR: unknown math op %d\n", op)
     }

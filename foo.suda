@@ -1,8 +1,1 @@
-let x = [1, 2, 3, 4, 5]
-
-fn foo(bar)
-    print bar
-    return bar
-;
-
-print foo(x)
+print(3 ** 3)

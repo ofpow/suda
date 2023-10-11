@@ -55,6 +55,7 @@ typedef enum {
     Tok_Lshift,
     Tok_Rshift,
     Tok_Include,
+    Tok_Power,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -105,6 +106,7 @@ char *find_tok_type(int type) {
         case Tok_Lshift: return "Tok_Lshift";
         case Tok_Rshift: return "Tok_Rshift";
         case Tok_Include: return "Tok_Include";
+        case Tok_Power: return "Tok_Power";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -335,7 +337,7 @@ Token scan_token(Lexer *l) {
         case '-':
             return make_token(Tok_Sub, l);
         case '*':
-            return make_token(Tok_Mult, l);
+            return make_token(match('*', l) ? Tok_Power : Tok_Mult, l);
         case '/':
             return make_token(Tok_Div, l);
         case '!':
