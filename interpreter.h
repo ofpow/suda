@@ -356,7 +356,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             Variable var;
             int var_index;
             var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
-            if (var_index >= 0) var = interpreter->vars[var_index];
+            if (var_index >= 0) var = interpreter->local_vars[var_index];
             else {
                 var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
                 if (var_index >= 0) var = interpreter->vars[var_index];
