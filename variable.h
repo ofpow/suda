@@ -33,13 +33,13 @@ typedef struct Variable {
 } Variable;
 
 //TODO: variables as a hashmap
-Variable get_var(const char *var_name, Variable *vars, int vars_index) {
+Variable get_var(const char *var_name, Variable *vars, int vars_index, int line) {
     for (int i = 0; i < vars_index; i++) {
         if (!strcmp(var_name, vars[i].name)) {
             return vars[i];
         }
     }
-    ERR("variable `%s` not found\n", var_name)
+    ERR("ERROR on line %d: variable `%s` not found\n", line, var_name)
     return (Variable) {0};
 }
 

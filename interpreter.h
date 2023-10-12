@@ -150,8 +150,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         char *var_name = strdup(n->value->value);
 
         Variable var;
-        if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
-        else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+        if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index, n->line);
+        else var = get_var(var_name, interpreter->vars, interpreter->vars_index, n->line);
 
         free(var_name);
         if (mutable <= 0) {
@@ -189,8 +189,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         } else index = (int)strtoint(n->left->value->value, strlen(n->left->value->value));
     
         Variable var;
-        if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index);
-        else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
+        if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
+        else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
 
         if (var.value->type == Value_String) {
             return new_ast_value(Value_String, format_str(2, "%c", var.value->value[index - 1]), 1);
@@ -207,7 +207,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("ERROR on line %d: Can't evaluate %s as part of array\n", n->line, find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
-        Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
+        Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
 
         Interpreter intrprtr = {
             func->nodes,
@@ -400,8 +400,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             char *var_name = strdup(n->value->value);
             Variable var;
-            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
-            else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
+            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index, n->line);
+            else var = get_var(var_name, interpreter->vars, interpreter->vars_index, n->line);
             free(var_name);
 
             //if it was assigned after array was created, add quotes around value
@@ -425,7 +425,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Return:
             return eval_node(n->left, interpreter, 1);
         case AST_Function_Call:;
-            Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value);
+            Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
 
             Interpreter intrprtr = {
                 func->nodes,

@@ -1,10 +1,10 @@
 #pragma once
 
-Function *get_func(Function **funcs, int funcs_size, char *func_name) {
+Function *get_func(Function **funcs, int funcs_size, char *func_name, int line) {
     for (int i = 0; i < funcs_size; i++) {
         if (!strcmp(funcs[i]->name, func_name)) return funcs[i];
     }
-    ERR("ERROR: function %s not found\n", func_name);
+    ERR("ERROR on line %d: function %s not found\n", line, func_name);
     return NULL;
 }
 
