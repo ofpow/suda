@@ -189,7 +189,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         } else index = (int)strtoint(n->left->value->value, strlen(n->left->value->value));
     
         Variable var;
-        if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index);
+        if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index);
         else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index);
 
         if (var.value->type == Value_String) {
@@ -400,7 +400,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             char *var_name = strdup(n->value->value);
             Variable var;
-            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index)) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
+            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index);
             else var = get_var(var_name, interpreter->vars, interpreter->vars_index);
             free(var_name);
 
