@@ -123,7 +123,6 @@ typedef struct Token {
     const char *start;
     int length;
     int line;
-    int jump_index;
 } Token;
 
 static Token make_token(Token_Type type, Lexer *l) {
@@ -132,7 +131,6 @@ static Token make_token(Token_Type type, Lexer *l) {
     tok.start = l->start;
     tok.length = (int)(l->current - l->start);
     tok.line = l->line;
-    tok.jump_index = 0;
     return tok;
 }
 
