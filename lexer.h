@@ -56,6 +56,7 @@ typedef enum {
     Tok_Rshift,
     Tok_Include,
     Tok_Power,
+    Tok_Append,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -107,6 +108,7 @@ char *find_tok_type(int type) {
         case Tok_Rshift: return "Tok_Rshift";
         case Tok_Include: return "Tok_Include";
         case Tok_Power: return "Tok_Power";
+        case Tok_Append: return "Tok_Append";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -231,6 +233,8 @@ static Token_Type check_keyword(int start, int length, const char *rest, Token_T
 
 static Token_Type id_type(Lexer *l) {
     switch (l->start[0]) {
+        case 'a':
+            return check_keyword(1, 5, "ppend", Tok_Append, l);
         case 'b':
             return check_keyword(1, 4, "reak", Tok_Break, l);
         case 'c':

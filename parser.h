@@ -71,6 +71,7 @@ typedef enum {
     AST_Lshift,
     AST_Rshift,
     AST_Power,
+    AST_Append,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -118,6 +119,7 @@ char *find_ast_type(int type) {
         case AST_Lshift: return "AST_Lshift";
         case AST_Rshift: return "AST_Rshift";
         case AST_Power: return "AST_Power";
+        case AST_Append: return "AST_Append";
         default: return "ast type not found";
     }
 }
@@ -558,6 +560,13 @@ Node *statement(Parser *p) {
             return n;
         case Tok_Elif:
             n = new_node(AST_Elif, NULL, -1, CURRENT_TOK.line);
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
+        case Tok_Append:
+            n = new_node(AST_Append, NULL, -1, CURRENT_TOK.line);
+            p->tok_index++;
+            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), 1);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
