@@ -36,12 +36,19 @@ char *format_str(int strlen, const char *format, ...) {
 int strtoint(const char *str, int len) {
     if (!str) ERR("need something to convert\n")
     if (!len) ERR("need length to convert\n")
-    float total = 0;
-    for (int i = 0; i < len - 1; i++) {
-        total += str[i] - '0';
-        total *= 10;
+    int total = 0;
+    if (str[0] == '-') {
+        for (int i = 1; i < len - 1; i++) {
+            total -= str[i] - '0';
+            total *= 10;
+        }
+    } else {
+        for (int i = 0; i < len - 1; i++) {
+            total += str[i] - '0';
+            total *= 10;
+        }
+        total += str[len - 1] - '0';
     }
-    total += str[len - 1] - '0';
     return total;
 }
 
