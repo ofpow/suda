@@ -57,35 +57,35 @@ char *format_array(AST_Value *array) {
     return array_str;
 }
 
-AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
+AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line) {
     int op1_len = strlen(op1->value);
     int op2_len;
     if (op2 != NULL) op2_len = strlen(op2->value);
-    ASSERT((op1 != NULL), "ERROR: cant do math with a null op\n")
+    ASSERT((op1 != NULL), "ERROR on line %d: cant do math with a null op\n", line)
     switch (op) {
         case AST_Add:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) + strtoint(op2->value, op2_len)), 1);
             else return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value), 1);
         case AST_Sub:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant subtract type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant subtract type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) - strtoint(op2->value, op2_len)), 1);
         case AST_Mult:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant multiply type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant multiply type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) * strtoint(op2->value, op2_len)), 1);
         case AST_Div:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant divide type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant divide type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) / strtoint(op2->value, op2_len)), 1);
         case AST_Less:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant less than type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) < strtoint(op2->value, op2_len)), 1);
         case AST_Less_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant less equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant less equal type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) <= strtoint(op2->value, op2_len)), 1);
         case AST_Greater:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater than type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant greater than type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) > strtoint(op2->value, op2_len)), 1);
         case AST_Greater_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant greater equal type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant greater equal type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(2, "%d", strtoint(op1->value, op1_len) >= strtoint(op2->value, op2_len)), 1);
         case AST_Is_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", !strcmp(op1->value, op2->value)), 1);
@@ -100,31 +100,31 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op) {
         case AST_Not_Equal:
             return new_ast_value(Value_Number, format_str(2, "%d", strcmp(op1->value, op2->value)), 1);
         case AST_Modulo:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant modulo type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant modulo type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) % (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Or:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise or type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant bitwise or type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) | (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_And:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise and type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant bitwise and type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) & (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Xor:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant bitwise xor type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant bitwise xor type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) ^ (int)strtoint(op2->value, op2_len)), 1);
         case AST_Bit_Not:
-            ASSERT((op1->type == Value_Number), "Cant bitwise not type %s\n", find_ast_value_type(op1->type))
+            ASSERT((op1->type == Value_Number), "ERROR on line %d: Cant bitwise not type %s\n", line, find_ast_value_type(op1->type))
             return new_ast_value(Value_Number, format_str(op1_len + 2, "%d", ~strtoint(op1->value, op1_len)), 1);
         case AST_Rshift:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant rshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant rshift type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) >> (int)strtoint(op2->value, op2_len)), 1);
         case AST_Lshift:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant lshift type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant lshift type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) << (int)strtoint(op2->value, op2_len)), 1);
         case AST_Power:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "Cant exponentiate type %s and type %s\n", find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant exponentiate type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", exponentiate(strtoint(op1->value, op1_len), (int)strtoint(op2->value, op2_len))), 1);
         default:
-            ERR("ERROR: unknown math op %d\n", op)
+            ERR("ERROR on line %d: unknown math op %d\n", line, op)
     }
     return NULL;
 }
@@ -142,7 +142,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
     } else if (IS_AST_MATH_OP(n->type)) {
         AST_Value *op1 = eval_node(n->left, interpreter, 0);
         AST_Value *op2 = eval_node(n->right, interpreter, 0);
-        AST_Value *result = ast_math(op1, op2, n->type);
+        AST_Value *result = ast_math(op1, op2, n->type, n->line);
         if (op1->mutable > 0) free_ast_value(op1);
         if (op2 && op2->mutable > 0) free_ast_value(op2);
         return result;
