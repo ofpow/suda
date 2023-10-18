@@ -203,7 +203,11 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             int len = strlen(var.value[index].value);
             return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, var.value[index].value + 1), 1);
         } else if (var.value[index].type == Value_Number) {
-            if (mutable <= 0) return &var.value[index];
+            if (mutable <= 0) {
+                AST_Value *val = &var.value[index];
+                val->mutable = 0;
+                return val;
+            }
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("ERROR on line %d: Can't evaluate %s as part of array\n", n->line, find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
