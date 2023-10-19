@@ -72,6 +72,8 @@ typedef enum {
     AST_Rshift,
     AST_Power,
     AST_Append,
+    AST_Cast_Str,
+    AST_Cast_Num,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -120,6 +122,8 @@ char *find_ast_type(int type) {
         case AST_Rshift: return "AST_Rshift";
         case AST_Power: return "AST_Power";
         case AST_Append: return "AST_Append";
+        case AST_Cast_Str: return "AST_Cast_Str";
+        case AST_Cast_Num: return "AST_Cast_Num";
         default: return "ast type not found";
     }
 }
@@ -491,6 +495,16 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
+            return n;
+        case Tok_Cast_Num:
+            n = new_node(AST_Cast_Num, NULL, -1, CURRENT_TOK.line);
+            p->tok_index++;
+            n->left = expr(p, NULL);
+            return n;
+        case Tok_Cast_Str:
+            n = new_node(AST_Cast_Str, NULL, -1, CURRENT_TOK.line);
+            p->tok_index++;
+            n->left = expr(p, NULL);
             return n;
         default: ERR("ERROR on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }

@@ -57,6 +57,8 @@ typedef enum {
     Tok_Include,
     Tok_Power,
     Tok_Append,
+    Tok_Cast_Str,
+    Tok_Cast_Num,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -109,6 +111,8 @@ char *find_tok_type(int type) {
         case Tok_Include: return "Tok_Include";
         case Tok_Power: return "Tok_Power";
         case Tok_Append: return "Tok_Append";
+        case Tok_Cast_Str: return "Tok_Cast_Str";
+        case Tok_Cast_Num: return "Tok_Cast_Num";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -280,10 +284,14 @@ static Token_Type id_type(Lexer *l) {
                 }
             }
             break;
+        case 'n':
+            return check_keyword(1, 2, "um", Tok_Cast_Num, l);
         case 'p':
             return check_keyword(1, 4, "rint", Tok_Print, l);
         case 'r':
             return check_keyword(1, 5, "eturn", Tok_Return, l);
+        case 's':
+            return check_keyword(1, 2, "tr", Tok_Cast_Str, l);
         case 'w':
             return check_keyword(1, 4, "hile", Tok_While, l);
 

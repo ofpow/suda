@@ -1,5 +1,6 @@
-fn foo(bar)
-    return bar@1
-;
-
-print foo("12345")
+let foo = "12345"
+print 5 + num(foo@5)
+print 5 + str(5)
+print "\n"
+print foo
+print num(foo)

@@ -1,6 +1,6 @@
 #pragma once
 
-#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len))
+#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len || type == AST_Cast_Num || type == AST_Cast_Str))
 
 int exponentiate(int base, int power) {
     int result = 1;
@@ -269,6 +269,14 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 return new_ast_value(Value_Number, format_str(str_len + 1, "%d", len), 1);
             default: ERR("ERROR on line %d: cant evaluate length of value type %s\n", n->line, find_ast_value_type(op->type))
         }
+    } else if (n->type == AST_Cast_Num) {
+        AST_Value *val = eval_node(n->left, interpreter, mutable);
+        val->type = Value_Number;
+        return val;
+    } else if (n->type == AST_Cast_Str) {
+        AST_Value *val = eval_node(n->left, interpreter, mutable);
+        val->type = Value_String;
+        return val;
     } else ERR("ERROR on line %d: cant evaluate node type `%s`\n", n->line, find_ast_type(n->type))
     return NULL;
 }
