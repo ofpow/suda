@@ -284,12 +284,12 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Right_Bracket:
                 p->tok_index++;
                 list[0].type = Value_Array;
-                list[0].value = format_str(snprintf(NULL, 0, "%d", list_index) + 1, "%d", list_index);
+                list[0].value = format_str(num_len(list_index) + 1, "%d", list_index);
                 return list;
             case Tok_Right_Paren:
                 p->tok_index++;
                 list[0].type = Value_Function_Args;
-                list[0].value = format_str(snprintf(NULL, 0, "%d", list_index) + 1, "%d", list_index);
+                list[0].value = format_str(num_len(list_index) + 1, "%d", list_index);
                 return list;
             case Tok_Eof:
                 ERR("ERROR on line %d: unclosed list\n", CURRENT_TOK.line)

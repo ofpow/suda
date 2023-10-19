@@ -257,7 +257,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         switch (op->type) {
             case Value_String:
                 len = strlen(op->value);
-                return new_ast_value(Value_Number, format_str(snprintf(NULL, 0, "%d", len) + 1, "%d", len), 1);
+                return new_ast_value(Value_Number, format_str(num_len(len) + 1, "%d", len), 1);
             case Value_Array:;
                 int str_len = strlen(op[0].value);
                 len = (int)strtoint(op[0].value, str_len) - 1;
@@ -489,7 +489,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             interpreter->vars[var.index].value = realloc(interpreter->vars[var.index].value, arr_len * sizeof(AST_Value));
 
             free(interpreter->vars[var.index].value->value);
-            interpreter->vars[var.index].value->value = format_str(snprintf(NULL, 0, "%d", arr_len) + 1, "%d", arr_len);
+            interpreter->vars[var.index].value->value = format_str(num_len(arr_len) + 1, "%d", arr_len);
 
             AST_Value *new_val = eval_node(n->left, interpreter, 0);
             interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
