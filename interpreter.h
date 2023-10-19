@@ -44,6 +44,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter);
 
 char *format_array(AST_Value *array) {
     int arr_size = (int)strtoint(array[0].value, strlen(array[0].value));
+    if (arr_size < 2) return format_str(3, "[]");
     int str_len = 3 + strlen(array[1].value);
     char *array_str = format_str(str_len, "[%s", array[1].value);
     for (int i = 2; i < arr_size; i++) {
