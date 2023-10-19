@@ -230,15 +230,19 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         };
 
         for (int i = 0; i < func->arity; i++) {
-            if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
+            if (n->left->value[i + 1].type == Value_Number) {
                 intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
+                intrprtr.local_vars_index++;
+            } else if (n->left->value[i + 1].type == Value_String) {
+                int len = strlen(n->left->value[i + 1].value + 1);
+                intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
                 intrprtr.local_vars_index++;
             } else if (n->left->value[i + 1].type == Value_Identifier) {
                 Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
                 AST_Value *new_val = eval_node(&temp, interpreter, 1);
                 intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
                 intrprtr.local_vars_index++;
-            } else ERR("ERROR on line %d: Cant add var type %s\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
+            } else ERR("ERROR on line %d: Cant add var type %s to function local vars\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
         }
 
         AST_Value *rtrn;
@@ -448,15 +452,19 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             };
 
             for (int i = 0; i < func->arity; i++) {
-                if (n->left->value[i + 1].type == Value_Number || n->left->value[i + 1].type == Value_String) {
+                if (n->left->value[i + 1].type == Value_Number) {
                     intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
+                    intrprtr.local_vars_index++;
+                } else if (n->left->value[i + 1].type == Value_String) {
+                    int len = strlen(n->left->value[i + 1].value + 1);
+                    intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
                     intrprtr.local_vars_index++;
                 } else if (n->left->value[i + 1].type == Value_Identifier) {
                     Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
                     AST_Value *new_val = eval_node(&temp, interpreter, 1);
                     intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
                     intrprtr.local_vars_index++;
-                } else ERR("ERROR on line %d: Cant add arg type %s\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
+                } else ERR("ERROR on line %d: Cant add var type %s to function local vars\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
             }
 
             AST_Value *rtrn;
