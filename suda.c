@@ -311,6 +311,11 @@ int main(int argc, char *argv[]) {
                     break;
                 } else ERR("ERROR on line %d: cant parse token type %s as part of function arguments\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
             }
+        } else if (n->type == AST_Function_Call) {
+            Function *func = get_func(p->funcs, p->funcs_index, n->value->value, n->line);
+            int call_args_len = strtoint(n->left->value->value, strlen(n->left->value->value)) - 1;
+            ASSERT((func->arity == call_args_len), "ERROR on line %d: cant call function %s with %d arguments\n", n->line, func->name, call_args_len)
+            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else {
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         }
