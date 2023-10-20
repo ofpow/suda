@@ -271,10 +271,12 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         }
     } else if (n->type == AST_Cast_Num) {
         AST_Value *val = eval_node(n->left, interpreter, mutable);
+        ASSERT((val->type == Value_Number || val->type == Value_String), "ERROR on line %d: cant cast type %s to number\n", n->line, find_ast_value_type(val->type))
         val->type = Value_Number;
         return val;
     } else if (n->type == AST_Cast_Str) {
         AST_Value *val = eval_node(n->left, interpreter, mutable);
+        ASSERT((val->type == Value_Number || val->type == Value_String), "ERROR on line %d: cant cast type %s to string\n", n->line, find_ast_value_type(val->type))
         val->type = Value_String;
         return val;
     } else ERR("ERROR on line %d: cant evaluate node type `%s`\n", n->line, find_ast_type(n->type))

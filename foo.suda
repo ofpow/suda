@@ -1,6 +1,3 @@
-let foo = "12345"
-print 5 + num(foo@5)
-print 5 + str(5)
-print "\n"
-print foo
-print num(foo)
+let x = [1, 2, 3, 4, 5]
+
+print num(x)
