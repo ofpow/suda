@@ -255,6 +255,9 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             }
             intrprtr.program_counter++;
         }
+        for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
+        free(intrprtr.local_vars);
+        return NULL;
     } else if (n->type == AST_Len) {
         ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR: cant do len on value type %s\n", find_ast_value_type(n->left->value->type))
         AST_Value *op = eval_node(n->left, interpreter, 0);
