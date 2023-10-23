@@ -3,21 +3,26 @@
 /* 
  * SUDA EBNF
  *
- * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition> | <function call>
+ * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition> | <function call> | <append> | <include>
  * <print statement> : "print" <expr>
  * <variable assignment> : "let" var_name "=" <expr>
  * <if statement> : "if" <expr> <statements> ";" | "if" <expr> <statements> "else" <statements>
  * <while statement> : "while" <expr> <statements> ";"
  * <function definition> : "fn" function_name "(" <identifier> "," <identifier> "," ...")" <statements> ";"
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
+ * <append> : "append" <variable> <expr>
+ * <include> : "include" <file path to include>
  *
  * <paren expr> : "(" <expr> ")"
- * <expr> : <terminal> | <math_expr> | <array> | <array access> | <function call>
+ * <expr> : <terminal> | <math_expr> | <array> | <array access> | <function call> | <len> | <cast_num> | <cast_str>
  * <array> : "[" <expr> "," <expr> "," ... "]"
- * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "==" "<expr>"
+ * <math_expr> : "<expr>" "+" | "-" | "*" | "/" | ">" | ">=" | "<" | "<=" | "==" | "%" | "|" | "&" | "^" | ">>" | "<<" | "**" "<expr>"
  * <terminal> : <literal>
  * <array access> : <array variable> "@" <expr>
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
+ * <len> : "len" <string or array variable>
+ * <cast_num> : num <expr>
+ * <cast_str> : str <expr>
  * 
  */
 
