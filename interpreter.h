@@ -58,6 +58,57 @@ char *format_array(AST_Value *array) {
     return array_str;
 }
 
+AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable);
+
+AST_Value *call_function(Interpreter *interpreter, Node *n) {
+    Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
+
+    Interpreter intrprtr = {
+        func->nodes,
+        func->nodes_size,
+        0,
+        interpreter->vars,
+        interpreter->vars_index,
+        interpreter->vars_capacity,
+        calloc(func->arity, sizeof(Variable)),
+        0,
+        func->arity,
+        interpreter->funcs,
+        interpreter->funcs_capacity,
+        0
+    };
+
+    for (int i = 0; i < func->arity; i++) {
+        if (n->left->value[i + 1].type == Value_Number) {
+            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
+            intrprtr.local_vars_index++;
+        } else if (n->left->value[i + 1].type == Value_String) {
+            int len = strlen(n->left->value[i + 1].value + 1);
+            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
+            intrprtr.local_vars_index++;
+        } else if (n->left->value[i + 1].type == Value_Identifier) {
+            Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
+            AST_Value *new_val = eval_node(&temp, interpreter, 1);
+            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
+            intrprtr.local_vars_index++;
+        } else ERR("ERROR on line %d: Cant add var type %s to function local vars\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
+    }
+
+    AST_Value *rtrn;
+    while (intrprtr.program_counter < intrprtr.stmts_capacity) {
+        rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
+        if (rtrn != NULL) {
+            for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
+            free(intrprtr.local_vars);
+            return rtrn;
+        }
+        intrprtr.program_counter++;
+    }
+    for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
+    free(intrprtr.local_vars);
+    return NULL;
+}
+
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line) {
     int op1_len = strlen(op1->value);
     int op2_len;
@@ -212,52 +263,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
         } else ERR("ERROR on line %d: Can't evaluate %s as part of array\n", n->line, find_ast_value_type(var.value[index].type))
     } else if (n->type == AST_Function_Call) {
-        Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
-
-        Interpreter intrprtr = {
-            func->nodes,
-            func->nodes_size,
-            0,
-            interpreter->vars,
-            interpreter->vars_index,
-            interpreter->vars_capacity,
-            calloc(func->arity, sizeof(Variable)),
-            0,
-            func->arity,
-            interpreter->funcs,
-            interpreter->funcs_capacity,
-            0
-        };
-
-        for (int i = 0; i < func->arity; i++) {
-            if (n->left->value[i + 1].type == Value_Number) {
-                intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
-                intrprtr.local_vars_index++;
-            } else if (n->left->value[i + 1].type == Value_String) {
-                int len = strlen(n->left->value[i + 1].value + 1);
-                intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
-                intrprtr.local_vars_index++;
-            } else if (n->left->value[i + 1].type == Value_Identifier) {
-                Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
-                AST_Value *new_val = eval_node(&temp, interpreter, 1);
-                intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
-                intrprtr.local_vars_index++;
-            } else ERR("ERROR on line %d: Cant add var type %s to function local vars\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
-        }
-
-        AST_Value *rtrn;
-        while (intrprtr.program_counter < intrprtr.stmts_capacity) {
-            rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
-            if (rtrn != NULL) {
-                for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-                free(intrprtr.local_vars);
-                return rtrn;
-            }
-            intrprtr.program_counter++;
-        }
-        for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-        free(intrprtr.local_vars);
-        return NULL;
+        return call_function(interpreter, n);
     } else if (n->type == AST_Len) {
         ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR: cant do len on value type %s\n", find_ast_value_type(n->left->value->type))
         AST_Value *op = eval_node(n->left, interpreter, 0);
@@ -447,52 +453,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Return:
             return eval_node(n->left, interpreter, 1);
         case AST_Function_Call:;
-            Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
-
-            Interpreter intrprtr = {
-                func->nodes,
-                func->nodes_size,
-                0,
-                interpreter->vars,
-                interpreter->vars_index,
-                interpreter->vars_capacity,
-                calloc(func->arity, sizeof(Variable)),
-                0,
-                func->arity,
-                interpreter->funcs,
-                interpreter->funcs_capacity,
-                0
-            };
-
-            for (int i = 0; i < func->arity; i++) {
-                if (n->left->value[i + 1].type == Value_Number) {
-                    intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
-                    intrprtr.local_vars_index++;
-                } else if (n->left->value[i + 1].type == Value_String) {
-                    int len = strlen(n->left->value[i + 1].value + 1);
-                    intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
-                    intrprtr.local_vars_index++;
-                } else if (n->left->value[i + 1].type == Value_Identifier) {
-                    Node temp = { value_to_ast_type(n->left->value[i + 1].type), &n->left->value[i + 1], NULL, NULL, -1, -1 };
-                    AST_Value *new_val = eval_node(&temp, interpreter, 1);
-                    intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
-                    intrprtr.local_vars_index++;
-                } else ERR("ERROR on line %d: Cant add var type %s to function local vars\n", n->line, find_ast_value_type(n->left->value[i + 1].type))
-            }
-
-            AST_Value *rtrn;
-            while (intrprtr.program_counter < intrprtr.stmts_capacity) {
-                rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
-                if (rtrn != NULL) {
-                    for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-                    free(intrprtr.local_vars);
-                    if (rtrn->mutable > 0) free_ast_value(rtrn);
-                    return NULL;
-                }
-                intrprtr.program_counter++;
-            }
-            for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-            free(intrprtr.local_vars);
+            AST_Value *result = call_function(interpreter, n);
+            if (result->mutable > 0) free_ast_value(result);
             break;
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
