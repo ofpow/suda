@@ -128,6 +128,48 @@ char *find_ast_type(int type) {
     }
 }
 
+AST_Type tok_to_ast(Token_Type type, int line) {
+    switch (type) {
+        case Tok_Add: return AST_Add;
+        case Tok_Sub: return AST_Sub;
+        case Tok_Mult: return AST_Mult;
+        case Tok_Div: return AST_Div;
+        case Tok_Modulo: return AST_Modulo;
+        case Tok_Greater: return AST_Greater;
+        case Tok_Greater_Equal: return AST_Greater_Equal;
+        case Tok_Less: return AST_Less;
+        case Tok_Less_Equal: return AST_Less_Equal;
+        case Tok_Is_Equal: return AST_Is_Equal;
+        case Tok_Not_Equal: return AST_Not_Equal;
+        case Tok_Bit_And: return AST_Bit_And;
+        case Tok_Bit_Or: return AST_Bit_Or;
+        case Tok_Bit_Xor: return AST_Bit_Xor;
+        case Tok_Lshift: return AST_Lshift;
+        case Tok_Rshift: return AST_Rshift;
+        case Tok_Power: return AST_Power;
+        case Tok_And: return AST_And;
+        case Tok_Or: return AST_Or;
+        case Tok_Bit_Not: return AST_Bit_Not;
+        case Tok_Not: return AST_Not;
+        case Tok_Len: return AST_Len;
+        case Tok_Cast_Num: return AST_Cast_Num;
+        case Tok_Cast_Str: return AST_Cast_Str;
+        case Tok_Print: return AST_Print;
+        case Tok_If: return AST_If;
+        case Tok_While: return AST_While;
+        case Tok_Return: return AST_Return;
+        case Tok_Exit: return AST_Exit;
+        case Tok_Break: return AST_Break;
+        case Tok_Continue: return AST_Continue;
+        case Tok_Semicolon: return AST_Semicolon;
+        case Tok_Else: return AST_Else;
+        case Tok_Function: return AST_Function;
+        case Tok_Elif: return AST_Elif;
+        default: ERR("ERROR on line %d: cant convert token type %s to ast\n", line, find_tok_type(type))
+    }
+    return -1;
+}
+
 typedef struct Node {
     int type;
     AST_Value *value;
@@ -201,15 +243,6 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index, int line) {
     node->line = line;
     node->left = NULL;
     node->right = NULL;
-    return node;
-}
-
-Node *dup_node(Node *n) {
-    if (n == NULL) return NULL;
-    Node *node = new_node(n->type, NULL, n->jump_index, n->line);
-    if (n->value) node->value = new_ast_value(n->value->type, strdup(n->value->value), n->value->mutable);
-    node->right = dup_node(n->right);
-    node->left = dup_node(n->left);
     return node;
 }
 
@@ -327,7 +360,6 @@ Node *expr(Parser *p, Node *child) {
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
                 n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1, CURRENT_TOK.line);
-                //TODO: print array@x + array@y segfaults, print((array@x) + (array@y)) doesnt
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 if (CURRENT_TOK.type == Tok_Assign) {
@@ -353,122 +385,44 @@ Node *expr(Parser *p, Node *child) {
             }
             p->tok_index++;
             return n;
-        case Tok_Add:
-            n = new_node(AST_Add, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
+        case Tok_Add: // nodes with 2 arguments
         case Tok_Sub:
-            n = new_node(AST_Sub, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Mult:
-            n = new_node(AST_Mult, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Div:
-            n = new_node(AST_Div, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Modulo:
-            n = new_node(AST_Modulo, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Greater:
-            n = new_node(AST_Greater, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Greater_Equal:
-            n = new_node(AST_Greater_Equal, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Less:
-            n = new_node(AST_Less, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Less_Equal:
-            n = new_node(AST_Less_Equal, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Is_Equal:
-            n = new_node(AST_Is_Equal, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Not_Equal:
-            n = new_node(AST_Not_Equal, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Bit_And:
-            n = new_node(AST_Bit_And, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Bit_Or:
-            n = new_node(AST_Bit_Or, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Bit_Xor:
-            n = new_node(AST_Bit_Xor, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
-        case Tok_Bit_Not:
-            n = new_node(AST_Bit_Not, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
         case Tok_Lshift:
-            n = new_node(AST_Lshift, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Rshift:
-            n = new_node(AST_Rshift, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
         case Tok_Power:
-            n = new_node(AST_Power, NULL, -1, CURRENT_TOK.line);
+        case Tok_And:
+        case Tok_Or:
+            n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line), NULL, -1, CURRENT_TOK.line);
             p->tok_index++;
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
+
+        case Tok_Bit_Not: // nodes with 1 argument
         case Tok_Not:
-            n = new_node(AST_Not, NULL, -1, CURRENT_TOK.line);
+        case Tok_Len:
+        case Tok_Cast_Num:
+        case Tok_Cast_Str:
+            n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line), NULL, -1, CURRENT_TOK.line);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
+
         case Tok_Comma:
             p->tok_index++;
             return new_node(AST_Comma, NULL, -1, CURRENT_TOK.line);
-            break;
         case Tok_Right_Paren:
             p->tok_index++;
             return new_node(AST_Right_Paren, NULL, -1, CURRENT_TOK.line);
@@ -479,33 +433,6 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n->value = parse_list(p);
             return n;
-        case Tok_Len:
-            n = new_node(AST_Len, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_And:
-            n = new_node(AST_And, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
-        case Tok_Or:
-            n = new_node(AST_Or, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
-            return n;
-        case Tok_Cast_Num:
-            n = new_node(AST_Cast_Num, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Cast_Str:
-            n = new_node(AST_Cast_Str, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
         default: ERR("ERROR on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
@@ -514,15 +441,8 @@ Node *expr(Parser *p, Node *child) {
 Node *statement(Parser *p) {
     Node *n;
     switch (CURRENT_TOK.type) {
-        case Tok_Print:;
-            n = new_node(AST_Print, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;        
-            break;
         case Tok_Eof:
             return new_node(AST_End, NULL, -1, CURRENT_TOK.line);
-            break;
         case Tok_Let:
             n = new_node(AST_Var_Assign, NULL, -1, CURRENT_TOK.line);
             p->tok_index++;
@@ -532,51 +452,26 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
+        case Tok_Print: //nodes with 1 arg
         case Tok_If:
-            n = new_node(AST_If, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Semicolon:
-            n = new_node(AST_Semicolon, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            return n;
-        case Tok_Else:
-            n = new_node(AST_Else, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            return n;
         case Tok_While:
-            n = new_node(AST_While, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Function:
-            n = new_node(AST_Function, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            return n;
         case Tok_Return:
-            n = new_node(AST_Return, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Break:
-            n = new_node(AST_Break, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            return n;
         case Tok_Exit:
-            n = new_node(AST_Exit, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            n->left = expr(p, NULL);
-            return n;
-        case Tok_Continue:
-            n = new_node(AST_Continue, NULL, -1, CURRENT_TOK.line);
-            p->tok_index++;
-            return n;
         case Tok_Elif:
-            n = new_node(AST_Elif, NULL, -1, CURRENT_TOK.line);
+            n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line), NULL, -1, CURRENT_TOK.line);
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
+
+        case Tok_Break: //nodes with no args
+        case Tok_Continue:
+        case Tok_Semicolon:
+        case Tok_Else:
+        case Tok_Function:
+            n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line), NULL, -1, CURRENT_TOK.line);
+            p->tok_index++;
+            return n;
+
         case Tok_Append:
             n = new_node(AST_Append, NULL, -1, CURRENT_TOK.line);
             p->tok_index++;
