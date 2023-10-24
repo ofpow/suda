@@ -70,9 +70,9 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         interpreter->vars,
         interpreter->vars_index,
         interpreter->vars_capacity,
-        calloc(func->arity, sizeof(Variable)),
+        calloc(func->arity + 1, sizeof(Variable)),
         0,
-        func->arity,
+        func->arity + 1,
         interpreter->funcs,
         interpreter->funcs_capacity,
         0
