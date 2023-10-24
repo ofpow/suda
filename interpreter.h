@@ -469,14 +469,24 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
 
             int arr_len = strtoint(var.value->value, strlen(var.value->value)) + 1;
-
-            interpreter->vars[var.index].value = realloc(interpreter->vars[var.index].value, arr_len * sizeof(AST_Value));
-
-            free(interpreter->vars[var.index].value->value);
-            interpreter->vars[var.index].value->value = format_str(num_len(arr_len) + 1, "%d", arr_len);
-
             AST_Value *new_val = eval_node(n->left, interpreter, 0);
-            interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
+            
+            if (interpreter->local_vars != NULL) {
+                interpreter->local_vars[var.index].value = realloc(interpreter->local_vars[var.index].value, arr_len * sizeof(AST_Value));
+                
+                free(interpreter->local_vars[var.index].value->value);
+                interpreter->local_vars[var.index].value->value = format_str(num_len(arr_len) + 1, "%d", arr_len);
+
+                interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
+            } else {
+                interpreter->vars[var.index].value = realloc(interpreter->vars[var.index].value, arr_len * sizeof(AST_Value));
+                
+                free(interpreter->vars[var.index].value->value);
+                interpreter->vars[var.index].value->value = format_str(num_len(arr_len) + 1, "%d", arr_len);
+
+                interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
+            }
+
             if (new_val->mutable > 0) free_ast_value(new_val);
 
             break;
