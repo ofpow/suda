@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (n->jump_index < 0) ERR("ERROR: tried to use break outside a while loop\n")
+            if (n->jump_index < 0) ERR("ERROR on line %d: tried to use break outside a while loop\n", n->line)
         } else if (n->type == AST_Continue) {
             for (int i = p->jumps_index - 1; i > -1; i--) {
                 if (p->nodes[p->jump_indices[i]]->type == AST_While) {
@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (n->jump_index < 0) ERR("ERROR: tried to use continue outside a while loop\n")
+            if (n->jump_index < 0) ERR("ERROR on line %d: tried to use continue outside a while loop\n", n->line)
         } else if (n->type == AST_Function) {
             free_node(n);
             func = calloc(1, sizeof(Function));
@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
             p->tok_index++;
 
             //switch parser to parse the function
-            if (temp_nodes != NULL) ERR("ERROR cant define functions inside other functions\n")
+            if (temp_nodes != NULL) ERR("ERROR on line %d: cant define functions inside other functions\n", LAST_TOK.line)
             temp_nodes = p->nodes;
             temp_nodes_index = p->nodes_index;
             temp_nodes_capacity = p->nodes_capacity;
