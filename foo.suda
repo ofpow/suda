@@ -1,9 +1,6 @@
-fn foo()
-    let x = [1, 2, 3, 4]
-
-    append x 5
-
-    return x
+while 1
+    print "hi"
+    if 1
+        break;
+    ;
 ;
-
-print foo()

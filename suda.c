@@ -247,6 +247,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
             p->jumps_index--;
+            if (p->jumps_index < 0) ERR("ERROR on line %d: extra semicolon\n", n->line)
             if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
                 n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
                 p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
