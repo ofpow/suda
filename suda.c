@@ -258,13 +258,13 @@ int main(int argc, char *argv[]) {
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Break) {
             for (int i = p->jumps_index - 1; i > -1; i--) {
-                if (p->nodes[p->jump_indices[i]]->type == AST_While) {
+                if (p->nodes[p->jump_indices[i]]->type == AST_While || p->nodes[p->jump_indices[i]]->type == AST_Break) {
                     n->jump_index = p->jump_indices[i];
                     p->jump_indices[i] = p->nodes_index;
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (n->jump_index < 0) ERR("ERROR on line %d: tried to use break outside a while loop\n", n->line)
+            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR on line %d: tried to use break outside a while loop\n", n->line)
         } else if (n->type == AST_Continue) {
             for (int i = p->jumps_index - 1; i > -1; i--) {
                 if (p->nodes[p->jump_indices[i]]->type == AST_While) {
