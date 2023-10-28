@@ -265,7 +265,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
     } else if (n->type == AST_Function_Call) {
         return call_function(interpreter, n);
     } else if (n->type == AST_Len) {
-        ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR on line %d: cant do len on value type %s\n", n->line, find_ast_value_type(n->left->value->type))
+        ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier || n->left->value->type == Value_Number), "ERROR on line %d: cant do len on value type %s\n", n->line, find_ast_value_type(n->left->value->type))
         AST_Value *op = eval_node(n->left, interpreter, 0);
         int len;
         switch (op->type) {
@@ -276,6 +276,9 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                 int str_len = strlen(op[0].value);
                 len = (int)strtoint(op[0].value, str_len) - 1;
                 return new_ast_value(Value_Number, format_str(str_len + 1, "%d", len), 1);
+            case Value_Number:;
+                len = strlen(op->value);
+                return new_ast_value(Value_Number, format_str(num_len(len) + 1, "%d", len), 1);
             default: ERR("ERROR on line %d: cant evaluate length of value type %s\n", n->line, find_ast_value_type(op->type))
         }
     } else if (n->type == AST_Cast_Num) {

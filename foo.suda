@@ -1,3 +1,1 @@
-include "tests/functions.suda"
-
-print fib(10)
+print len 1234
