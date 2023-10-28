@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
             if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR on line %d: cant define function %s multiple times\n", CURRENT_TOK.line, func->name)
 
             p->tok_index++;
-            ASSERT((p->jumps_index >= 0), "ERROR: unclosed block before function %s\n", func->name)
+            ASSERT((p->jumps_index >= 0), "ERROR on line %d: unclosed block before function %s\n", CURRENT_TOK.line, func->name)
             ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR on line %d: need left paren to open function arguments\n", CURRENT_TOK.line)
             p->tok_index++;
 

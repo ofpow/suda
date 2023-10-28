@@ -32,11 +32,11 @@ typedef struct {
     int auto_jump;
 } Interpreter;
 
-AST_Type value_to_ast_type(Value_Type type) {
+AST_Type value_to_ast_type(Value_Type type, int line) {
     if (type == Value_Number || type == Value_String) return AST_Literal;
     else if (type == Value_Identifier) return AST_Identifier;
     else if (type == Value_Array) return AST_Array;
-    else ERR("ERROR: value type %d has not AST type\n", type);
+    else ERR("ERROR: value type %d has not AST type\n", line, type);
     return -1;
 }
 
@@ -265,7 +265,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
     } else if (n->type == AST_Function_Call) {
         return call_function(interpreter, n);
     } else if (n->type == AST_Len) {
-        ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR: cant do len on value type %s\n", find_ast_value_type(n->left->value->type))
+        ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier), "ERROR on line %d: cant do len on value type %s\n", n->line, find_ast_value_type(n->left->value->type))
         AST_Value *op = eval_node(n->left, interpreter, 0);
         int len;
         switch (op->type) {
@@ -458,7 +458,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
-            ASSERT(exit_val->type == Value_Number, "ERROR: tried to exit with non-number code\n")
+            ASSERT(exit_val->type == Value_Number, "ERROR on line %d: tried to exit with non-number code\n", n->line)
             int val = (int)strtoint(exit_val->value, strlen(exit_val->value));
             if (exit_val->mutable > 0) free_ast_value(exit_val);
             free_mem(val);
