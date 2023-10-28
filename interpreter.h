@@ -36,7 +36,7 @@ AST_Type value_to_ast_type(Value_Type type, int line) {
     if (type == Value_Number || type == Value_String) return AST_Literal;
     else if (type == Value_Identifier) return AST_Identifier;
     else if (type == Value_Array) return AST_Array;
-    else ERR("ERROR: value type %d has not AST type\n", line, type);
+    else ERR("ERROR on line %d: value type %d has not AST type\n", line, type);
     return -1;
 }
 
