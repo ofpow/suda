@@ -70,6 +70,12 @@ char *read_file(const char *file_path) {
     return program;
 }
 
+typedef struct Programs {
+    char **progs;
+    int progs_index;
+    int progs_capacity;
+} Programs;
+
 #include "variable.h"
 #include "lexer.h"
 #include "parser.h"
@@ -78,7 +84,7 @@ char *read_file(const char *file_path) {
 
 //global variables for access to freeing from anywhere
 Token *tokens;
-char *program;
+Programs *programs;
 Parser *p;
 Interpreter interpreter;
 
@@ -99,7 +105,9 @@ void free_mem(int exit_val) {
     for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
     free(p->nodes);
     free(p);
-    free(program);
+    for (int i = 0; i < programs->progs_index; i++) free(programs->progs[i]);
+    free(programs->progs);
+    free(programs);
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
     free(include_paths);
     exit(exit_val);
@@ -113,72 +121,12 @@ int main(int argc, char *argv[]) {
     }
     
     //tokenize program
-    include_paths = calloc(10, sizeof(char*));
-    include_paths_index = 0;
-    include_paths_capacity = 10;
-    
-    program = read_file(argv[1]);
-    Lexer lexer = { program, program, 1 };
-    int tokens_index = 0;
-    int tokens_capacity = 10;
-
-    tokens = calloc(tokens_capacity, sizeof(struct Token));
-
-    debug("LEXING\n")
-    while (1) {
-        if (tokens_index >= tokens_capacity) {
-            tokens_capacity *= 2;
-            tokens = realloc(tokens, tokens_capacity * sizeof(struct Token));
-        }
-        Token tok = scan_token(&lexer);
-        if (tok.type == Tok_Eof) {
-            tokens[tokens_index] = tok;
-            tokens_index++;
-            break;
-        } else if (tok.type == Tok_Comment) {
-        } else if (tok.type == Tok_Include) {
-            //TODO: including currently counts lines of included files, not just main file
-            // offset line based on number of lines in included file
-            tok = scan_token(&lexer);
-            char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
-            int included = 0;
-            for (int i = 0; i < include_paths_index; i++) {
-                if (!strcmp(include_path, include_paths[i])) {
-                    included = 1;
-                }
-            }
-            if (included) {
-                free(include_path);
-                continue;
-            }
-            append(include_paths, include_path, include_paths_index, include_paths_capacity);
-            char *include = read_file(include_path);
-            
-            //concatenate included file and current program
-            int new_program_len = strlen(program) + strlen(include) + 3;
-            char *new_program = calloc(new_program_len, sizeof(char));
-            strcat(new_program, include);
-            strcat(new_program, "\n\n");
-            strcat(new_program, program);
-
-            free(program);
-            free(include);
-            program = new_program;
-            lexer.start = program;
-            lexer.current = program;
-            lexer.line = 1;
-            
-            //start lexing again from beginning of new program
-            free(tokens);
-            tokens = calloc(10, sizeof(struct Token));
-            tokens_index = 0;
-            tokens_capacity = 10;
-        } else {
-            tokens[tokens_index] = tok;
-            tokens_index++;
-        }
-        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start)
-    }
+    debug("\n----------\nLEXING\n")
+    programs = calloc(1, sizeof(Programs));
+    programs->progs = calloc(2, sizeof(char*));
+    programs->progs_index = 0;
+    programs->progs_capacity = 2;
+    tokens = lex_file(argv[1], programs);
 
     debug("\n----------\nPARSING\n")
 
