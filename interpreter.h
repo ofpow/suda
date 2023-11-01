@@ -62,6 +62,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable);
 
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
+    int call_args_len = strtoint(n->left->value->value, strlen(n->left->value->value)) - 1;
+    ASSERT((func->arity == call_args_len), "ERROR on line %d: cant call function %s with %d arguments\n", n->line, func->name, call_args_len)
 
     Interpreter intrprtr = {
         func->nodes,
