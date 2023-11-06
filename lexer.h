@@ -406,6 +406,7 @@ Token scan_token(Lexer *l) {
 }
 
 Token *lex_file(const char *file_path, Programs *programs) {
+    debug("LEX FILE %s\n", file_path)
     char **include_paths = calloc(2, sizeof(char*));
     int include_paths_index = 0;
     int include_paths_capacity = 2;

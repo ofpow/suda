@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
     #define debug(...) printf(__VA_ARGS__);
 #else
@@ -166,18 +166,22 @@ int main(int argc, char *argv[]) {
             }
             break;
         } else if (n->type == AST_If) {
+            debug("IF: push index %d\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_While) {
+            debug("WHILE: push index %d\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Else) {
+            debug("ELSE: change %d to %d\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index;
             n->jump_index = p->jump_indices[p->jumps_index - 1];
             p->jumps_index--;
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Elif) {
+            debug("ELIF: change %d to %d\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index - 1;
             p->jump_indices[p->jumps_index - 1] = p->nodes_index;
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
@@ -196,6 +200,7 @@ int main(int argc, char *argv[]) {
             }
             p->jumps_index--;
             if (p->jumps_index < 0) ERR("ERROR on line %d: extra semicolon\n", n->line)
+            debug("SEMICOLON: pop index %d\n", p->jump_indices[p->jumps_index])
             if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
                 n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
                 p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
