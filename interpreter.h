@@ -62,23 +62,35 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable);
 
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
+
+    char *call_info = format_str(strlen(func->name) + 3 + num_len(func->line), "%s:%d", func->name, func->line);
+
     int call_args_len = strtoint(n->left->value->value, strlen(n->left->value->value)) - 1;
     ASSERT((func->arity == call_args_len), "ERROR on line %d: cant call function %s with %d arguments\n", n->line, func->name, call_args_len)
 
     Interpreter intrprtr = {
+        // nodes to execute
         func->nodes,
         func->nodes_size,
         0,
+
+        //global variables inherited from call
         interpreter->vars,
         interpreter->vars_index,
         interpreter->vars_capacity,
+        
+        // arguments and local variables
         calloc(func->arity + 1, sizeof(Variable)),
         0,
         func->arity + 1,
+
+        // other functions
         interpreter->funcs,
         interpreter->funcs_capacity,
-        0
+        0,
     };
+
+    append(call_stack, call_info, call_stack_index, call_stack_capacity)
 
     for (int i = 0; i < func->arity; i++) {
         if (n->left->value[i + 1].type == Value_Number) {
@@ -108,6 +120,8 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     }
     for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
     free(intrprtr.local_vars);
+    call_stack_index--;
+    free(call_stack[call_stack_index]);
     return NULL;
 }
 
@@ -459,6 +473,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             return eval_node(n->left, interpreter, 1);
         case AST_Function_Call:;
             AST_Value *result = call_function(interpreter, n);
+            if (result == NULL) break;
             if (result->mutable > 0) free_ast_value(result);
             break;
         case AST_Exit:;

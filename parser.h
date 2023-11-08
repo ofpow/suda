@@ -194,6 +194,8 @@ typedef struct Function {
 
     int arity;
     AST_Value **args;
+
+    int line;
 } Function;
 
 typedef struct Parser {

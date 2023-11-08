@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     #define debug(...) printf(__VA_ARGS__);
 #else
@@ -76,6 +76,10 @@ typedef struct Programs {
     int progs_capacity;
 } Programs;
 
+char **call_stack;
+int call_stack_index;
+int call_stack_capacity;
+
 #include "variable.h"
 #include "lexer.h"
 #include "parser.h"
@@ -109,6 +113,12 @@ void free_mem(int exit_val) {
     free(programs->progs);
     free(programs);
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
+    if (call_stack_index > 0) printf("Stack trace:\n");
+    for (int i = call_stack_index - 1; i > 0; i--) {
+        printf("%s\n", call_stack[i]);
+        free(call_stack[i]);
+    }
+    free(call_stack);
     free(include_paths);
     exit(exit_val);
 }
@@ -230,6 +240,7 @@ int main(int argc, char *argv[]) {
             free_node(n);
             func = calloc(1, sizeof(Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
+            func->line = CURRENT_TOK.line;
             if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR on line %d: cant define function %s multiple times\n", CURRENT_TOK.line, func->name)
 
             p->tok_index++;
@@ -287,6 +298,10 @@ int main(int argc, char *argv[]) {
     interpreter.funcs = p->funcs;
 
     interpreter.auto_jump = 0;
+
+    call_stack = calloc(10, sizeof(char*));
+    call_stack_index = 0;
+    call_stack_capacity = 10;
 
     interpret(&interpreter);
 

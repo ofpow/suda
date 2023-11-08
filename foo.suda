@@ -1,1 +1,17 @@
-print len 1234
+fn foo()
+    bar()
+;
+
+fn bar()
+    print (5 * "x")
+;
+
+fn baz()
+    foo()
+;
+
+fn bop()
+    baz()
+;
+
+bop()
