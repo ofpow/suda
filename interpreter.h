@@ -121,7 +121,7 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
     free(intrprtr.local_vars);
     call_stack_index--;
-    free(call_stack[call_stack_index]);
+    free(call_info);
     return NULL;
 }
 

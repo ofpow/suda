@@ -115,8 +115,12 @@ void free_mem(int exit_val) {
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
     if (exit_val > 0 && call_stack_index > 0) {
         printf("Stack trace:\n");
-        for (int i = call_stack_index - 1; i > 0; i--) {
+        for (int i = call_stack_index - 1; i >= 0; i--) {
             printf("%s\n", call_stack[i]);
+            free(call_stack[i]);
+        }
+    } else {
+        for (int i = call_stack_index - 1; i >= 0; i--) {
             free(call_stack[i]);
         }
     }
