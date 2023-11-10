@@ -48,7 +48,7 @@ char *format_array(AST_Value *array) {
     int str_len = 3 + strlen(array[1].value);
     char *array_str = format_str(str_len, "[%s", array[1].value);
     for (int i = 2; i < arr_size; i++) {
-        if (!array[i].value) ERR("array has null value\n")
+        if (!array[i].value) ERR("array has null value at index %d\n", i)
         str_len += (strlen(array[i].value) + 2);
         array_str = realloc(array_str, str_len);
         strcat(array_str, ", ");
@@ -124,6 +124,22 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     free(call_info);
     return NULL;
 }
+// TODO: use something like this for appending to array instead of append keyword
+AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
+    int op1_len = strtoint(op1->value, strlen(op1->value));
+    int op2_len = strtoint(op2->value, strlen(op2->value));
+    AST_Value *new = calloc(op1_len + op2_len + 1, sizeof(AST_Value));
+    new->type = Value_Array;
+    new->value = format_str(num_len(op1_len + op2_len - 1) + 1, "%d", op1_len + op2_len - 1);
+    new->mutable = 1;
+    for (int i = 1; i < op1_len; i++) {
+        new[i] = (AST_Value) { op1[i].type, strdup(op1[i].value), 1 };
+    }
+    for (int i = 1; i < op2_len; i++) {
+        new[i + op1_len - 1] = (AST_Value) { op2[i].type, strdup(op2[i].value), 1 };
+    }
+    return new;
+}
 
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line) {
     int op1_len = strlen(op1->value);
@@ -133,6 +149,7 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line) {
     switch (op) {
         case AST_Add:
             if (op1->type == Value_Number && op2->type == Value_Number) return new_ast_value(Value_Number, format_str(op1_len + op2_len + 1, "%d", strtoint(op1->value, op1_len) + strtoint(op2->value, op2_len)), 1);
+            else if (op1->type == Value_Array && op2->type == Value_Array) return add_array(op1, op2);
             else return new_ast_value(Value_String, format_str(op1_len + op2_len + 1, "%.*s%.*s", op1_len, op1->value, op2_len, op2->value), 1);
         case AST_Sub:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR on line %d: Cant subtract type %s and type %s\n", line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
@@ -215,13 +232,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
         if (op2 && op2->mutable > 0) free_ast_value(op2);
         return result;
     } else if (n->type == AST_Identifier) {
-        char *var_name = strdup(n->value->value);
-
         Variable var;
-        if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index, n->line);
-        else var = get_var(var_name, interpreter->vars, interpreter->vars_index, n->line);
+        if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
+        else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
 
-        free(var_name);
         if (mutable <= 0) {
             AST_Value *new_val = var.value;
             new_val->mutable = 0;

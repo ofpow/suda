@@ -1,17 +1,6 @@
-fn foo()
-    bar()
-;
+let x = [1, 2, 3, 4]
+let y = [5, 6, 7]
 
-fn bar()
-    print (5 * "x")
-;
+let z = (x + y)
 
-fn baz()
-    foo()
-;
-
-fn bop()
-    baz()
-;
-
-bop()
+print z
