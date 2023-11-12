@@ -122,6 +122,7 @@ typedef struct Lexer {
     char *start;
     char *current;
     int line;
+    const char *file;
 } Lexer;
 
 typedef struct Token {
@@ -129,6 +130,7 @@ typedef struct Token {
     const char *start;
     int length;
     int line;
+    const char *file;
 } Token;
 
 static Token make_token(Token_Type type, Lexer *l) {
@@ -137,6 +139,7 @@ static Token make_token(Token_Type type, Lexer *l) {
     tok.start = l->start;
     tok.length = (int)(l->current - l->start);
     tok.line = l->line;
+    tok.file = l->file;
     return tok;
 }
 
@@ -412,7 +415,7 @@ Token *lex_file(const char *file_path, Programs *programs) {
     int include_paths_capacity = 2;
 
     char *program = read_file(file_path);
-    Lexer lexer = { program, program, 1 };
+    Lexer lexer = { program, program, 1, file_path };
     int tokens_index = 0;
     int tokens_capacity = 10;
 
