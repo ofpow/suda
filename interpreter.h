@@ -375,6 +375,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
                 interpreter->vars_index++;
             }
+            debug("ASSIGN `%s` to variable `%s`\n", var_val->value, var_name)
             break;
         case AST_If:;
             AST_Value *expr = eval_node(n->left, interpreter, 0);
@@ -424,11 +425,14 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 else ERR("ERROR in %s on line %d: can't assign to undefined variable %s\n", n->file, n->line, var_name)
             }
             free(var_name);
+
             
             if (interpreter->local_vars != NULL) {
+                debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, interpreter->local_vars[var.index].value->value, new_val->value)
                 free_ast_value(interpreter->local_vars[var.index].value);
                 interpreter->local_vars[var.index].value = new_val;
             } else {
+                debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, interpreter->vars[var.index].value->value, new_val->value)
                 free_ast_value(interpreter->vars[var.index].value);
                 interpreter->vars[var.index].value = new_val;
             }
