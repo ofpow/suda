@@ -63,7 +63,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable);
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
 
-    char *call_info = format_str(strlen(func->name) + 3 + num_len(func->line), "%s:%d", func->name, func->line);
+    char *call_info = format_str(strlen(func->name) + 3 + num_len(n->line), "%s:%d", func->name, n->line);
 
     int call_args_len = strtoint(n->left->value->value, strlen(n->left->value->value)) - 1;
     ASSERT((func->arity == call_args_len), "ERROR in %s on line %d: cant call function %s with %d arguments\n", n->file, n->line, func->name, call_args_len)
