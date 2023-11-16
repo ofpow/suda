@@ -204,7 +204,6 @@ static Token lex_string(Lexer *l) {
             l->line++;
         } else if (peek(l) == '\\') {
             i++;
-            //l->start[i] = '\n';
             switch (*(l->current + 1)) {
                 case 'a': l->start[i] = '\a'; break;
                 case 'b': l->start[i] = '\b'; break;
@@ -218,6 +217,8 @@ static Token lex_string(Lexer *l) {
                 case '"': l->start[i] = '\"'; break;
                 case '?': l->start[i] = '\?'; break;
             }
+            // TODO: this is really slow, 
+            // maybe introduce seperate keyword for printing with newline
             shunt(&l->start[i + 1], &l->start[i + 2]);
             i--;
         }
