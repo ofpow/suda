@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
             p->jumps_index--;
-            if (p->jumps_index < 0) ERR("ERROR on line %d: extra semicolon\n", n->line)
+            if (p->jumps_index < 0) ERR("ERROR in %s on line %d: extra semicolon\n", n->file, n->line)
             debug("SEMICOLON: pop index %d\n", p->jump_indices[p->jumps_index])
             if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
                 n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR on line %d: tried to use break outside a while loop\n", n->line)
+            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR in %s on line %d: tried to use break outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Continue) {
             for (int i = p->jumps_index - 1; i > -1; i--) {
                 if (p->nodes[p->jump_indices[i]]->type == AST_While) {
@@ -241,21 +241,21 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (n->jump_index < 0) ERR("ERROR on line %d: tried to use continue outside a while loop\n", n->line)
+            if (n->jump_index < 0) ERR("ERROR in %s on line %d: tried to use continue outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Function) {
             free_node(n);
             func = calloc(1, sizeof(Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
             func->line = CURRENT_TOK.line;
-            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR on line %d: cant define function %s multiple times\n", CURRENT_TOK.line, func->name)
+            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR in %s on line %d: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
 
             p->tok_index++;
-            ASSERT((p->jumps_index >= 0), "ERROR on line %d: unclosed block before function %s\n", CURRENT_TOK.line, func->name)
-            ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR on line %d: need left paren to open function arguments\n", CURRENT_TOK.line)
+            ASSERT((p->jumps_index >= 0), "ERROR in %s on line %d: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
+            ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR in %s on line %d: need left paren to open function arguments\n",  CURRENT_TOK.file,CURRENT_TOK.line)
             p->tok_index++;
 
             //switch parser to parse the function
-            if (temp_nodes != NULL) ERR("ERROR on line %d: cant define functions inside other functions\n", LAST_TOK.line)
+            if (temp_nodes != NULL) ERR("ERROR in %s on line %d: cant define functions inside other functions\n", CURRENT_TOK.file, LAST_TOK.line)
             temp_nodes = p->nodes;
             temp_nodes_index = p->nodes_index;
             temp_nodes_capacity = p->nodes_capacity;
@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
                 } else if (n->type == AST_Right_Paren) {
                     free_node(n);
                     break;
-                } else ERR("ERROR on line %d: cant parse token type %s as part of function arguments\n", CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
+                } else ERR("ERROR in %s on line %d: cant parse token type %s as part of function arguments\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
             }
         } else {
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
