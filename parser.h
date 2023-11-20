@@ -79,6 +79,7 @@ typedef enum {
     AST_Append,
     AST_Cast_Str,
     AST_Cast_Num,
+    AST_Println,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -129,6 +130,7 @@ char *find_ast_type(int type) {
         case AST_Append: return "AST_Append";
         case AST_Cast_Str: return "AST_Cast_Str";
         case AST_Cast_Num: return "AST_Cast_Num";
+        case AST_Println: return "AST_Println";
         default: return "ast type not found";
     }
 }
@@ -170,6 +172,7 @@ AST_Type tok_to_ast(Token_Type type, int line, const char *file) {
         case Tok_Else: return AST_Else;
         case Tok_Function: return AST_Function;
         case Tok_Elif: return AST_Elif;
+        case Tok_Println: return AST_Println;
         default: ERR("ERROR in %s on line %d: cant convert token type %s to ast\n", file, line, find_tok_type(type))
     }
     return -1;
@@ -462,6 +465,7 @@ Node *statement(Parser *p) {
             n->left = expr(p, NULL);
             return n;
         case Tok_Print: //nodes with 1 arg
+        case Tok_Println:
         case Tok_If:
         case Tok_While:
         case Tok_Return:

@@ -327,6 +327,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
 
 AST_Value *do_statement(Node *n, Interpreter *interpreter) {
     switch (n->type) {
+        case AST_Println:
         case AST_Print:;
             if (!n->left) ERR("ERROR in %s on line %d: need something to print\n", n->file, n->line)
             ASSERT(AST_IS_EVALUATABLE(n->left->type), "Can't print `%s`\n", find_ast_type(n->left->type))
@@ -335,7 +336,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             if (print->type == Value_Array) {
                 char *array = format_array(print);
-                printf("%s\n", array);
+                if (n->type == AST_Println) printf("%s\n", array);
+                else printf("%s", array);
                 if (print->mutable > 0) {
                     int arr_len = (int)strtoint(print->value, strlen(print->value));
                     for (int j = 0; j < arr_len; j++) {
@@ -345,8 +347,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 }
                 free(array);
             } else {
-                if (print->type == Value_String) printf("%s", print->value);
-                else printf("%s\n", print->value);
+                if (n->type == AST_Println) printf("%s\n", print->value);
+                else printf("%s", print->value);
                 if (print->mutable > 0) free_ast_value(print);
             }
 

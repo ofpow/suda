@@ -59,6 +59,7 @@ typedef enum {
     Tok_Append,
     Tok_Cast_Str,
     Tok_Cast_Num,
+    Tok_Println,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -113,6 +114,7 @@ char *find_tok_type(int type) {
         case Tok_Append: return "Tok_Append";
         case Tok_Cast_Str: return "Tok_Cast_Str";
         case Tok_Cast_Num: return "Tok_Cast_Num";
+        case Tok_Println: return "Tok_Println";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -291,6 +293,8 @@ static Token_Type id_type(Lexer *l) {
         case 'n':
             return check_keyword(1, 2, "um", Tok_Cast_Num, l);
         case 'p':
+            if (l->start[1] == 'r' && l->start[2] == 'i' && l->start[3] == 'n' && l->start[4] == 't' && l->start[5] == 'l' && l->start[6] == 'n')
+                return Tok_Println;
             return check_keyword(1, 4, "rint", Tok_Print, l);
         case 'r':
             return check_keyword(1, 5, "eturn", Tok_Return, l);
