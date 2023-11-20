@@ -1,27 +1,27 @@
-print(("hel" + "lo ") + ("wo" + "rld\n"))
+println(("hel" + "lo ") + ("wo" + "rld"))
 
-print("hello" == "world")
-print("1" == 1)
+println("hello" == "world")
+println("1" == 1)
 
-print((17 + 18) + (2 * 17))
+println((17 + 18) + (2 * 17))
 
-print(34 > 35)
-print(420 >= 421)
-print(3 == 3)
-print(15 < 30)
-print(18 <= 18)
+println(34 > 35)
+println(420 >= 421)
+println(3 == 3)
+println(15 < 30)
+println(18 <= 18)
 
-print(!1)
-print(12 % 5)
-print(1 || 0)
-print(1 && 1)
+println(!1)
+println(12 % 5)
+println(1 || 0)
+println(1 && 1)
 
 let a = 5
 let b = 9
 
-print(a & b)
-print(a | b)
-print(a ^ b)
-print(~a)
-print(b << 1)
-print(b >> 1)
+println(a & b)
+println(a | b)
+println(a ^ b)
+println(~a)
+println(b << 1)
+println(b >> 1)

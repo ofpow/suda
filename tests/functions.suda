@@ -9,10 +9,10 @@ fn fib(n)
     return (fib(n1) + fib(n2))
 ;
 
-print fib(10)
+println fib(10)
 
 fn add(a, b)
-    print(a + b)
+    println(a + b)
     return "E"
 ;
 

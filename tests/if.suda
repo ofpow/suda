@@ -1,23 +1,23 @@
 if 1
-    print "hello\n"
+    println "hello"
     if 0
-        print "world"
-        print "world"
-        print "world"
-        print "world"
+        println "world"
+        println "world"
+        println "world"
+        println "world"
     ;
 ;
 
 if 0
-    print "thursday"
+    println "thursday"
 elif 1
-    print "thursday again\n"
+    println "thursday again"
 else
-    print "goodbye"
+    println "goodbye"
 ;
 
 if 0
-    print "e"
+    println "e"
 elif 0
-    print "E"
+    println "E"
 ;

@@ -5,5 +5,5 @@ while (count < 100)
         break
     ;
     count = (count + 1)
-    print count
+    println count
 ;

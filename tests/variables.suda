@@ -1,10 +1,9 @@
-let var_one = "hello world\n"
+let var_one = "hello world"
 let var_two = 5
 
-print var_one
-print var_two
+println var_one
+println var_two
 
-print var_one@var_two
-print "\n"
+println var_one@var_two
 var_one@3 = "G"
-print var_one
+println var_one
