@@ -283,7 +283,8 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
 
         if (var.value[index].type == Value_String) {
             int len = strlen(var.value[index].value);
-            return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, var.value[index].value + 1), 1);
+            if (var.value[index].value[0] != '"') return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
+            else return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, var.value[index].value + 1), 1);
         } else if (var.value[index].type == Value_Number) {
             if (mutable <= 0) {
                 AST_Value *val = &var.value[index];
