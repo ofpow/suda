@@ -97,7 +97,7 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
             intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
             intrprtr.local_vars_index++;
         } else if (n->left->value[i + 1].type == Value_String) {
-            int len = strlen(n->left->value[i + 1].value + 1);
+            int len = strlen(n->left->value[i + 1].value) + 1;
             intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
             intrprtr.local_vars_index++;
         } else if (n->left->value[i + 1].type == Value_Identifier) {
@@ -466,11 +466,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 if (i->mutable > 0) free_ast_value(i);
             }
 
-            char *var_name = strdup(n->value->value);
             Variable var;
-            if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(var_name, interpreter->local_vars, interpreter->local_vars_index, n->line);
-            else var = get_var(var_name, interpreter->vars, interpreter->vars_index, n->line);
-            free(var_name);
+            if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
+            else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
 
             //if it was assigned after array was created, add quotes around value
             if (new_val->type == Value_String && new_val->value[0] != '"' && var.value->type == Value_Array) {
@@ -486,7 +484,10 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 break;
             }
             free(var.value[index].value);
-            interpreter->vars[var.index].value[index] = *new_val;
+            if (interpreter->local_vars != NULL)
+                interpreter->local_vars[var.index].value[index] = *new_val;
+            else
+                interpreter->vars[var.index].value[index] = *new_val;
             free(new_val);
 
             break;}
