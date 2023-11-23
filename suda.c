@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
     #define debug(...) printf(__VA_ARGS__);
 #else
@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 
 void free_mem(int exit_val);
 
@@ -135,6 +136,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "ERROR: invalid arguments\nUsage: suda [script]\n");
         exit(1);
     }
+
+    #ifdef DEBUG
+    struct timespec tstart={0,0}, tend={0,0};
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
+    #endif
     
     //tokenize program
     debug("\n----------\nLEXING\n")
@@ -143,6 +149,15 @@ int main(int argc, char *argv[]) {
     programs->progs_index = 0;
     programs->progs_capacity = 2;
     tokens = lex_file(argv[1], programs);
+
+    #ifdef DEBUG
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    printf("LEXING       time: %f seconds\n",
+           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+    tstart = tend;
+    #endif
+
 
     debug("\n----------\nPARSING\n")
 
@@ -287,6 +302,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    #ifdef DEBUG
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    printf("PARSING      time: %f seconds\n",
+           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+    tstart = tend;
+    #endif
+
     debug("\n----------\nINTERPRETING\n")
 
     interpreter.nodes = p->nodes;
@@ -310,6 +333,13 @@ int main(int argc, char *argv[]) {
     call_stack_capacity = 10;
 
     interpret(&interpreter);
+
+    #ifdef DEBUG
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    printf("INTERPRETING time: %f seconds\n",
+           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+    #endif
 
     free_mem(0);
 }
