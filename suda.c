@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     #define debug(...) printf(__VA_ARGS__);
 #else
@@ -132,16 +132,30 @@ void free_mem(int exit_val) {
 
 int main(int argc, char *argv[]) {
     //read input file
-    if (argc != 2) {
-        fprintf(stderr, "ERROR: invalid arguments\nUsage: suda [script]\n");
+    if (argc < 2) {
+        fprintf(stderr, "ERROR: invalid arguments\nUsage: suda <args> [script]\n");
         exit(1);
     }
 
-    #ifdef DEBUG
-    struct timespec tstart={0,0}, tend={0,0}, tfinal={0,0};
-    clock_gettime(CLOCK_MONOTONIC, &tstart);
-    tfinal = tstart;
-    #endif
+    int time = 0;
+    struct timespec tstart, tend, tfinal;
+    char *file_path;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-t")) {
+            time = 1;
+        } else {
+            file_path = argv[i];
+            break;
+        }
+    }
+
+    if (time) {
+        tstart=(struct timespec){0,0};
+        tend=(struct timespec){0,0};
+        tfinal=(struct timespec){0,0};
+        clock_gettime(CLOCK_MONOTONIC, &tstart);
+        tfinal = tstart;
+    }
     
     //tokenize program
     debug("\n----------\nLEXING\n")
@@ -149,15 +163,15 @@ int main(int argc, char *argv[]) {
     programs->progs = calloc(2, sizeof(char*));
     programs->progs_index = 0;
     programs->progs_capacity = 2;
-    tokens = lex_file(argv[1], programs);
+    tokens = lex_file(file_path, programs);
 
-    #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &tend);
-    printf("LEXING       time: %f seconds\n",
-           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-    tstart = tend;
-    #endif
+    if (time) {
+        clock_gettime(CLOCK_MONOTONIC, &tend);
+        printf("LEXING       time: %f seconds\n",
+               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+        tstart = tend;
+    }
 
 
     debug("\n----------\nPARSING\n")
@@ -303,13 +317,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &tend);
-    printf("PARSING      time: %f seconds\n",
-           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-    tstart = tend;
-    #endif
+    if (time) {
+        clock_gettime(CLOCK_MONOTONIC, &tend);
+        printf("PARSING      time: %f seconds\n",
+               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+        tstart = tend;
+    }
 
     debug("\n----------\nINTERPRETING\n")
 
@@ -335,15 +349,15 @@ int main(int argc, char *argv[]) {
 
     interpret(&interpreter);
 
-    #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &tend);
-    printf("INTERPRETING time: %f seconds\n",
-           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-           ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-    printf("OVERALL      time: %f seconds\n",
-           ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-           ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
-    #endif
+    if (time) {
+        clock_gettime(CLOCK_MONOTONIC, &tend);
+        printf("INTERPRETING time: %f seconds\n",
+               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+        printf("OVERALL      time: %f seconds\n",
+               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+               ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
+    }
 
     free_mem(0);
 }
