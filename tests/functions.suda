@@ -2,18 +2,13 @@ fn fib(n)
     if (n < 2)
         return 1
     ;
-
-    let n1 = (n - 1)
-    let n2 = (n - 2)
-
-    return (fib(n1) + fib(n2))
+    return ((fib(n - 1)) + (fib(n - 2)))
 ;
 
 println fib(10)
 
 fn add(a, b)
-    println(a + b)
-    return "E"
+    return (a + b)
 ;
 
-add(34, 35)
+println add(34, 17 + 18)

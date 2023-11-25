@@ -189,6 +189,10 @@ typedef struct Node {
 
     int line;
     const char *file;
+
+    struct Node **func_args;
+    int func_args_index;
+    int func_args_capacity;
 } Node;
 
 typedef struct Function {
@@ -255,6 +259,7 @@ Node *new_node(AST_Type type, AST_Value *value, int jump_index, int line, const 
     node->left = NULL;
     node->right = NULL;
     node->file = file;
+    node->func_args = NULL;
     return node;
 }
 
@@ -272,7 +277,6 @@ void free_node(Node *n) {
         }
     }
     
-
     if (n->value != NULL) {
         if (n->value->type == Value_Function_Args) {
             int len = strtoint(n->value[0].value, strlen(n->value[0].value));
@@ -294,6 +298,13 @@ void free_node(Node *n) {
         free_node(n->right);
         n->right = NULL;
     }
+
+    if (n->func_args != NULL) {
+        for (int i = 0; i < n->func_args_index; i++)
+            free_node(n->func_args[i]);
+    }
+    free(n->func_args);
+
     if (n->left == NULL && n->right == NULL) 
         free(n);
     else
@@ -382,10 +393,21 @@ Node *expr(Parser *p, Node *child) {
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
                 n = new_node(AST_Function_Call, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 n->value = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1);
+                n->func_args = calloc(10, sizeof(Node*));
+                n->func_args_index = 0;
+                n->func_args_capacity = 10;
                 p->tok_index++;
-                n->left = new_node(AST_Function, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
-                n->left->value = parse_list(p);
+                //n->left = new_node(AST_Function, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                //n->left->value = parse_list(p);
+                Node *arg;
+                while ((arg = expr(p, NULL)) != NULL) {
+                    if (arg->type == AST_Right_Paren) { free_node(arg); break; }
+                    else if (arg->type == AST_Comma) free_node(arg);
+                    else append(n->func_args, arg, n->func_args_index, n->func_args_capacity)
+                }
                 return n;
+            } else if (IS_TOK_MATH_OP(CURRENT_TOK.type)) {
+                return expr(p, new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1, CURRENT_TOK.line, CURRENT_TOK.file));
             }
             return new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Left_Paren:

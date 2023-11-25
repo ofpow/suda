@@ -64,9 +64,9 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
 
     char *call_info = format_str(strlen(func->name) + 3 + num_len(n->line), "%s:%d", func->name, n->line);
+    append(call_stack, call_info, call_stack_index, call_stack_capacity)
 
-    int call_args_len = strtoint(n->left->value->value, strlen(n->left->value->value)) - 1;
-    ASSERT((func->arity == call_args_len), "ERROR in %s on line %d: cant call function %s with %d arguments\n", n->file, n->line, func->name, call_args_len)
+    ASSERT((func->arity == n->func_args_index), "ERROR in %s on line %d: cant call function %s with %d arguments, it needs %d arguments\n", n->file, n->line, func->name, n->func_args_index, func->arity)
 
     Interpreter intrprtr = {
         // nodes to execute
@@ -90,22 +90,13 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         0,
     };
 
-    append(call_stack, call_info, call_stack_index, call_stack_capacity)
-
     for (int i = 0; i < func->arity; i++) {
-        if (n->left->value[i + 1].type == Value_Number) {
-            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
-            intrprtr.local_vars_index++;
-        } else if (n->left->value[i + 1].type == Value_String) {
-            int len = strlen(n->left->value[i + 1].value) + 1;
-            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
-            intrprtr.local_vars_index++;
-        } else if (n->left->value[i + 1].type == Value_Identifier) {
-            Node temp = { value_to_ast_type(n->left->value[i + 1].type, n->left->line, n->left->file), &n->left->value[i + 1], NULL, NULL, -1, n->left->line, n->left->file };
-            AST_Value *new_val = eval_node(&temp, interpreter, 1);
-            intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
-            intrprtr.local_vars_index++;
-        } else ERR("ERROR in %s on line %d: Cant add var type %s to function local vars\n", n->file, n->line, find_ast_value_type(n->left->value[i + 1].type))
+        intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) {
+            func->args[i]->value,
+            eval_node(n->func_args[i], interpreter, 1),
+            i,
+        };
+        intrprtr.local_vars_index++;
     }
 
     AST_Value *rtrn;
@@ -543,3 +534,19 @@ void interpret(Interpreter *interpreter) {
         interpreter->program_counter++;
     }
 }
+    //for (int i = 0; i < func->arity; i++) {
+    //    if (n->left->value[i + 1].type == Value_Number) {
+    //        intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, strdup(n->left->value[i + 1].value), 1), intrprtr.local_vars_index };
+    //        intrprtr.local_vars_index++;
+    //    } else if (n->left->value[i + 1].type == Value_String) {
+    //        int len = strlen(n->left->value[i + 1].value) + 1;
+    //        intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_ast_value(n->left->value[i + 1].type, format_str(len, "%.*s", len, n->left->value[i + 1].value + 1), 1), intrprtr.local_vars_index };
+    //        intrprtr.local_vars_index++;
+    //    } else if (n->left->value[i + 1].type == Value_Identifier) {
+    //        Node temp = { value_to_ast_type(n->left->value[i + 1].type, n->left->line, n->left->file), &n->left->value[i + 1], NULL, NULL, -1, n->left->line, n->left->file, NULL, -1, -1 };
+    //        AST_Value *new_val = eval_node(&temp, interpreter, 1);
+    //        intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) { func->args[i]->value, new_val, intrprtr.local_vars_index };
+    //        intrprtr.local_vars_index++;
+    //    } else ERR("ERROR in %s on line %d: Cant add var type %s to function local vars\n", n->file, n->line, find_ast_value_type(n->left->value[i + 1].type))
+    //}
+
