@@ -140,9 +140,18 @@ int main(int argc, char *argv[]) {
     int time = 0;
     struct timespec tstart, tend, tfinal;
     char *file_path;
+
+    //TODO: make debug a cli flag
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
             time = 1;
+        }
+        else if (!strcmp(argv[i], "-h")) {
+            printf("Usage: suda <args> [file] \n");
+            printf("Arguments:\n");
+            printf("  -h: print this message\n");
+            printf("  -t: print timing info\n");
+            return 0;
         } else {
             file_path = argv[i];
             break;
