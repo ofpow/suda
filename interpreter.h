@@ -531,6 +531,11 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             int arr_len = strtoint(var.value->value, strlen(var.value->value)) + 1;
             AST_Value *new_val = eval_node(n->left, interpreter, 0);
+            if (new_val->type == Value_String && new_val->value[0] != '"') {
+                char *temp = new_val->value;
+                new_val->value = format_str(strlen(temp) + 3, "\"%s\"", temp);
+                free(temp);
+            }
             
             if (interpreter->local_vars != NULL) {
                 interpreter->local_vars[var.index].value = realloc(interpreter->local_vars[var.index].value, arr_len * sizeof(AST_Value));
