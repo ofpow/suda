@@ -477,7 +477,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             int index;
             if (n->right) {
                 new_val = eval_node(n->right, interpreter, 1);
-                index = (int)strtoint(n->left->value->value, strlen(n->left->value->value));
+                AST_Value *i = eval_node(n->left, interpreter, 0);
+                index = (int)strtoint(i->value, strlen(i->value));
+                if (i->mutable > 0) free_ast_value(i);
             } else {
                 new_val = eval_node(n->left->left, interpreter, 1);
                 AST_Value *i = eval_node(n->left, interpreter, 1);
