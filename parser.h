@@ -397,8 +397,6 @@ Node *expr(Parser *p, Node *child) {
                 n->func_args_index = 0;
                 n->func_args_capacity = 10;
                 p->tok_index++;
-                //n->left = new_node(AST_Function, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
-                //n->left->value = parse_list(p);
                 Node *arg;
                 while ((arg = expr(p, NULL)) != NULL) {
                     if (arg->type == AST_Right_Paren) { free_node(arg); break; }
