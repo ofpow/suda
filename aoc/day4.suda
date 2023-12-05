@@ -1,0 +1,118 @@
+include "aoc/aoc.suda"
+
+let input = [
+    "41 48 83 86 17|83 86 6 31 17 9 48 53",
+    "13 32 20 16 61|61 30 68 82 17 32 24 19",
+    " 1 21 53 59 44|69 82 63 72 16 21 14 1",
+    "41 92 73 84 69|59 84 76 51 58 5 54 83",
+    "87 83 26 28 32|88 30 70 12 93 22 82 36",
+    "31 18 13 56 72|74 77 10 23 35 67 36 11",
+]
+
+fn parse_game(wins, scratches)
+    let total = 0
+
+    let i = 1
+    while (i <= len(scratches))
+        if (in(wins, scratches@i) == 1)
+            total = (total + 1)
+        ;
+        i = (i + 1)
+    ;
+    return total
+;
+
+fn part_1()
+    let total = 0
+
+    let x = []
+
+    let winning_numbers = []
+    let scratches = []
+    let i = 1
+    while (i <= len(input))
+        x = split_by(input@i, "|")
+        append winning_numbers trim_left(x@1)
+        append scratches trim_left(x@2)
+        i = (i + 1)
+    ;
+    
+    let winners = []
+    let nums = []
+    let score = 0
+
+    let j = 1
+    i = 1
+    while (i <= len(input))
+        score = 0
+
+        winners = split_by(winning_numbers@i, " ") 
+        nums = split_by(scratches@i, " ")
+
+        j = parse_game(winners, nums)
+
+        while (j)
+            if (score == 0)
+                score = 1
+            else
+                score = (score * 2)
+            ;
+            j = (j - 1)
+        ;
+
+        total = (total + score)
+        i = (i + 1)
+    ;
+
+    return total
+;
+
+fn add_after(array, start, end, amount)
+    let i = 1
+    while (i <= end)
+        array@(start + i) = ((array@(start + i)) + amount)
+        i = (i + 1)
+    ;
+    return array
+;
+
+fn part_2()
+    let total = 0
+
+    let x = []
+
+    let winning_numbers = []
+    let scratches = []
+    let i = 1
+    while (i <= len(input))
+        x = split_by(input@i, "|")
+        append winning_numbers trim_left(x@1)
+        append scratches trim_left(x@2)
+        i = (i + 1)
+    ;
+
+    let winners = []
+    let nums = []
+    let copies_count = []
+    i = 1
+    while (i <= len(input))
+        append copies_count 1
+        i = (i + 1)
+    ;
+
+    let j = 1
+    i = 1
+    while (i <= len(input))
+        winners = split_by(winning_numbers@i, " ") 
+        nums = split_by(scratches@i, " ")
+        copies_count = add_after(copies_count, i, parse_game(winners, nums), copies_count@i)
+        total = (total + copies_count@i)
+        i = (i + 1)
+    ;
+
+    return total
+;
+print "part 1: "
+println part_1()
+print "part 2: "
+println part_2()

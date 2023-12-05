@@ -1,0 +1,162 @@
+include "aoc/aoc.suda"
+
+let input = [
+    "1abc2",
+    "pqr3stu8vwx",
+    "a1b2c3d4e5f",
+    "treb7uchet",
+]
+
+fn part_1()
+    let sum = 0
+    let current = ""
+
+    let number = ""
+    let i = 0
+
+    let count = 1
+    while (count <= len(input))
+        number = ""
+        current = (input@count)
+
+        # find first digit
+        i = 1
+        while (i <= len(current))
+            if (is_num(current@i))
+                number = (number + current@i)
+                i = (len(current) + 1) # break
+            ;
+
+            i = (i + 1)
+        ;
+
+        # find last number
+        i = len(current)
+        while (i > 0)
+            if (is_num(current@i))
+                number = (number + current@i)
+                i = 0 # break
+            ;
+
+            i = (i - 1)
+        ;
+
+        sum = (sum + num(number))
+
+        count = (count + 1)
+    ;
+
+    return sum
+;
+
+fn find_first_number(string)
+    let i = 1
+    let x = ""
+    while (i <= len(string))
+        if ((len(string) - i) >= 3) # one two six
+            x = substr(string, i, i + 3)
+            if (x == "two")
+                return 2
+            ;
+            if (x == "one")
+                return 1
+            ;
+            if (x == "six")
+                return 6
+            ;
+        ;
+        if ((len(string) - i) >= 4) # four five nine
+            x = substr(string, i, i + 4) 
+            if (x == "four")
+                return 4
+            ;
+            if (x == "five")
+                return 5
+            ;
+            if (x == "nine")
+                return 9
+            ;
+        ;
+        if ((len(string) - i) >= 5) # three seven eight
+            x = substr(string, i, i + 5) 
+            if (x == "three")
+                return 3
+            ;
+            if (x == "seven")
+                return 7
+            ;
+            if (x == "eight")
+                return 8
+            ;
+        ;
+        if (is_num(string@i))
+            return num(string@i)
+        ;
+
+        i = (i + 1)
+    ;
+;
+fn find_last_number(string)
+    let i = len(string)
+    let x = ""
+    while (i > 0)
+        if ((len(string) - i) >= 2) # one two six
+            x = substr(string, i, i + 3)
+            if (x == "two")
+                return 2
+            ;
+            if (x == "one")
+                return 1
+            ;
+            if (x == "six")
+                return 6
+            ;
+        ;
+        if ((len(string) - i) >= 3) # four five nine
+            x = substr(string, i, i + 4) 
+            if (x == "four")
+                return 4
+            ;
+            if (x == "five")
+                return 5
+            ;
+            if (x == "nine")
+                return 9
+            ;
+        ;
+        if ((len(string) - i) >= 4) # three seven eight
+            x = substr(string, i, i + 5) 
+            if (x == "three")
+                return 3
+            ;
+            if (x == "seven")
+                return 7
+            ;
+            if (x == "eight")
+                return 8
+            ;
+        ;
+        if (is_num(string@i))
+            return num(string@i)
+        ;
+
+        i = (i - 1)
+    ;
+;
+
+fn part_2()
+    let sum = 0
+
+    let count = 1
+    while (count <= len(input))
+        sum = (sum + num((str(find_first_number(input@count)) + str(find_last_number(input@count)))))
+        count = (count + 1)
+    ;
+
+    return sum
+;
+
+print "part 1: "
+println part_1()
+print "part 2: "
+println part_2()

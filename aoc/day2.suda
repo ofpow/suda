@@ -1,0 +1,131 @@
+include "aoc/aoc.suda"
+
+let input = [
+    "3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green",
+    "1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue",
+    "8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red",
+    "1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red",
+    "6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green",
+]
+
+fn parse_set(set)
+    set = split_by(set, ",")
+
+    let i = 1
+    while (i <= len(set))
+        set@i = trim_left(set@i)
+        i = (i + 1)
+    ;
+
+              # r  g  b
+    let nums = [0, 0, 0]
+    
+    let info = []
+
+    i = 1
+    while (i <= len(set))
+        info = split_by(set@i, " ")
+
+        if ((info@2) == "red")
+            nums@1 = ((nums@1) + num(info@1))
+        elif ((info@2) == "green")
+            nums@2 = ((nums@2) + num(info@1))
+        elif ((info@2) == "blue")
+            nums@3 = ((nums@3) + num(info@1))
+        ;
+
+        i = (i + 1)
+    ;
+    if (((nums@1) <= 12) && ((nums@2) <= 13) && ((nums@3) <= 14))
+        return 1
+    ;
+
+    return 0
+;
+
+fn part_1()
+    let sum = 0
+    
+    let sets = []
+    let valid = 1
+    
+    let j = 1
+    let i = 1
+    while (i <= len(input))
+        sets = split_by(input@i, ";")
+
+        valid = 1
+        j = 1
+        while (j <= len(sets))
+            if (parse_set(sets@j) == 0)
+                valid = 0
+            ;
+            j = (j + 1)
+        ;
+
+        if (valid == 1)
+            sum = (sum + i)
+        ;
+
+        i = (i + 1)
+    ;
+
+    return sum
+;
+
+fn find_min(sets)
+    let draws = []
+    
+    let draw = []
+    let j = 1
+    let i = 1
+    while (i <= len(sets))
+        draw = split_by(sets@i, ",")
+        j = 1
+        while (j <= len(draw))
+            append draws trim_left(draw@j)
+            j = (j + 1)
+        ;
+        i = (i + 1)
+    ;
+                # r  g  b 
+    let colors = [0, 0, 0]
+    let info = []
+    i = 1
+    while (i <= len(draws))
+        info = split_by(draws@i, " ")
+        if ((info@2) == "red")
+            if (num(info@1) > (colors@1))
+                colors@1 = num(info@1)
+            ;
+        elif ((info@2) == "blue")
+            if (num(info@1) > (colors@2))
+                colors@2 = num(info@1)
+            ;
+        elif ((info@2) == "green")
+            if (num(info@1) > (colors@3))
+                colors@3 = num(info@1)
+            ;
+        ;
+        i = (i + 1)
+    ;
+    return ((colors@1) * (colors@2) * (colors@3))
+;
+
+fn part_2()
+    let sum = 0
+    let sets = [] 
+    let i = 1
+    while (i <= len(input))
+        sets = split_by(input@i, ";")
+        sum = (sum + find_min(sets))
+        i = (i + 1)
+    ;
+
+    return sum
+;
+
+print "part 1: "
+println part_1()
+print "part 2: "
+println part_2()
