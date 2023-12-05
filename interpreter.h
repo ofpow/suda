@@ -305,6 +305,27 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
                     return val;
                 }
                 return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
+            } else if (var.value[index].type == Value_Identifier) {
+                Variable rtrn;
+                if (interpreter->local_vars != NULL) var = get_var(var.value[index].value, interpreter->local_vars, interpreter->local_vars_index, n->line);
+                else rtrn = get_var(var.value[index].value, interpreter->vars, interpreter->vars_index, n->line);
+
+                if (mutable <= 0) {
+                    AST_Value *new_val = rtrn.value;
+                    new_val->mutable = 0;
+                    return new_val;
+                }
+                if (rtrn.value->type == Value_Array) {
+                    int arr_len = (int)strtoint(rtrn.value->value, strlen(rtrn.value->value));
+                    AST_Value *array = calloc(arr_len + 1, sizeof(rtrn.value[0]));
+                    array->mutable = 1;
+                    for (int i = 0; i < arr_len; i++) {
+                        array[i].type = rtrn.value[i].type;
+                        array[i].value = strdup(rtrn.value[i].value);
+                    }
+                    return array;
+                }
+                return new_ast_value(rtrn.value->type, strdup(rtrn.value->value), 1);
             } else ERR("ERROR in %s on line %d: Can't evaluate %s as part of array\n", n->file, n->line, find_ast_value_type(var.value[index].type))
             break;
         }
