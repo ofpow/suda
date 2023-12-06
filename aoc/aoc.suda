@@ -58,3 +58,13 @@ fn in(array, element)
     ;
     return 0
 ;
+
+# cast all elements of array to number
+fn to_num(array)
+    let i = 1
+    while (i <= len(array))
+        array@i = num(array@i)
+        i = (i + 1)
+    ;
+    return array
+;
