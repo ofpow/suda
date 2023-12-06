@@ -10,15 +10,27 @@ let input2 = [
 ]
 
 fn calc_race(time, record)
-    let wins = 0
+    let upper = 0
+    let lower = 0
     let hold = 0
+
     while (hold <= time)
         if (record < (hold * (time - hold)))
-            wins = (wins + 1)
+            lower = hold
+            hold = (time + 1)
         ;
         hold = (hold + 1)
     ;
-    return wins
+
+    hold = time
+    while (hold > 0)
+        if (record < (hold * (time - hold)))
+            upper = (hold + 1)
+            hold = 0
+        ;
+        hold = (hold - 1)
+    ;
+    return (upper - lower)
 ;
 
 fn part_1()
@@ -37,15 +49,10 @@ fn part_1()
 fn part_2()
     let result = 1
 
-    let times = split_by(input2@1, " ")
-    let records = split_by(input2@2, " ")
+    let time = num(input2@1)
+    let record = num(input2@2)
 
-    let i = 1
-    while (i <= len(times))
-        result = (result * calc_race(num(times@i), num(records@i)))
-        i = (i + 1)
-    ;
-    return result
+    return calc_race(time, record)
 ;
 
 println part_1()
