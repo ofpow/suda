@@ -135,7 +135,7 @@ AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
 
 void assign_variable(Interpreter *interpreter, char *var_name, AST_Value *var_val, int line, const char *file) {
     if (check_variable(var_name, interpreter->vars, interpreter->vars_index) >= 0) 
-        ERR("ERROR in %s on line %d: cant assign `%s` multiple times", file, line, var_name)
+        ERR("ERROR in %s on line %d: cant assign `%s` multiple times\n", file, line, var_name)
     else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) 
         ERR("ERROR in %s on line %d: cant assign `%s` multiple times\n", file, line, var_name)
 
@@ -188,19 +188,21 @@ void unassign_variable(Interpreter *interpreter, char *var_name, int line, const
     else {
         var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
         if (var_index >= 0) var = interpreter->vars[var_index];
-        else ERR("ERROR in %s on line %d: can't assign to undefined variable %s\n", file, line, var_name)
+        else ERR("ERROR in %s on line %d: can't unassign to undefined variable %s\n", file, line, var_name)
     }
 
     if (interpreter->local_vars != NULL) {
         debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
         free_ast_value(interpreter->local_vars[var.index].value);
-        interpreter->local_vars[var.index].value = NULL;
+        interpreter->local_vars_index--;
+        free_ast_value(interpreter->local_vars[interpreter->local_vars_index].value);
     } else {
         debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
-        free_ast_value(interpreter->vars[var.index].value);
-        interpreter->vars[var.index].value = NULL;
+        interpreter->vars_index--;
+        free_ast_value(interpreter->vars[interpreter->vars_index].value);
+        //free_ast_value(interpreter->vars[var.index].value);
+        //interpreter->vars[var.index].value = NULL;
     }
-
 }
 
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line, const char *file) {
@@ -504,6 +506,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             int index = strtoint(n->value->value, strlen(n->value->value));
             if (index >= (list_len - 1)) {
                 unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
                 interpreter->program_counter = n->jump_index;
                 break;
             }

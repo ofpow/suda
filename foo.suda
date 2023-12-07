@@ -1,7 +1,11 @@
 let foo = [1, 2, 3]
+let bar = [4, 5, 6]
 
-for bar in foo
-    println bar
+for i in foo
+    println i
+    for j in bar
+        println j
+    ;
 ;
 
 println "done"
