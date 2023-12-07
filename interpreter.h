@@ -505,6 +505,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             int list_len = strtoint(list[0].value, strlen(list[0].value));
             int index = strtoint(n->value->value, strlen(n->value->value));
             if (index >= (list_len - 1)) {
+                //TODO: only works if iterator is last variable in list, ie no variables created inside loop
                 unassign_variable(interpreter, n->left->value->value, n->line, n->file);
                 n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
                 interpreter->program_counter = n->jump_index;
