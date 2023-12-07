@@ -1,5 +1,7 @@
-let x = 3
+let foo = [1, 2, 3]
 
-let y = [1, 2, x]
+for bar in foo
+    println bar
+;
 
-println y@3
+println "done"

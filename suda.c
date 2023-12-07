@@ -228,6 +228,10 @@ int main(int argc, char *argv[]) {
             debug("WHILE: push index %d\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+        } else if (n->type == AST_For) {
+            debug("For: push index %d\n", p->nodes_index)
+            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
+            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Else) {
             debug("ELSE: change %d to %d\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index;

@@ -3,8 +3,8 @@
 /* 
  * SUDA EBNF
  *
- * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition> | <function call> | <append> | <include>
- * <print statement> : "print" <expr>
+ * <statement> : <print statement> | <variable assignment> | <if statement> | <while statement> | <function definition> | <function call> | <append> | <include> | <for loop>
+ * <print statement> : "print" <expr> | "println" <expr>
  * <variable assignment> : "let" var_name "=" <expr>
  * <if statement> : "if" <expr> <statements> ";" | "if" <expr> <statements> "else" <statements>
  * <while statement> : "while" <expr> <statements> ";"
@@ -12,6 +12,7 @@
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
  * <append> : "append" <variable> <expr>
  * <include> : "include" <file path to include>
+ * <for loop> : "for" <identifier> "in" <identifier> <statements> ";"
  *
  * <paren expr> : "(" <expr> ")"
  * <expr> : <terminal> | <math_expr> | <array> | <array access> | <function call> | <len> | <cast_num> | <cast_str>
@@ -80,6 +81,8 @@ typedef enum {
     AST_Cast_Str,
     AST_Cast_Num,
     AST_Println,
+    AST_For,
+    AST_In,
 } AST_Type;
 
 char *find_ast_type(int type) {
@@ -131,6 +134,8 @@ char *find_ast_type(int type) {
         case AST_Cast_Str: return "AST_Cast_Str";
         case AST_Cast_Num: return "AST_Cast_Num";
         case AST_Println: return "AST_Println";
+        case AST_For: return "AST_For";
+        case AST_In: return "AST_In";
         default: return "ast type not found";
     }
 }
@@ -173,6 +178,8 @@ AST_Type tok_to_ast(Token_Type type, int line, const char *file) {
         case Tok_Function: return AST_Function;
         case Tok_Elif: return AST_Elif;
         case Tok_Println: return AST_Println;
+        case Tok_For: return AST_For;
+        case Tok_In: return AST_In;
         default: ERR("ERROR in %s on line %d: cant convert token type %s to ast\n", file, line, find_tok_type(type))
     }
     return -1;
@@ -512,6 +519,19 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;
+        case Tok_For:
+            n = new_node(AST_For, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+            p->tok_index++;
+
+            ASSERT((CURRENT_TOK.type == Tok_Identifier), "ERROR in %s on line %d: need identifier to follow for\n", CURRENT_TOK.file, CURRENT_TOK.line)
+            n->left = expr(p, NULL);
+
+            ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %d: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
+            p->tok_index++;
+            n->right = expr(p, NULL);
+            n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
+            return n;
+
         default: return expr(p, NULL); 
     }
     return NULL;

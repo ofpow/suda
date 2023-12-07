@@ -1,6 +1,7 @@
 #pragma once
 
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len || type == AST_Cast_Num || type == AST_Cast_Str))
+#define NO_AST_VALUE (AST_Value) {0, NULL, 0}
 
 int exponentiate(int base, int power) {
     int result = 1;
@@ -132,6 +133,76 @@ AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
     return new;
 }
 
+void assign_variable(Interpreter *interpreter, char *var_name, AST_Value *var_val, int line, const char *file) {
+    if (check_variable(var_name, interpreter->vars, interpreter->vars_index) >= 0) 
+        ERR("ERROR in %s on line %d: cant assign `%s` multiple times", file, line, var_name)
+    else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) 
+        ERR("ERROR in %s on line %d: cant assign `%s` multiple times\n", file, line, var_name)
+
+    if (interpreter->local_vars != NULL) {
+        if (interpreter->local_vars_index >= interpreter->local_vars_capacity) {
+            interpreter->local_vars_capacity *= 2;
+            interpreter->local_vars = realloc(interpreter->local_vars, sizeof(Variable) * interpreter->local_vars_capacity);
+        }
+        interpreter->local_vars[interpreter->local_vars_index] = (Variable) { var_name, var_val, interpreter->local_vars_index };
+        interpreter->local_vars_index++;
+    } else {
+        if (interpreter->vars_index >= interpreter->vars_capacity) {
+            interpreter->vars_capacity *= 2;
+            interpreter->vars = realloc(interpreter->vars, sizeof(Variable) * interpreter->vars_capacity);
+        }
+
+        interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
+        interpreter->vars_index++;
+    }
+}
+
+void reassign_variable(Interpreter *interpreter, char *var_name, AST_Value *new_val, int line, const char *file) {
+    Variable var;
+    int var_index;
+    var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
+    if (var_index >= 0) var = interpreter->local_vars[var_index];
+    else {
+        var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
+        if (var_index >= 0) var = interpreter->vars[var_index];
+        else ERR("ERROR in %s on line %d: can't assign to undefined variable %s\n", file, line, var_name)
+    }
+
+    
+    if (interpreter->local_vars != NULL) {
+        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, interpreter->local_vars[var.index].value->value, new_val->value)
+        free_ast_value(interpreter->local_vars[var.index].value);
+        interpreter->local_vars[var.index].value = new_val;
+    } else {
+        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, interpreter->vars[var.index].value->value, new_val->value)
+        free_ast_value(interpreter->vars[var.index].value);
+        interpreter->vars[var.index].value = new_val;
+    }
+}
+
+void unassign_variable(Interpreter *interpreter, char *var_name, int line, const char *file) {
+    Variable var;
+    int var_index;
+    var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
+    if (var_index >= 0) var = interpreter->local_vars[var_index];
+    else {
+        var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
+        if (var_index >= 0) var = interpreter->vars[var_index];
+        else ERR("ERROR in %s on line %d: can't assign to undefined variable %s\n", file, line, var_name)
+    }
+
+    if (interpreter->local_vars != NULL) {
+        debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
+        free_ast_value(interpreter->local_vars[var.index].value);
+        interpreter->local_vars[var.index].value = NULL;
+    } else {
+        debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
+        free_ast_value(interpreter->vars[var.index].value);
+        interpreter->vars[var.index].value = NULL;
+    }
+
+}
+
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int op, int line, const char *file) {
     int op1_len = strlen(op1->value);
     int op2_len;
@@ -246,6 +317,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int mutable) {
             Variable var;
             if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
             else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
+            if (var.value == NULL) return NULL;
 
             if (mutable <= 0) {
                 AST_Value *new_val = var.value;
@@ -396,28 +468,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Var_Assign:;
             char *var_name = n->value->value;
-            if (check_variable(var_name, interpreter->vars, interpreter->vars_index) >= 0) 
-                ERR("ERROR in %s on line %d: cant assign `%s` multiple times", n->file, n->line, var_name)
-            else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) 
-                ERR("ERROR in %s on line %d: cant assign `%s` multiple times\n", n->file, n->line, var_name)
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
-
-            if (interpreter->local_vars != NULL) {
-                if (interpreter->local_vars_index >= interpreter->local_vars_capacity) {
-                    interpreter->local_vars_capacity *= 2;
-                    interpreter->local_vars = realloc(interpreter->local_vars, sizeof(Variable) * interpreter->local_vars_capacity);
-                }
-                interpreter->local_vars[interpreter->local_vars_index] = (Variable) { var_name, var_val, interpreter->local_vars_index };
-                interpreter->local_vars_index++;
-            } else {
-                if (interpreter->vars_index >= interpreter->vars_capacity) {
-                    interpreter->vars_capacity *= 2;
-                    interpreter->vars = realloc(interpreter->vars, sizeof(Variable) * interpreter->vars_capacity);
-                }
-
-                interpreter->vars[interpreter->vars_index] = (Variable) { var_name, var_val, interpreter->vars_index };
-                interpreter->vars_index++;
-            }
+            assign_variable(interpreter, var_name, var_val, n->line, n->file);
             debug("ASSIGN `%s` to variable `%s`\n", var_val->value, var_name)
             break;
         case AST_If:;
@@ -445,40 +497,39 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
+        case AST_For:;
+            AST_Value *list = eval_node(n->right, interpreter, 0);
+            int list_len = strtoint(list[0].value, strlen(list[0].value));
+            int index = strtoint(n->value->value, strlen(n->value->value));
+            if (index >= (list_len - 1)) {
+                unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                interpreter->program_counter = n->jump_index;
+                break;
+            }
+            AST_Value *new_value = new_ast_value(list[index + 1].type, strdup(list[index + 1].value), 1);
+            if (index < 1) {
+                assign_variable(interpreter, n->left->value->value, new_value, n->line, n->file);
+            }
+            else if (index < (list_len - 1)) {
+                reassign_variable(interpreter, n->left->value->value, new_value, n->line, n->file);
+            }
+            index++;
+            free(n->value->value);
+            n->value->value = format_str(num_len(index) + 1, "%d", index);
+            break;
         case AST_Else:
             interpreter->program_counter = n->jump_index;
             break;
         case AST_Semicolon:
-            if (interpreter->nodes[n->jump_index]->type == AST_While) {
+            if (interpreter->nodes[n->jump_index]->type == AST_While || interpreter->nodes[n->jump_index]->type == AST_For) {
                 interpreter->program_counter = n->jump_index - 1;
             }
             interpreter->auto_jump = 0;
             break;
         case AST_Identifier:;{
             AST_Value *new_val = eval_node(n->left, interpreter, 1);
-            char *var_name = strdup(n->value->value);
+            reassign_variable(interpreter, n->value->value, new_val, n->line, n->file);
 
-            Variable var;
-            int var_index;
-            var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
-            if (var_index >= 0) var = interpreter->local_vars[var_index];
-            else {
-                var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
-                if (var_index >= 0) var = interpreter->vars[var_index];
-                else ERR("ERROR in %s on line %d: can't assign to undefined variable %s\n", n->file, n->line, var_name)
-            }
-            free(var_name);
-
-            
-            if (interpreter->local_vars != NULL) {
-                debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, interpreter->local_vars[var.index].value->value, new_val->value)
-                free_ast_value(interpreter->local_vars[var.index].value);
-                interpreter->local_vars[var.index].value = new_val;
-            } else {
-                debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, interpreter->vars[var.index].value->value, new_val->value)
-                free_ast_value(interpreter->vars[var.index].value);
-                interpreter->vars[var.index].value = new_val;
-            }
             break;}
         case AST_While:;{
             AST_Value *expr = eval_node(n->left, interpreter, 0);
