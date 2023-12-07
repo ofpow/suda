@@ -499,6 +499,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;}
         case AST_For:;
             AST_Value *list = eval_node(n->right, interpreter, 0);
+            ASSERT((list->type == Value_Array || list->type == Value_String), "ERROR in %s on line %d: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
             int list_len = strtoint(list[0].value, strlen(list[0].value));
             int index = strtoint(n->value->value, strlen(n->value->value));
             if (index >= (list_len - 1)) {
