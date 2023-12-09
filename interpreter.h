@@ -195,13 +195,10 @@ void unassign_variable(Interpreter *interpreter, char *var_name, int line, const
         debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
         free_ast_value(interpreter->local_vars[var.index].value);
         interpreter->local_vars_index--;
-        free_ast_value(interpreter->local_vars[interpreter->local_vars_index].value);
     } else {
-        debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
+        debug("UNASSIGN variable `%s`\n", interpreter->vars[var.index].name)
+        free_ast_value(interpreter->vars[var.index].value);
         interpreter->vars_index--;
-        free_ast_value(interpreter->vars[interpreter->vars_index].value);
-        //free_ast_value(interpreter->vars[var.index].value);
-        //interpreter->vars[var.index].value = NULL;
     }
 }
 
