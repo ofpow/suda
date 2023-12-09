@@ -499,7 +499,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
-        case AST_For:;
+        case AST_For:; //TODO: iterating doesnt work with characters in string
             AST_Value *list = eval_node(n->right, interpreter, 0);
             ASSERT((list->type == Value_Array || list->type == Value_String), "ERROR in %s on line %d: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
             int list_len = strtoint(list[0].value, strlen(list[0].value));
