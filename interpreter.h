@@ -496,31 +496,43 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             }
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
-        case AST_For:; //TODO: iterating doesnt work with characters in string
+        case AST_For:;
+            debug("FOR: index is `%s`\n", n->value->value)
             AST_Value *list = eval_node(n->right, interpreter, 0);
-            ASSERT((list->type == Value_Array || list->type == Value_String), "ERROR in %s on line %d: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
-            int list_len = strtoint(list[0].value, strlen(list[0].value));
             int index = strtoint(n->value->value, strlen(n->value->value));
-
-            if (index >= (list_len - 1)) {
-                //TODO: only works if iterator is last variable in list, ie no variables created inside loop
-                unassign_variable(interpreter, n->left->value->value, n->line, n->file);
-                n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
-                interpreter->program_counter = n->jump_index;
-                break;
-            }
+           
+            int len;
             AST_Value *new_value;
-            if (list[index + 1].type == Value_String) {
-                int len = strlen(list[index + 1].value);
-                new_value = new_ast_value(list[index + 1].type, format_str(len, "%.*s", len - 2, list[index + 1].value + 1), 1);
-            } else {
-                new_value = new_ast_value(list[index + 1].type, strdup(list[index + 1].value), 1);
-            }
+            if (list->type == Value_Array) {
+                len = strtoint(list[0].value, strlen(list[0].value));
+                if (index >= (len - 1)) {
+                    //TODO: only works if iterator is last variable in list, ie no variables created inside loop
+                    unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                    n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
+                    interpreter->program_counter = n->jump_index;
+                    break;
+                }
+                if (list[index + 1].type == Value_String) {
+                    int len = strlen(list[index + 1].value);
+                    new_value = new_ast_value(list[index + 1].type, format_str(len, "%.*s", len - 2, list[index + 1].value + 1), 1);
+                } else {
+                    new_value = new_ast_value(list[index + 1].type, strdup(list[index + 1].value), 1);
+                }
+            } else if (list->type == Value_String) {
+                len = strlen(list->value) + 1;
+                if (index >= (len - 1)) {
+                    unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                    n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
+                    interpreter->program_counter = n->jump_index;
+                    break;
+                }
+                new_value = new_ast_value(Value_String, format_str(2, "%c", list->value[index]), 1);
+            } else ERR("ERROR in %s on line %d: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
 
             if (index < 1) {
                 assign_variable(interpreter, n->left->value->value, new_value, n->line, n->file);
             }
-            else if (index < (list_len - 1)) {
+            else if (index < (len - 1)) {
                 reassign_variable(interpreter, n->left->value->value, new_value, n->line, n->file);
             }
             index++;
