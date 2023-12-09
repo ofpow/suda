@@ -281,7 +281,6 @@ static Token_Type id_type(Lexer *l) {
                 }
             }
             break;
-            return check_keyword(1, 1, "n", Tok_Function, l);
         case 'i':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
@@ -290,11 +289,11 @@ static Token_Type id_type(Lexer *l) {
                     case 'n':
                         if (l->start[2] == 'c')
                             return check_keyword(3, 4, "lude", Tok_Include, l);
-                        return Tok_In;
+                        else if (l->start[2] == ' ')
+                            return Tok_In;
                 }
             }
             break;
-            return check_keyword(1, 1, "f", Tok_If, l);
         case 'l':
             if (l->current - l->start > 2) {
                 switch (l->start[2]) {
