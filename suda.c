@@ -16,7 +16,7 @@ void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
-#define num_len(num) snprintf(NULL, 0, "%d", num)
+#define num_len(num) snprintf(NULL, 0, "%ld", num)
 #define append(array, element, index, capacity) do {            \
     if (index >= capacity) {                                    \
         capacity *= 2;                                          \
@@ -35,10 +35,10 @@ char *format_str(int strlen, const char *format, ...) {
     return result;
 }
 
-int strtoint(const char *str, int len) {
+int64_t strtoint(const char *str, int64_t len) {
     if (!str) ERR("need something to convert\n")
     if (!len) ERR("need length to convert\n")
-    int total = 0;
+    int64_t total = 0;
     if (str[0] == '-') {
         for (int i = 1; i < len - 1; i++) {
             total -= str[i] - '0';
@@ -73,8 +73,8 @@ char *read_file(const char *file_path) {
 
 typedef struct Programs {
     char **progs;
-    int progs_index;
-    int progs_capacity;
+    int64_t progs_index;
+    int64_t progs_capacity;
 } Programs;
 
 char **call_stack;
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    int time = 0;
+    int64_t time = 0;
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
@@ -204,8 +204,8 @@ int main(int argc, char *argv[]) {
 
     //variables to store main state when parsing a function
     Function *func;
-    int temp_nodes_capacity;
-    int temp_nodes_index;
+    int64_t temp_nodes_capacity;
+    int64_t temp_nodes_index;
     Node **temp_nodes = NULL;
 
     while (1) {
@@ -221,26 +221,26 @@ int main(int argc, char *argv[]) {
             }
             break;
         } else if (n->type == AST_If) {
-            debug("IF: push index %d\n", p->nodes_index)
+            debug("IF: push index %ld\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_While) {
-            debug("WHILE: push index %d\n", p->nodes_index)
+            debug("WHILE: push index %ld\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_For) {
-            debug("For: push index %d\n", p->nodes_index)
+            debug("For: push index %ld\n", p->nodes_index)
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Else) {
-            debug("ELSE: change %d to %d\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
+            debug("ELSE: change %ld to %ld\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index;
             n->jump_index = p->jump_indices[p->jumps_index - 1];
             p->jumps_index--;
             append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Elif) {
-            debug("ELIF: change %d to %d\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
+            debug("ELIF: change %ld to %ld\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
             p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index - 1;
             p->jump_indices[p->jumps_index - 1] = p->nodes_index;
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
@@ -258,8 +258,8 @@ int main(int argc, char *argv[]) {
                 continue;
             }
             p->jumps_index--;
-            if (p->jumps_index < 0) ERR("ERROR in %s on line %d: extra semicolon\n", n->file, n->line)
-            debug("SEMICOLON: pop index %d\n", p->jump_indices[p->jumps_index])
+            if (p->jumps_index < 0) ERR("ERROR in %s on line %ld: extra semicolon\n", n->file, n->line)
+            debug("SEMICOLON: pop index %ld\n", p->jump_indices[p->jumps_index])
             if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
                 n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
                 p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR in %s on line %d: tried to use break outside a while loop\n", n->file, n->line)
+            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use break outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Continue) {
             for (int i = p->jumps_index - 1; i > -1; i--) {
                 if (p->nodes[p->jump_indices[i]]->type == AST_While) {
@@ -284,21 +284,21 @@ int main(int argc, char *argv[]) {
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
-            if (n->jump_index < 0) ERR("ERROR in %s on line %d: tried to use continue outside a while loop\n", n->file, n->line)
+            if (n->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use continue outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Function) {
             free_node(n);
             func = calloc(1, sizeof(Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
             func->line = CURRENT_TOK.line;
-            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR in %s on line %d: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
+            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
 
             p->tok_index++;
-            ASSERT((p->jumps_index >= 0), "ERROR in %s on line %d: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
-            ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR in %s on line %d: need left paren to open function arguments\n",  CURRENT_TOK.file,CURRENT_TOK.line)
+            ASSERT((p->jumps_index >= 0), "ERROR in %s on line %ld: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
+            ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR in %s on line %ld: need left paren to open function arguments\n",  CURRENT_TOK.file,CURRENT_TOK.line)
             p->tok_index++;
 
             //switch parser to parse the function
-            if (temp_nodes != NULL) ERR("ERROR in %s on line %d: cant define functions inside other functions\n", CURRENT_TOK.file, LAST_TOK.line)
+            if (temp_nodes != NULL) ERR("ERROR in %s on line %ld: cant define functions inside other functions\n", CURRENT_TOK.file, LAST_TOK.line)
             temp_nodes = p->nodes;
             temp_nodes_index = p->nodes_index;
             temp_nodes_capacity = p->nodes_capacity;
@@ -308,7 +308,7 @@ int main(int argc, char *argv[]) {
             p->parsing_function = 1;
 
             //parse arguments into func->args
-            int args_capacity = 1;
+            int64_t args_capacity = 1;
             func->arity = 0;
             func->args = calloc(args_capacity, sizeof(AST_Value*));
             while (1) {
@@ -323,7 +323,7 @@ int main(int argc, char *argv[]) {
                 } else if (n->type == AST_Right_Paren) {
                     free_node(n);
                     break;
-                } else ERR("ERROR in %s on line %d: cant parse token type %s as part of function arguments\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
+                } else ERR("ERROR in %s on line %ld: cant parse token type %s as part of function arguments\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
             }
         } else {
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)

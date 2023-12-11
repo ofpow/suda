@@ -23,27 +23,27 @@ char *find_ast_value_type(Value_Type type) {
 typedef struct AST_Value {
     Value_Type type;
     char *value;
-    int mutable;
+    int64_t mutable;
 } AST_Value;
 
 typedef struct Variable {
     char *name;
     AST_Value *value;
-    int index;
+    int64_t index;
 } Variable;
 
 //TODO: variables as a hashmap
-Variable get_var(const char *var_name, Variable *vars, int vars_index, int line) {
+Variable get_var(const char *var_name, Variable *vars, int64_t vars_index, int64_t line) {
     for (int i = 0; i < vars_index; i++) {
         if (!strcmp(var_name, vars[i].name)) {
             return vars[i];
         }
     }
-    ERR("ERROR on line %d: variable `%s` not found\n", line, var_name)
+    ERR("ERROR on line %ld: variable `%s` not found\n", line, var_name)
     return (Variable) {0};
 }
 
-int check_variable(const char *var_name, Variable *vars, int vars_index) {
+int check_variable(const char *var_name, Variable *vars, int64_t vars_index) {
     for (int i = 0; i < vars_index; i++) {
         if (!strcmp(var_name, vars[i].name)) {
             return i;

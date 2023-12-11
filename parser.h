@@ -140,7 +140,7 @@ char *find_ast_type(int type) {
     }
 }
 
-AST_Type tok_to_ast(Token_Type type, int line, const char *file) {
+AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
     switch (type) {
         case Tok_Add: return AST_Add;
         case Tok_Sub: return AST_Sub;
@@ -180,58 +180,58 @@ AST_Type tok_to_ast(Token_Type type, int line, const char *file) {
         case Tok_Println: return AST_Println;
         case Tok_For: return AST_For;
         case Tok_In: return AST_In;
-        default: ERR("ERROR in %s on line %d: cant convert token type %s to ast\n", file, line, find_tok_type(type))
+        default: ERR("ERROR in %s on line %ld: cant convert token type %s to ast\n", file, line, find_tok_type(type))
     }
     return -1;
 }
 
 typedef struct Node {
-    int type;
+    int64_t type;
     AST_Value *value;
 
     struct Node *right;
     struct Node *left;
 
-    int jump_index;
+    int64_t jump_index;
 
-    int line;
+    int64_t line;
     const char *file;
 
     struct Node **func_args;
-    int func_args_index;
-    int func_args_capacity;
+    int64_t func_args_index;
+    int64_t func_args_capacity;
 } Node;
 
 typedef struct Function {
     char *name;
     Node **nodes;
-    int nodes_size;
+    int64_t nodes_size;
 
-    int arity;
+    int64_t arity;
     AST_Value **args;
 
-    int line;
+    int64_t line;
 } Function;
 
 typedef struct Parser {
     Token *tokens;
-    int tok_index;
+    int64_t tok_index;
 
     Node **nodes;
-    int nodes_index;
-    int nodes_capacity;
+    int64_t nodes_index;
+    int64_t nodes_capacity;
 
-    int *jump_indices;
-    int jumps_capacity;
-    int jumps_index;
+    int64_t *jump_indices;
+    int64_t jumps_capacity;
+    int64_t jumps_index;
 
     Function **funcs;
-    int funcs_index;
-    int funcs_capacity;
-    int parsing_function;
+    int64_t funcs_index;
+    int64_t funcs_capacity;
+    int64_t parsing_function;
 } Parser;
 
-AST_Value *new_ast_value(int type, char *value, int mutable) {
+AST_Value *new_ast_value(int type, char *value, int64_t mutable) {
     debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value)
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
@@ -244,7 +244,7 @@ AST_Value *new_ast_value(int type, char *value, int mutable) {
 void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
     if (value->type == Value_Array) {
-        int arr_len = strtoint(value[0].value, strlen(value[0].value));
+        int64_t arr_len = strtoint(value[0].value, strlen(value[0].value));
         for (int j = 0; j < arr_len; j++) {
             if (value[j].value != NULL) free(value[j].value);
             value[j].value = NULL;
@@ -254,7 +254,7 @@ void free_ast_value(AST_Value *value) {
     free(value);
 }
 
-Node *new_node(AST_Type type, AST_Value *value, int jump_index, int line, const char *file) {
+Node *new_node(AST_Type type, AST_Value *value, int64_t jump_index, int64_t line, const char *file) {
 
     debug("NODE ( `%s` )\n", find_ast_type(type))
 
@@ -277,7 +277,7 @@ void free_node(Node *n) {
     if (n == NULL) return;
 
     if (n->type == AST_Array) {
-        int size = strtoint(n->value->value, strlen(n->value->value));
+        int64_t size = strtoint(n->value->value, strlen(n->value->value));
         for (int i = 0; i < size; i++) {
             if (n->value[i].value != 0) free(n->value[i].value);
             n->value[i].value = NULL;
@@ -286,7 +286,7 @@ void free_node(Node *n) {
     
     if (n->value != NULL) {
         if (n->value->type == Value_Function_Args) {
-            int len = strtoint(n->value[0].value, strlen(n->value[0].value));
+            int64_t len = strtoint(n->value[0].value, strlen(n->value[0].value));
             for (int i = 0; i < len; i++) {
                 if (n->value[i].value) free(n->value[i].value);
             }
@@ -315,7 +315,7 @@ void free_node(Node *n) {
     if (n->left == NULL && n->right == NULL) 
         free(n);
     else
-        ERR("ERROR in %s on line %d: not everything freed correctly\n", n->file, n->line)
+        ERR("ERROR in %s on line %ld: not everything freed correctly\n", n->file, n->line)
 }
 
 void free_function(Function *func) {
@@ -328,8 +328,8 @@ void free_function(Function *func) {
 }
 
 AST_Value *parse_list(Parser *p) {
-    int list_capacity = 2;
-    int list_index = 1;
+    int64_t list_capacity = 2;
+    int64_t list_index = 1;
     AST_Value *list = calloc(list_capacity, sizeof(struct AST_Value));
     while (1) {
         switch (CURRENT_TOK.type) {
@@ -351,18 +351,18 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Right_Bracket:
                 p->tok_index++;
                 list[0].type = Value_Array;
-                list[0].value = format_str(num_len(list_index) + 1, "%d", list_index);
+                list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
                 return list;
             case Tok_Right_Paren:
                 p->tok_index++;
                 list[0].type = Value_Function_Args;
-                list[0].value = format_str(num_len(list_index) + 1, "%d", list_index);
+                list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
                 return list;
             case Tok_Eof:
-                ERR("ERROR in %s on line %d: unclosed list\n", CURRENT_TOK.file, CURRENT_TOK.line)
+                ERR("ERROR in %s on line %ld: unclosed list\n", CURRENT_TOK.file, CURRENT_TOK.line)
                 break;
             default: 
-                ERR("ERROR in %s on line %d: cant parse %s as part of list\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
+                ERR("ERROR in %s on line %ld: cant parse %s as part of list\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
         }
     }
     return NULL;
@@ -419,7 +419,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n = expr(p, NULL);
             while (CURRENT_TOK.type != Tok_Right_Paren) {
-                if (CURRENT_TOK.type == Tok_Eof) ERR("ERROR in %s on line %d: Require closing parenthese\n", CURRENT_TOK.file, CURRENT_TOK.line)
+                if (CURRENT_TOK.type == Tok_Eof) ERR("ERROR in %s on line %ld: Require closing parenthese\n", CURRENT_TOK.file, CURRENT_TOK.line)
                 n = expr(p, n);
             }
             p->tok_index++;
@@ -472,7 +472,7 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n->value = parse_list(p);
             return n;
-        default: ERR("ERROR in %s on line %d: Unsupported token type for expr %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
+        default: ERR("ERROR in %s on line %ld: Unsupported token type for expr %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
 }
@@ -523,10 +523,10 @@ Node *statement(Parser *p) {
             n = new_node(AST_For, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
 
-            ASSERT((CURRENT_TOK.type == Tok_Identifier), "ERROR in %s on line %d: need identifier to follow for\n", CURRENT_TOK.file, CURRENT_TOK.line)
+            ASSERT((CURRENT_TOK.type == Tok_Identifier), "ERROR in %s on line %ld: need identifier to follow for\n", CURRENT_TOK.file, CURRENT_TOK.line)
             n->left = expr(p, NULL);
 
-            ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %d: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
+            ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %ld: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
             p->tok_index++;
             n->right = expr(p, NULL);
             n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);

@@ -127,15 +127,15 @@ char *find_tok_type(int type) {
 typedef struct Lexer {
     char *start;
     char *current;
-    int line;
+    int64_t line;
     const char *file;
 } Lexer;
 
 typedef struct Token {
     Token_Type type;
     const char *start;
-    int length;
-    int line;
+    int64_t length;
+    int64_t line;
     const char *file;
 } Token;
 
@@ -204,7 +204,7 @@ static void skip_whitespace(Lexer *l) {
 }
 
 static Token lex_string(Lexer *l) {
-    int i = 0;
+    int64_t i = 0;
     while (peek(l) != '"' && !at_end(l)) {
         if (peek(l) == '\n') {
             l->line++;
@@ -232,13 +232,13 @@ static Token lex_string(Lexer *l) {
         i++;
     }
     if (at_end(l)) {
-        ERR("Unclosed string on line %d\n", l->line)
+        ERR("Unclosed string on line %ld\n", l->line)
     }
     advance(l);
     return make_token(Tok_String, l);
 }
 
-static Token_Type check_keyword(int start, int length, const char *rest, Token_Type type, Lexer *l) {
+static Token_Type check_keyword(int start, int64_t length, const char *rest, Token_Type type, Lexer *l) {
     if (l->current - l->start == start + length && memcmp(l->start + start, rest, length) == 0) {
         return type;
     }
@@ -421,22 +421,22 @@ Token scan_token(Lexer *l) {
         case '%':
             return make_token(Tok_Modulo, l);
         default:
-            ERR("ERROR: Unknown character on line %d:   %c\n", l->line, c)
+            ERR("ERROR: Unknown character on line %ld:   %c\n", l->line, c)
     }
-    ERR("Unknown character on line %d:   %c\n", l->line, c)
+    ERR("Unknown character on line %ld:   %c\n", l->line, c)
     exit(1);
 }
 
 Token *lex_file(const char *file_path, Programs *programs) {
     debug("LEX FILE %s\n", file_path)
     char **include_paths = calloc(2, sizeof(char*));
-    int include_paths_index = 0;
-    int include_paths_capacity = 2;
+    int64_t include_paths_index = 0;
+    int64_t include_paths_capacity = 2;
 
     char *program = read_file(file_path);
     Lexer lexer = { program, program, 1, file_path };
-    int tokens_index = 0;
-    int tokens_capacity = 10;
+    int64_t tokens_index = 0;
+    int64_t tokens_capacity = 10;
 
     Token *tokens = calloc(tokens_capacity, sizeof(struct Token));
 
@@ -454,7 +454,7 @@ Token *lex_file(const char *file_path, Programs *programs) {
         } else if (tok.type == Tok_Include) {
             tok = scan_token(&lexer);
             char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
-            int included = 0;
+            int64_t included = 0;
             for (int i = 0; i < include_paths_index; i++) {
                 if (!strcmp(include_path, include_paths[i])) {
                     included = 1;
@@ -468,8 +468,8 @@ Token *lex_file(const char *file_path, Programs *programs) {
 
             append(include_paths, include_path, include_paths_index, include_paths_capacity);
 
-            int new_tokens_index = 0;
-            int new_tokens_capacity = 10;
+            int64_t new_tokens_index = 0;
+            int64_t new_tokens_capacity = 10;
 
             Token *new_tokens = calloc(new_tokens_capacity, sizeof(struct Token));
             Token *to_include = lex_file(include_path, programs);
