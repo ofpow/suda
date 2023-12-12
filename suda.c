@@ -15,7 +15,7 @@
 void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
-#define ASSERT(expr, ...) do {if (!expr) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
+#define ASSERT(expr, ...) do {if (!(expr)) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
 #define num_len(num) snprintf(NULL, 0, "%ld", num)
 #define append(array, element, index, capacity) do {            \
     if (index >= capacity) {                                    \
