@@ -1,0 +1,12 @@
+let foo = "hello world"
+for i in foo
+    println i
+;
+
+let bar = [4, 5, 6]
+for i in foo
+    println i
+    for j in bar
+        println j
+    ;
+;
