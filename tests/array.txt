@@ -2,3 +2,8 @@
 1
 world
 [30, 2, "good", "hello", "world"]
+[30, 2, "good", "hello", "world", 5]
+good
+6
+5
+[1, 2, 3]

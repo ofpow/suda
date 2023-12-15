@@ -25,3 +25,5 @@ println(a ^ b)
 println(~a)
 println(b << 1)
 println(b >> 1)
+
+println(10 ** 2)

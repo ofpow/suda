@@ -8,3 +8,15 @@ var_one@1 = 30
 var_one@3 = "good"
 
 println var_one
+
+append var_one 5
+
+println var_one
+println var_one@(1 + 2)
+
+println len(var_one)
+println len(var_one@5)
+
+var_one = [1, 2, 3]
+
+println var_one
