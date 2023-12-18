@@ -16,15 +16,17 @@ void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!(expr)) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
-#define num_len(num) snprintf(NULL, 0, "%ld", num)
-#define append(array, element, index, capacity) do {            \
-    if (index >= capacity) {                                    \
-        capacity *= 2;                                          \
-        array = realloc(array, capacity * sizeof(array[0]));    \
-    }                                                           \
-                                                                \
-    array[index++] = element;                                   \
-} while (0);                                                    \
+#define num_len(num) snprintf(NULL, 0, "%ld", (num))
+#define NUM(x) (*((int64_t*)(x)))
+#define STR(x) ((char*)(x))
+#define append(_array, _element, _index, _capacity) do {         \
+    if (_index >= _capacity) {                                   \
+        _capacity *= 2;                                          \
+        _array = realloc(_array, _capacity * sizeof(_array[0])); \
+    }                                                            \
+                                                                 \
+    _array[_index++] = _element;                                 \
+} while (0);                                                     \
 
 char *format_str(int strlen, const char *format, ...) {
     char *result = malloc(strlen + 1);
@@ -33,6 +35,12 @@ char *format_str(int strlen, const char *format, ...) {
     vsnprintf(result, strlen, format, args);
     va_end(args);
     return result;
+}
+
+int64_t *dup_int(int64_t x) {
+    int64_t *rtrn = calloc(1, sizeof(int64_t));
+    *rtrn = x;
+    return rtrn;
 }
 
 int64_t strtoint(const char *str, int64_t len) {

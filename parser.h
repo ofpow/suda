@@ -231,7 +231,7 @@ typedef struct Parser {
     int64_t parsing_function;
 } Parser;
 
-AST_Value *new_ast_value(int type, char *value, int64_t mutable) {
+AST_Value *new_ast_value(int type, void *value, int64_t mutable) {
     debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value)
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
@@ -244,7 +244,7 @@ AST_Value *new_ast_value(int type, char *value, int64_t mutable) {
 void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
     if (value->type == Value_Array) {
-        int64_t arr_len = strtoint(value[0].value, strlen(value[0].value));
+        int64_t arr_len = NUM(value[0].value);
         for (int j = 0; j < arr_len; j++) {
             if (value[j].value != NULL) free(value[j].value);
             value[j].value = NULL;
@@ -277,7 +277,7 @@ void free_node(Node *n) {
     if (n == NULL) return;
 
     if (n->type == AST_Array) {
-        int64_t size = strtoint(n->value->value, strlen(n->value->value));
+        int64_t size = NUM(n->value->value);
         for (int i = 0; i < size; i++) {
             if (n->value[i].value != 0) free(n->value[i].value);
             n->value[i].value = NULL;
@@ -286,7 +286,7 @@ void free_node(Node *n) {
     
     if (n->value != NULL) {
         if (n->value->type == Value_Function_Args) {
-            int64_t len = strtoint(n->value[0].value, strlen(n->value[0].value));
+            int64_t len = NUM(n->value[0].value);
             for (int i = 0; i < len; i++) {
                 if (n->value[i].value) free(n->value[i].value);
             }
@@ -335,7 +335,8 @@ AST_Value *parse_list(Parser *p) {
         switch (CURRENT_TOK.type) {
             case Tok_Number:
                 p->tok_index++;
-                append(list, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
+                append(list, ((AST_Value){ Value_Number, dup_int(strtoint(LAST_TOK.start, LAST_TOK.length)), 1 }), list_index, list_capacity)
+                //append(list, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
                 break;
             case Tok_String:
                 p->tok_index++;
@@ -351,12 +352,13 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Right_Bracket:
                 p->tok_index++;
                 list[0].type = Value_Array;
-                list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
+                list[0].value = dup_int(list_index);
                 return list;
             case Tok_Right_Paren:
                 p->tok_index++;
                 list[0].type = Value_Function_Args;
-                list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
+                list[0].value = dup_int(list_index);
+                //list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
                 return list;
             case Tok_Eof:
                 ERR("ERROR in %s on line %ld: unclosed list\n", CURRENT_TOK.file, CURRENT_TOK.line)
@@ -378,9 +380,11 @@ Node *expr(Parser *p, Node *child) {
             return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Number:
             p->tok_index++;
+            int64_t *val = calloc(1, sizeof(int64_t));
+            *val = strtoint(LAST_TOK.start, LAST_TOK.length);
             if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1, CURRENT_TOK.line, CURRENT_TOK.file));
-            return new_node(AST_Literal, new_ast_value(Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file));
+            return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Identifier: 
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Assign) {
@@ -529,7 +533,7 @@ Node *statement(Parser *p) {
             ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %ld: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
             p->tok_index++;
             n->right = expr(p, NULL);
-            n->value = new_ast_value(Value_Number, format_str(2, "0"), 1);
+            n->value = new_ast_value(Value_Number, dup_int(0), 1);
             return n;
 
         default: return expr(p, NULL); 

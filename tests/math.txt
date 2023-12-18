@@ -1,6 +1,6 @@
 hello world
 0
-1
+0
 69
 0
 0
