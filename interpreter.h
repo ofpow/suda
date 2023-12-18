@@ -472,15 +472,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             if (val->type == Value_Number) return val;
             ASSERT((val->type == Value_String), "ERROR in %s on line %ld: cant cast type %s to number\n", n->file, n->line, find_ast_value_type(val->type))
             if (val->mutable > 0) {
-                int64_t *x = dup_int(strtoint(val->value, strlen(val->value)));
+                int64_t *x = dup_int(strtoint(STR(val->value), strlen(STR(val->value))));
                 free(val->value);
                 val->value = x;
-            } else {
-                int64_t x = strtoint(val->value, strlen(val->value));
-                val->value = &x;
-            }
-            val->type = Value_Number;
-            return val;
+                val->type = Value_Number;
+                return val;
+            } else
+                return new_ast_value(Value_Number, dup_int(strtoint(STR(val->value), strlen(STR(val->value)))), 1);
         }
         case AST_Cast_Str: {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
