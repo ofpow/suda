@@ -2,6 +2,15 @@
 
 #define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len || type == AST_Cast_Num || type == AST_Cast_Str || type == AST_Array))
 
+#define do_op(op) do {                                       \
+    result = NUM(op1->value) op NUM(op2->value);             \
+    if (mutable < 1) {                                       \
+        if (result == 0) return &Zero;                       \
+        else if (result == 1) return &One;                   \
+    }                                                        \
+    return new_ast_value(Value_Number, dup_int(result), 1);  \
+} while (0);                                             
+
 int exponentiate(int base, int64_t power) {
     int64_t result = 1;
 
@@ -11,6 +20,11 @@ int exponentiate(int base, int64_t power) {
 
     return result;
 }
+
+int64_t one = 1;
+AST_Value One = {Value_Number, &one, 0};
+int64_t zero = 0;
+AST_Value Zero = {Value_Number, &zero, 0};
 
 typedef struct {
     Node **nodes;
@@ -213,7 +227,8 @@ void unassign_variable(Interpreter *interpreter, char *var_name, int64_t line, c
     }
 }
 
-AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file) {
+AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file, int mutable) {
+    int result;
     ASSERT((op1 != NULL), "ERROR in %s on line %ld: cant do math with a null op\n", file, line)
     int64_t op1_len = strlen(op1->value);
     int64_t op2_len;
@@ -252,30 +267,38 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) / NUM(op2->value)), 1);
         case AST_Less:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less than type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) < NUM(op2->value)), 1);
+            do_op(<)
         case AST_Less_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less equal type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) <= NUM(op2->value)), 1);
+            do_op(<=)
         case AST_Greater:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater than type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) > NUM(op2->value)), 1);
+            do_op(>)
         case AST_Greater_Equal:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater equal type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) >= NUM(op2->value)), 1);
+            do_op(>=)
         case AST_Is_Equal:
-            if (op1->type == Value_Number && op2->type == Value_Number)
-                return new_ast_value(Value_Number, dup_int(NUM(op1->value) == NUM(op2->value)), 1);
-            else if (op1->type == Value_String && op2->type == Value_String)
-                return new_ast_value(Value_Number, dup_int(!strcmp(op1->value, op2->value)), 1);
-            else
+            if (op1->type == Value_Number && op2->type == Value_Number) {
+                result = NUM(op1->value) == NUM(op2->value);
+                if ((result == 0) && (mutable < 1)) return &Zero;
+                else if ((result == 1) && (mutable < 1)) return &One;
+                return new_ast_value(Value_Number, dup_int(result), 1);
+            } else if (op1->type == Value_String && op2->type == Value_String) {
+                result = !strcmp(op1->value, op2->value);
+                if ((result == 0) && (mutable < 1)) return &Zero;
+                else if ((result == 1) && (mutable < 1)) return &One;
+                return new_ast_value(Value_Number, dup_int(result), 1);
+            } else {
+                if (mutable < 1) return &Zero;
                 return new_ast_value(Value_Number, dup_int(0), 1);
+            }
             break;
         case AST_And:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical and type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) && NUM(op2->value)), 1);
+            do_op(&&)
         case AST_Or:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical or type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
-            return new_ast_value(Value_Number, dup_int(NUM(op1->value) || NUM(op2->value)), 1);
+            do_op(||)
         case AST_Not:
             return new_ast_value(Value_Number, dup_int(!(NUM(op1->value))), 1);
         case AST_Not_Equal:
@@ -345,7 +368,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
         case AST_Power:;
             AST_Value *op1 = eval_node(n->left, interpreter, 0);
             AST_Value *op2 = eval_node(n->right, interpreter, 0);
-            AST_Value *result = ast_math(op1, op2, n->type, n->line, n->file);
+            AST_Value *result = ast_math(op1, op2, n->type, n->line, n->file, mutable);
             if (op1->mutable > 0) free_ast_value(op1);
             if (op2 && op2->mutable > 0) free_ast_value(op2);
             return result;
