@@ -185,34 +185,6 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
     return -1;
 }
 
-typedef struct Node {
-    int64_t type;
-    AST_Value *value;
-
-    struct Node *right;
-    struct Node *left;
-
-    int64_t jump_index;
-
-    int64_t line;
-    const char *file;
-
-    struct Node **func_args;
-    int64_t func_args_index;
-    int64_t func_args_capacity;
-} Node;
-
-typedef struct Function {
-    char *name;
-    Node **nodes;
-    int64_t nodes_size;
-
-    int64_t arity;
-    AST_Value **args;
-
-    int64_t line;
-} Function;
-
 typedef struct Parser {
     Token *tokens;
     int64_t tok_index;

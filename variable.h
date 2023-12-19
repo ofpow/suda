@@ -32,20 +32,82 @@ typedef struct Variable {
     int64_t index;
 } Variable;
 
+typedef struct Node {
+    int64_t type;
+    AST_Value *value;
+
+    struct Node *right;
+    struct Node *left;
+
+    int64_t jump_index;
+
+    int64_t line;
+    const char *file;
+
+    struct Node **func_args;
+    int64_t func_args_index;
+    int64_t func_args_capacity;
+} Node;
+
+typedef struct Function {
+    char *name;
+    Node **nodes;
+    int64_t nodes_size;
+
+    int64_t arity;
+    AST_Value **args;
+
+    int64_t line;
+} Function;
+
+typedef struct {
+    Node **nodes;
+    int64_t stmts_capacity;
+
+    int64_t program_counter;
+
+    Variable *vars;
+    int64_t vars_index;
+    int64_t vars_capacity;
+
+    Variable *local_vars;
+    int64_t local_vars_index;
+    int64_t local_vars_capacity;
+
+    Function **funcs;
+    int64_t funcs_capacity;
+
+    int64_t auto_jump;
+} Interpreter;
+
 //TODO: variables as a hashmap
-Variable get_var(const char *var_name, Variable *vars, int64_t vars_index, int64_t line) {
-    for (int i = 0; i < vars_index; i++) {
-        if (!strcmp(var_name, vars[i].name)) {
-            return vars[i];
+Variable get_var(const char *var_name, Interpreter *interpreter, int64_t line, const char *file) {
+    if (interpreter->local_vars != NULL) {
+        for (int i = 0; i < interpreter->local_vars_index; i++) {
+            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
+                return interpreter->local_vars[i];
+            }
         }
     }
-    ERR("ERROR on line %ld: variable `%s` not found\n", line, var_name)
+    for (int i = 0; i < interpreter->vars_index; i++) {
+        if (!strcmp(var_name, interpreter->vars[i].name)) {
+            return interpreter->vars[i];
+        }
+    }
+    ERR("ERROR in %s on line %ld: variable `%s` not found\n", file, line, var_name)
     return (Variable) {0};
 }
 
-int check_variable(const char *var_name, Variable *vars, int64_t vars_index) {
-    for (int i = 0; i < vars_index; i++) {
-        if (!strcmp(var_name, vars[i].name)) {
+int check_variable(const char *var_name, Interpreter *interpreter) {
+    if (interpreter->local_vars != NULL) {
+        for (int i = 0; i < interpreter->local_vars_index; i++) {
+            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
+                return i;
+            }
+        }
+    }
+    for (int i = 0; i < interpreter->vars_index; i++) {
+        if (!strcmp(var_name, interpreter->vars[i].name)) {
             return i;
         }
     }

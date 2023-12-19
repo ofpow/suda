@@ -26,26 +26,6 @@ AST_Value One = {Value_Number, &one, 0};
 int64_t zero = 0;
 AST_Value Zero = {Value_Number, &zero, 0};
 
-typedef struct {
-    Node **nodes;
-    int64_t stmts_capacity;
-    
-    int64_t program_counter;
-
-    Variable *vars;
-    int64_t vars_index;
-    int64_t vars_capacity;
-
-    Variable *local_vars;
-    int64_t local_vars_index;
-    int64_t local_vars_capacity;
-
-    Function **funcs;
-    int64_t funcs_capacity;
-
-    int64_t auto_jump;
-} Interpreter;
-
 AST_Type value_to_ast_type(Value_Type type, int64_t line, const char *file) {
     if (type == Value_Number || type == Value_String) return AST_Literal;
     else if (type == Value_Identifier) return AST_Identifier;
@@ -159,9 +139,7 @@ AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
 }
 
 void assign_variable(Interpreter *interpreter, char *var_name, AST_Value *var_val, int64_t line, const char *file) {
-    if (check_variable(var_name, interpreter->vars, interpreter->vars_index) >= 0) 
-        ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", file, line, var_name)
-    else if (check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index) >= 0) 
+    if (check_variable(var_name, interpreter) >= 0) 
         ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", file, line, var_name)
 
     if (interpreter->local_vars != NULL) {
@@ -183,16 +161,7 @@ void assign_variable(Interpreter *interpreter, char *var_name, AST_Value *var_va
 }
 
 void reassign_variable(Interpreter *interpreter, char *var_name, AST_Value *new_val, int64_t line, const char *file) {
-    Variable var;
-    int64_t var_index;
-    var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
-    if (var_index >= 0) var = interpreter->local_vars[var_index];
-    else {
-        var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
-        if (var_index >= 0) var = interpreter->vars[var_index];
-        else ERR("ERROR in %s on line %ld: can't assign to undefined variable %s\n", file, line, var_name)
-    }
-
+    Variable var = get_var(var_name, interpreter, line, file);
     
     if (interpreter->local_vars != NULL) {
         debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, interpreter->local_vars[var.index].value->value, new_val->value)
@@ -206,15 +175,7 @@ void reassign_variable(Interpreter *interpreter, char *var_name, AST_Value *new_
 }
 
 void unassign_variable(Interpreter *interpreter, char *var_name, int64_t line, const char *file) {
-    Variable var;
-    int64_t var_index;
-    var_index = check_variable(var_name, interpreter->local_vars, interpreter->local_vars_index);
-    if (var_index >= 0) var = interpreter->local_vars[var_index];
-    else {
-        var_index = check_variable(var_name, interpreter->vars, interpreter->vars_index);
-        if (var_index >= 0) var = interpreter->vars[var_index];
-        else ERR("ERROR in %s on line %ld: can't unassign to undefined variable %s\n", file, line, var_name)
-    }
+    Variable var = get_var(var_name, interpreter, line, file);
 
     if (interpreter->local_vars != NULL) {
         debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
@@ -373,9 +334,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             if (op2 && op2->mutable > 0) free_ast_value(op2);
             return result;
         case AST_Identifier: {
-            Variable var;
-            if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
-            else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
+            Variable var = get_var(n->value->value, interpreter, n->line, n->file);
             if (var.value == NULL) return NULL;
 
             if (mutable <= 0) {
@@ -420,7 +379,6 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             return array;
         }
         case AST_At: {
-            Variable var;
             int64_t index = 0;
             if (n->left->type != AST_Literal) {
                 AST_Value *val = eval_node(n->left, interpreter, 0);
@@ -428,8 +386,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
                 if (val->mutable > 0) free_ast_value(val);
             } else index = NUM(n->left->value->value);
         
-            if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
-            else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
+            Variable var = get_var(n->value->value, interpreter, n->line, n->file);
 
             if (var.value->type == Value_String) {
                 return new_ast_value(Value_String, format_str(2, "%c", STR(var.value->value)[index - 1]), 1);
@@ -450,9 +407,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
                 }
                 return new_ast_value(var.value[index].type, dup_int(NUM(var.value[index].value)), 1);
             } else if (var.value[index].type == Value_Identifier) {
-                Variable rtrn;
-                if (interpreter->local_vars != NULL) var = get_var(var.value[index].value, interpreter->local_vars, interpreter->local_vars_index, n->line);
-                else rtrn = get_var(var.value[index].value, interpreter->vars, interpreter->vars_index, n->line);
+                Variable rtrn = get_var(var.value[index].value, interpreter, n->line, n->file);
 
                 if (mutable <= 0) {
                     AST_Value *new_val = rtrn.value;
@@ -668,9 +623,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 if (i->mutable > 0) free_ast_value(i);
             }
 
-            Variable var;
-            if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
-            else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
+            Variable var = get_var(n->value->value, interpreter, n->line, n->file);
 
             //if it was assigned after array was created, add quotes around value
             if (new_val->type == Value_String && ((char*)new_val->value)[0] != '"' && var.value->type == Value_Array) {
@@ -708,9 +661,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             free_mem(val);
             break;
         case AST_Append:;
-            Variable var;
-            if (check_variable(n->value->value, interpreter->local_vars, interpreter->local_vars_index) >= 0) var = get_var(n->value->value, interpreter->local_vars, interpreter->local_vars_index, n->line);
-            else var = get_var(n->value->value, interpreter->vars, interpreter->vars_index, n->line);
+            Variable var = get_var(n->value->value, interpreter, n->line, n->file);
 
             int64_t arr_len = NUM(var.value->value) + 1;
             AST_Value *new_val = eval_node(n->left, interpreter, 0);
