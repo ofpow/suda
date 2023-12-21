@@ -32,6 +32,7 @@
 #define NEXT_TOK p->tokens[p->tok_index + 1]
 #define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Is_Equal) || (expr == Tok_And) || (expr == Tok_Or) || (expr == Tok_Not) || (expr == Tok_Not_Equal) || (expr == Tok_Modulo) || (expr == Tok_Bit_And) || (expr == Tok_Bit_Or) || (expr == Tok_Bit_Xor) || (expr == Tok_Bit_Not) || (expr == Tok_Lshift) || (expr == Tok_Rshift) || (expr == Tok_Power))
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal) || (expr == AST_And) || (expr == AST_Or) || (expr == AST_Not) || (expr == AST_Not_Equal) || (expr == AST_Modulo) || (expr == AST_Bit_And) || (expr == AST_Bit_Or) || (expr == AST_Bit_Xor) || (expr == AST_Bit_Not) || (expr == AST_Lshift) || (expr == AST_Rshift) || (expr == AST_Power))
+#define TOK_IS_EVALUATABLE(type) ((type == Tok_String || type == Tok_Number || IS_TOK_MATH_OP(type) || type == Tok_Identifier || type == Tok_At || type == Tok_Function || type == Tok_Len || type == Tok_Cast_Num || type == Tok_Cast_Str))
 
 typedef enum {
     AST_End,
@@ -308,7 +309,6 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Number:
                 p->tok_index++;
                 append(list, ((AST_Value){ Value_Number, dup_int(strtoint(LAST_TOK.start, LAST_TOK.length)), 1 }), list_index, list_capacity)
-                //append(list, ((AST_Value){ Value_Number, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
                 break;
             case Tok_String:
                 p->tok_index++;
@@ -317,6 +317,12 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Identifier:
                 p->tok_index++;
                 append(list, ((AST_Value){ Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1 }), list_index, list_capacity)
+                break;
+            case Tok_Sub:
+                ASSERT(NEXT_TOK.type == Tok_Number, "ERROR in %s on line %ld: can't negate type %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(NEXT_TOK.type))
+                p->tok_index++;
+                append(list, ((AST_Value){ Value_Number, dup_int(-strtoint(CURRENT_TOK.start, CURRENT_TOK.length)), 1 }), list_index, list_capacity)
+                p->tok_index++;
                 break;
             case Tok_Comma:
                 p->tok_index++;
@@ -330,7 +336,6 @@ AST_Value *parse_list(Parser *p) {
                 p->tok_index++;
                 list[0].type = Value_Function_Args;
                 list[0].value = dup_int(list_index);
-                //list[0].value = format_str(num_len(list_index) + 1, "%ld", list_index);
                 return list;
             case Tok_Eof:
                 ERR("ERROR in %s on line %ld: unclosed list\n", CURRENT_TOK.file, CURRENT_TOK.line)
@@ -401,7 +406,6 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             return n;
         case Tok_Add: // nodes with 2 arguments
-        case Tok_Sub:
         case Tok_Mult:
         case Tok_Div:
         case Tok_Modulo:
@@ -424,6 +428,22 @@ Node *expr(Parser *p, Node *child) {
             if (child != NULL) n->left = child; else n->left = expr(p, child);
             n->right = expr(p, child);
             return n;
+
+        case Tok_Sub:
+            if (!TOK_IS_EVALUATABLE(LAST_TOK.type)) {
+                ASSERT(NEXT_TOK.type == Tok_Number, "ERROR in %s on line %ld: cant negate type %s\n", NEXT_TOK.file, NEXT_TOK.line, find_tok_type(NEXT_TOK.type))
+                p->tok_index++;
+                int64_t *val = calloc(1, sizeof(int64_t));
+                *val = -strtoint(CURRENT_TOK.start, CURRENT_TOK.length);
+                p->tok_index++;
+                return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+            } else {
+                n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                p->tok_index++;
+                if (child != NULL) n->left = child; else n->left = expr(p, child);
+                n->right = expr(p, child);
+                return n;
+            }
 
         case Tok_Bit_Not: // nodes with 1 argument
         case Tok_Not:

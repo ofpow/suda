@@ -218,6 +218,7 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
                 return rtrn;
             }
         case AST_Sub:
+            if (op2 == NULL) return new_ast_value(Value_Number, dup_int(NUM(op1->value) * -1), 1);
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant subtract type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) - NUM(op2->value)), 1);
         case AST_Mult:

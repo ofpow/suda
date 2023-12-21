@@ -1,3 +1,9 @@
-let x = "42"
+let x = [-2, -1, 0, 1, 2]
 
-println num(x)
+for i in x
+    println i
+;
+
+println -5
+println -5
+println -5
