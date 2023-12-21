@@ -164,11 +164,11 @@ void reassign_variable(Interpreter *interpreter, char *var_name, AST_Value *new_
     Variable var = get_var(var_name, interpreter, line, file);
     
     if (interpreter->local_vars != NULL) {
-        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, interpreter->local_vars[var.index].value->value, new_val->value)
+        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, STR(interpreter->local_vars[var.index].value->value), STR(new_val->value))
         free_ast_value(interpreter->local_vars[var.index].value);
         interpreter->local_vars[var.index].value = new_val;
     } else {
-        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, interpreter->vars[var.index].value->value, new_val->value)
+        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, STR(interpreter->vars[var.index].value->value), STR(new_val->value))
         free_ast_value(interpreter->vars[var.index].value);
         interpreter->vars[var.index].value = new_val;
     }
@@ -525,7 +525,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             char *var_name = n->value->value;
             AST_Value *var_val = eval_node(n->left, interpreter, 1);
             assign_variable(interpreter, var_name, var_val, n->line, n->file);
-            debug("ASSIGN `%s` to variable `%s`\n", var_val->value, var_name)
+            debug("ASSIGN `%s` to variable `%s`\n", STR(var_val->value), var_name)
             break;
         case AST_If:;
             AST_Value *expr = eval_node(n->left, interpreter, 0);
@@ -553,7 +553,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (expr->mutable > 0) free_ast_value(expr);
             break;}
         case AST_For:;
-            debug("FOR: index is `%s`\n", n->value->value)
+            debug("FOR: index is `%s`\n", STR(n->value->value))
             AST_Value *list = eval_node(n->right, interpreter, 0);
             int64_t index = NUM(n->value->value);
            

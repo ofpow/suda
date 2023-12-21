@@ -491,7 +491,7 @@ Token *lex_file(const char *file_path, Programs *programs) {
             tokens[tokens_index] = tok;
             tokens_index++;
         }
-        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), tok.length, tok.start)
+        debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), (int)tok.length, tok.start)
     } 
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
     free(include_paths);

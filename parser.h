@@ -205,7 +205,7 @@ typedef struct Parser {
 } Parser;
 
 AST_Value *new_ast_value(int type, void *value, int64_t mutable) {
-    debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), value)
+    debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), STR(value))
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
     val->type = type;
