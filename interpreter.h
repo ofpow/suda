@@ -263,7 +263,20 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
         case AST_Not:
             return new_ast_value(Value_Number, dup_int(!(NUM(op1->value))), 1);
         case AST_Not_Equal:
-            return new_ast_value(Value_Number, format_str(2, "%ld", !!strcmp(op1->value, op2->value)), 1);
+            if (op1->type == Value_Number && op2->type == Value_Number) {
+                result = NUM(op1->value) != NUM(op2->value);
+                if ((result == 0) && (mutable < 1)) return &Zero;
+                else if ((result == 1) && (mutable < 1)) return &One;
+                return new_ast_value(Value_Number, dup_int(result), 1);
+            } else if (op1->type == Value_String && op2->type == Value_String) {
+                result = !!strcmp(op1->value, op2->value);
+                if ((result == 0) && (mutable < 1)) return &Zero;
+                else if ((result == 1) && (mutable < 1)) return &One;
+                return new_ast_value(Value_Number, dup_int(result), 1);
+            } else {
+                if (mutable < 1) return &Zero;
+                return new_ast_value(Value_Number, dup_int(0), 1);
+            }
         case AST_Modulo:
             ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant modulo type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) % NUM(op2->value)), 1);
