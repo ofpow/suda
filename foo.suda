@@ -1,9 +1,1 @@
-let x = [-2, -1, 0, 1, 2]
-
-for i in x
-    println i
-;
-
-println -5
-println -5
-println -5
+ println ((5 - 3) - (2 * 6) + 3)

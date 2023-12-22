@@ -431,12 +431,18 @@ Node *expr(Parser *p, Node *child) {
 
         case Tok_Sub:
             if (!TOK_IS_EVALUATABLE(LAST_TOK.type)) {
-                ASSERT(NEXT_TOK.type == Tok_Number, "ERROR in %s on line %ld: cant negate type %s\n", NEXT_TOK.file, NEXT_TOK.line, find_tok_type(NEXT_TOK.type))
                 p->tok_index++;
-                int64_t *val = calloc(1, sizeof(int64_t));
-                *val = -strtoint(CURRENT_TOK.start, CURRENT_TOK.length);
-                p->tok_index++;
-                return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                if (CURRENT_TOK.type == Tok_Number) {
+                    int64_t *val = calloc(1, sizeof(int64_t));
+                    *val = -strtoint(CURRENT_TOK.start, CURRENT_TOK.length);
+                    p->tok_index++;
+                    return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                } else {
+                    n = new_node(AST_Mult, NULL, -1, NEXT_TOK.line, NEXT_TOK.file);
+                    n->right = expr(p, NULL);
+                    n->left = new_node(AST_Literal, new_ast_value(Value_Number, dup_int(-1), 1), -1, NEXT_TOK.line, NEXT_TOK.file);
+                    return n;
+                }
             } else {
                 n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 p->tok_index++;
