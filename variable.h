@@ -23,7 +23,7 @@ char *find_ast_value_type(Value_Type type) {
 typedef struct AST_Value {
     Value_Type type;
     void *value;
-    int64_t mutable;
+    bool mutable;
 } AST_Value;
 
 typedef struct Variable {

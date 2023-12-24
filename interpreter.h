@@ -4,7 +4,7 @@
 
 #define do_op(op) do {                                       \
     result = NUM(op1->value) op NUM(op2->value);             \
-    if (mutable < 1) {                                       \
+    if (!mutable) {                                          \
         if (result == 0) return &Zero;                       \
         else if (result == 1) return &One;                   \
     }                                                        \
@@ -64,7 +64,7 @@ char *format_array(AST_Value *array) {
     return array_str;
 }
 
-AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable);
+AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable);
 
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
@@ -128,7 +128,7 @@ AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
     AST_Value *new = calloc(op1_len + op2_len + 1, sizeof(AST_Value));
     new->type = Value_Array;
     new->value = dup_int(op1_len + op2_len - 1);
-    new->mutable = 1;
+    new->mutable = true;
     for (int i = 1; i < op1_len; i++) {
         new[i] = (AST_Value) { op1[i].type, strdup(op1[i].value), 1 };
     }
@@ -188,7 +188,7 @@ void unassign_variable(Interpreter *interpreter, char *var_name, int64_t line, c
     }
 }
 
-AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file, int mutable) {
+AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file, bool mutable) {
     int result;
     ASSERT((op1 != NULL), "ERROR in %s on line %ld: cant do math with a null op\n", file, line)
     int64_t op1_len = strlen(op1->value);
@@ -242,16 +242,16 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
         case AST_Is_Equal:
             if (op1->type == Value_Number && op2->type == Value_Number) {
                 result = NUM(op1->value) == NUM(op2->value);
-                if ((result == 0) && (mutable < 1)) return &Zero;
-                else if ((result == 1) && (mutable < 1)) return &One;
+                if ((result == 0) && (!mutable)) return &Zero;
+                else if ((result == 1) && (!mutable)) return &One;
                 return new_ast_value(Value_Number, dup_int(result), 1);
             } else if (op1->type == Value_String && op2->type == Value_String) {
                 result = !strcmp(op1->value, op2->value);
-                if ((result == 0) && (mutable < 1)) return &Zero;
-                else if ((result == 1) && (mutable < 1)) return &One;
+                if ((result == 0) && (!mutable)) return &Zero;
+                else if ((result == 1) && (!mutable)) return &One;
                 return new_ast_value(Value_Number, dup_int(result), 1);
             } else {
-                if (mutable < 1) return &Zero;
+                if (!mutable) return &Zero;
                 return new_ast_value(Value_Number, dup_int(0), 1);
             }
             break;
@@ -266,16 +266,16 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
         case AST_Not_Equal:
             if (op1->type == Value_Number && op2->type == Value_Number) {
                 result = NUM(op1->value) != NUM(op2->value);
-                if ((result == 0) && (mutable < 1)) return &Zero;
-                else if ((result == 1) && (mutable < 1)) return &One;
+                if ((result == 0) && (!mutable)) return &Zero;
+                else if ((result == 1) && (!mutable)) return &One;
                 return new_ast_value(Value_Number, dup_int(result), 1);
             } else if (op1->type == Value_String && op2->type == Value_String) {
                 result = !!strcmp(op1->value, op2->value);
-                if ((result == 0) && (mutable < 1)) return &Zero;
-                else if ((result == 1) && (mutable < 1)) return &One;
+                if ((result == 0) && (!mutable)) return &Zero;
+                else if ((result == 1) && (!mutable)) return &One;
                 return new_ast_value(Value_Number, dup_int(result), 1);
             } else {
-                if (mutable < 1) return &Zero;
+                if (!mutable) return &Zero;
                 return new_ast_value(Value_Number, dup_int(0), 1);
             }
         case AST_Modulo:
@@ -308,13 +308,13 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
     return NULL;
 }
 
-AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
+AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
     if (n == NULL) return NULL;
     switch (n->type) {
         case AST_Literal:
-            if (mutable <= 0) {
+            if (!mutable) {
                 AST_Value *new_val = n->value;
-                new_val->mutable = 0;
+                new_val->mutable = false;
                 return new_val;
             }
             if (n->value->type == Value_Number)
@@ -344,22 +344,22 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             AST_Value *op1 = eval_node(n->left, interpreter, 0);
             AST_Value *op2 = eval_node(n->right, interpreter, 0);
             AST_Value *result = ast_math(op1, op2, n->type, n->line, n->file, mutable);
-            if (op1->mutable > 0) free_ast_value(op1);
-            if (op2 && op2->mutable > 0) free_ast_value(op2);
+            if (op1->mutable) free_ast_value(op1);
+            if (op2 && op2->mutable) free_ast_value(op2);
             return result;
         case AST_Identifier: {
             Variable var = get_var(n->value->value, interpreter, n->line, n->file);
             if (var.value == NULL) return NULL;
 
-            if (mutable <= 0) {
+            if (!mutable) {
                 AST_Value *new_val = var.value;
-                new_val->mutable = 0;
+                new_val->mutable = false;
                 return new_val;
             }
             if (var.value->type == Value_Array) {
                 int64_t arr_len = NUM(var.value->value);
                 AST_Value *array = calloc(arr_len, sizeof(struct AST_Value));
-                array->mutable = 1;
+                array->mutable = true;
                 array->type = Value_Array;
                 array->value = dup_int(arr_len);
                 for (int i = 1; i < arr_len; i++) {
@@ -376,10 +376,10 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             return new_ast_value(var.value->type, strdup(var.value->value), 1);
         }
         case AST_Array: {
-            if (mutable <= 0) return n->value;
+            if (!mutable) return n->value;
             int64_t arr_len = NUM(n->value->value);
             AST_Value *array = calloc(arr_len, sizeof(struct AST_Value));
-            array->mutable = 1;
+            array->mutable = true;
             array->type = Value_Array;
             array[0].value = dup_int(NUM(n->value->value));
             for (int i = 1; i < arr_len; i++) {
@@ -397,7 +397,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             if (n->left->type != AST_Literal) {
                 AST_Value *val = eval_node(n->left, interpreter, 0);
                 index = NUM(val->value);
-                if (val->mutable > 0) free_ast_value(val);
+                if (val->mutable) free_ast_value(val);
             } else index = NUM(n->left->value->value);
         
             Variable var = get_var(n->value->value, interpreter, n->line, n->file);
@@ -414,24 +414,24 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
                 if (STR(var.value[index].value)[0] != '"') return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1);
                 else return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, STR(var.value[index].value) + 1), 1);
             } else if (var.value[index].type == Value_Number) {
-                if (mutable <= 0) {
+                if (!mutable) {
                     AST_Value *val = &var.value[index];
-                    val->mutable = 0;
+                    val->mutable = false;
                     return val;
                 }
                 return new_ast_value(var.value[index].type, dup_int(NUM(var.value[index].value)), 1);
             } else if (var.value[index].type == Value_Identifier) {
                 Variable rtrn = get_var(var.value[index].value, interpreter, n->line, n->file);
 
-                if (mutable <= 0) {
+                if (!mutable) {
                     AST_Value *new_val = rtrn.value;
-                    new_val->mutable = 0;
+                    new_val->mutable = false;
                     return new_val;
                 }
                 if (rtrn.value->type == Value_Array) {
                     int64_t arr_len = NUM(rtrn.value->value);
                     AST_Value *array = calloc(arr_len + 1, sizeof(rtrn.value[0]));
-                    array->mutable = 1;
+                    array->mutable = true;
                     for (int i = 0; i < arr_len; i++) {
                         array[i].type = rtrn.value[i].type;
                         array[i].value = strdup(rtrn.value[i].value);
@@ -461,7 +461,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
             if (val->type == Value_Number) return val;
             ASSERT((val->type == Value_String), "ERROR in %s on line %ld: cant cast type %s to number\n", n->file, n->line, find_ast_value_type(val->type))
-            if (val->mutable > 0) {
+            if (val->mutable) {
                 int64_t *x = dup_int(strtoint(STR(val->value), strlen(STR(val->value))));
                 free(val->value);
                 val->value = x;
@@ -474,7 +474,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, int64_t mutable) {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
             if (val->type == Value_String) return val;
             ASSERT((val->type == Value_Number), "ERROR in %s on line %ld: cant cast type %s to string\n", n->file, n->line, find_ast_value_type(val->type))
-            if (val->mutable > 0) {
+            if (val->mutable) {
                 char *x = format_str(num_len(NUM(val->value)) + 1, "%ld", NUM(val->value));
                 free(val->value);
                 val->value = x;
@@ -501,7 +501,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 char *array = format_array(print);
                 if (n->type == AST_Println) printf("%s\n", array);
                 else printf("%s", array);
-                if (print->mutable > 0) {
+                if (print->mutable) {
                     int64_t arr_len = NUM(print->value);
                     for (int j = 0; j < arr_len; j++) {
                         free(print[j].value);
@@ -517,7 +517,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     if (n->type == AST_Println) printf("%ld\n", NUM(print->value));
                     else printf("%ld", NUM(print->value));
                 }
-                if (print->mutable > 0) free_ast_value(print);
+                if (print->mutable) free_ast_value(print);
             }
 
             break;
@@ -534,7 +534,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             } else {
                 interpreter->auto_jump = 1;
             }
-            if (expr->mutable > 0) free_ast_value(expr);
+            if (expr->mutable) free_ast_value(expr);
             break;
         case AST_Elif:;{
             if (interpreter->auto_jump == 1) {
@@ -550,7 +550,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             } else {
                 interpreter->auto_jump = 1;
             }
-            if (expr->mutable > 0) free_ast_value(expr);
+            if (expr->mutable) free_ast_value(expr);
             break;}
         case AST_For:;
             debug("FOR: index is `%s`\n", STR(n->value->value))
@@ -614,7 +614,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             if (NUM(expr->value) == 0) {
                 interpreter->program_counter = n->jump_index;
             }
-            if (expr->mutable > 0) free_ast_value(expr);
+            if (expr->mutable) free_ast_value(expr);
             break;}
         case AST_Break:
             interpreter->program_counter = n->jump_index;
@@ -629,12 +629,12 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 new_val = eval_node(n->right, interpreter, 1);
                 AST_Value *i = eval_node(n->left, interpreter, 0);
                 index = NUM(i->value);
-                if (i->mutable > 0) free_ast_value(i);
+                if (i->mutable) free_ast_value(i);
             } else {
                 new_val = eval_node(n->left->left, interpreter, 1);
                 AST_Value *i = eval_node(n->left, interpreter, 1);
                 index = NUM(i->value);
-                if (i->mutable > 0) free_ast_value(i);
+                if (i->mutable) free_ast_value(i);
             }
 
             Variable var = get_var(n->value->value, interpreter, n->line, n->file);
@@ -649,7 +649,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 
             if (var.value->type == Value_String) {
                 ((char*)var.value->value)[index - 1] = ((char*)new_val->value)[0];
-                if (new_val->mutable > 0) free_ast_value(new_val);
+                if (new_val->mutable) free_ast_value(new_val);
                 break;
             }
             free(var.value[index].value);
@@ -665,13 +665,13 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
         case AST_Function_Call:;
             AST_Value *result = call_function(interpreter, n);
             if (result == NULL) break;
-            if (result->mutable > 0) free_ast_value(result);
+            if (result->mutable) free_ast_value(result);
             break;
         case AST_Exit:;
             AST_Value *exit_val = eval_node(n->left, interpreter, 0);
             ASSERT(exit_val->type == Value_Number, "ERROR in %s on line %ld: tried to exit with non-number code\n", n->file, n->line)
             int64_t val = NUM(exit_val->value);
-            if (exit_val->mutable > 0) free_ast_value(exit_val);
+            if (exit_val->mutable) free_ast_value(exit_val);
             free_mem(val);
             break;
         case AST_Append:;
@@ -695,7 +695,6 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, dup_int(NUM(new_val->value)), 1 };
                 else
                     interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
-                //interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
             } else {
                 interpreter->vars[var.index].value = realloc(interpreter->vars[var.index].value, arr_len * sizeof(AST_Value));
                 
@@ -706,10 +705,9 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, dup_int(NUM(new_val->value)), 1 };
                 else
                     interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
-                //interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1 };
             }
 
-            if (new_val->mutable > 0) free_ast_value(new_val);
+            if (new_val->mutable) free_ast_value(new_val);
 
             break;
         default: ERR("ERROR in %s on line %ld: Unsupported statement type `%s`\n", n->file, n->line, find_ast_type(n->type))
