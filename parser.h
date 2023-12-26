@@ -205,7 +205,7 @@ typedef struct Parser {
 } Parser;
 
 AST_Value *new_ast_value(int type, void *value, bool mutable) {
-    debug("AST_VALUE ( `%s` `%s` )\n", find_ast_value_type(type), STR(value))
+    debug("AST_VALUE ( `%s` `%ld` )\n", find_ast_value_type(type), NUM(value))
 
     AST_Value *val = calloc(1, sizeof(struct AST_Value));
     val->type = type;
@@ -270,6 +270,13 @@ void free_node(Node *n) {
         free(n->value);
         n->value = NULL;
     }
+
+    if (n->func_args != NULL) {
+        for (int i = 0; i < n->func_args_index; i++)
+            free_node(n->func_args[i]);
+    }
+    free(n->func_args);
+
     if (n->left != NULL) {
         free_node(n->left);
         n->left = NULL;
@@ -278,12 +285,6 @@ void free_node(Node *n) {
         free_node(n->right);
         n->right = NULL;
     }
-
-    if (n->func_args != NULL) {
-        for (int i = 0; i < n->func_args_index; i++)
-            free_node(n->func_args[i]);
-    }
-    free(n->func_args);
 
     if (n->left == NULL && n->right == NULL) 
         free(n);
@@ -360,7 +361,7 @@ Node *expr(Parser *p, Node *child) {
             int64_t *val = calloc(1, sizeof(int64_t));
             *val = strtoint(LAST_TOK.start, LAST_TOK.length);
             if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file));
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, val, 2), -1, CURRENT_TOK.line, CURRENT_TOK.file));
             return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Identifier: 
             p->tok_index++; 
@@ -434,8 +435,16 @@ Node *expr(Parser *p, Node *child) {
                 p->tok_index++;
                 if (CURRENT_TOK.type == Tok_Number) {
                     int64_t *val = calloc(1, sizeof(int64_t));
-                    *val = -strtoint(CURRENT_TOK.start, CURRENT_TOK.length);
+                    *val = -strtoint(LAST_TOK.start, LAST_TOK.length);
                     p->tok_index++;
+                    if (child != NULL) {
+                        n = new_node(AST_Sub, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                        n->left = child;
+                        *val = strtoint(LAST_TOK.start, LAST_TOK.length);
+                        n->right = new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                        return n;
+                    }
+                    *val = -strtoint(LAST_TOK.start, LAST_TOK.length);
                     return new_node(AST_Literal, new_ast_value(Value_Number, val, 1), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 } else {
                     n = new_node(AST_Mult, NULL, -1, NEXT_TOK.line, NEXT_TOK.file);
