@@ -668,38 +668,23 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             free_mem(val);
             break;
         case AST_Append:;
-            Variable var;// = get_var(n->value->value, interpreter, n->line, n->file);
+            Variable *var = get_var(interpreter, n->value->value, n->value->hash, n->line, n->file);
 
-            int64_t arr_len = NUM(var.value->value) + 1;
+            int64_t arr_len = NUM(var->value->value) + 1;
             AST_Value *new_val = eval_node(n->left, interpreter, 0);
             if (new_val->type == Value_String && STR(new_val->value)[0] != '"') {
                 char *temp = new_val->value;
                 new_val->value = format_str(strlen(temp) + 3, "\"%s\"", temp);
                 free(temp);
             }
-            
-            if (interpreter->local_vars != NULL) {
 
-                //interpreter->local_vars[var.index].value = realloc(interpreter->local_vars[var.index].value, arr_len * sizeof(AST_Value));
-                //
-                //free(interpreter->local_vars[var.index].value->value);
-                //interpreter->local_vars[var.index].value->value = dup_int(arr_len);
-                //
-                //if (new_val->type == Value_Number)
-                //    interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, dup_int(NUM(new_val->value)), 1, 0 };
-                //else
-                //    interpreter->local_vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1, 0 };
-            } else {
-                //interpreter->vars[var.index].value = realloc(interpreter->vars[var.index].value, arr_len * sizeof(AST_Value));
-                //
-                //free(interpreter->vars[var.index].value->value);
-                //interpreter->vars[var.index].value->value = dup_int(arr_len);
-                //
-                //if (new_val->type == Value_Number)
-                //    insert_entry(interpreter->vars, 
-                //else
-                //    interpreter->vars[var.index].value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1, 0 };
-            }
+            var->value = realloc(var->value, arr_len * sizeof(AST_Value));
+            free(var->value[0].value);
+            var->value[0].value = dup_int(arr_len);
+            if (new_val->type == Value_Number)
+                var->value[arr_len - 1] = (AST_Value) { new_val->type, dup_int(NUM(new_val->value)), 1, 0 };
+            else 
+                var->value[arr_len - 1] = (AST_Value) { new_val->type, strdup(new_val->value), 1, new_val->hash };
 
             if (new_val->mutable) free_ast_value(new_val);
 
