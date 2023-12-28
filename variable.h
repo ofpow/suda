@@ -24,6 +24,7 @@ typedef struct AST_Value {
     Value_Type type;
     void *value;
     bool mutable;
+    u_int32_t hash;
 } AST_Value;
 
 typedef struct Variable {
@@ -66,11 +67,11 @@ typedef struct {
 
     int64_t program_counter;
 
-    Variable *vars;
+    Map *vars;
     int64_t vars_index;
     int64_t vars_capacity;
 
-    Variable *local_vars;
+    Map *local_vars;
     int64_t local_vars_index;
     int64_t local_vars_capacity;
 
@@ -81,35 +82,47 @@ typedef struct {
 } Interpreter;
 
 //TODO: variables as a hashmap
-Variable get_var(const char *var_name, Interpreter *interpreter, int64_t line, const char *file) {
+Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64_t line, const char *file) {
     if (interpreter->local_vars != NULL) {
-        for (int i = 0; i < interpreter->local_vars_index; i++) {
-            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
-                return interpreter->local_vars[i];
-            }
-        }
+        Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, key);
+        if (entry->value != NULL) return entry->value;
     }
-    for (int i = 0; i < interpreter->vars_index; i++) {
-        if (!strcmp(var_name, interpreter->vars[i].name)) {
-            return interpreter->vars[i];
-        }
-    }
-    ERR("ERROR in %s on line %ld: variable `%s` not found\n", file, line, var_name)
-    return (Variable) {0};
+    Entry *entry = get_entry(interpreter->vars->entries, interpreter->vars->capacity, key);
+    if (entry->key == 0) ERR("ERROR in %s on line %ld: variable %s doesnt exist\n", file, line, var_name)
+
+    return entry->value;
 }
+//Variable get_var(const char *var_name, Interpreter *interpreter, int64_t line, const char *file) {
+//    if (interpreter->local_vars != NULL) {
+//        for (int i = 0; i < interpreter->local_vars_index; i++) {
+//            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
+//                return interpreter->local_vars[i];
+//            }
+//        }
+//    }
+//    for (int i = 0; i < interpreter->vars_index; i++) {
+//        if (!strcmp(var_name, interpreter->vars[i].name)) {
+//            return interpreter->vars[i];
+//        }
+//    }
+//    ERR("ERROR in %s on line %ld: variable `%s` not found\n", file, line, var_name)
+//    return (Variable) {0};
+//}
 
 int check_variable(const char *var_name, Interpreter *interpreter) {
-    if (interpreter->local_vars != NULL) {
-        for (int i = 0; i < interpreter->local_vars_index; i++) {
-            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
-                return i;
-            }
-        }
-    }
-    for (int i = 0; i < interpreter->vars_index; i++) {
-        if (!strcmp(var_name, interpreter->vars[i].name)) {
-            return i;
-        }
-    }
     return -1;
 }
+//    if (interpreter->local_vars != NULL) {
+//        for (int i = 0; i < interpreter->local_vars_index; i++) {
+//            if (!strcmp(var_name, interpreter->local_vars[i].name)) {
+//                return i;
+//            }
+//        }
+//    }
+//    for (int i = 0; i < interpreter->vars_index; i++) {
+//        if (!strcmp(var_name, interpreter->vars[i].name)) {
+//            return i;
+//        }
+//    }
+//    return -1;
+//}
