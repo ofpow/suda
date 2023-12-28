@@ -385,29 +385,29 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
                 index = NUM(val->value);
                 if (val->mutable) free_ast_value(val);
             } else index = NUM(n->left->value->value);
-        
-            Variable var;// = get_var(n->value->value, interpreter, n->line, n->file);
 
-            if (var.value->type == Value_String) {
-                return new_ast_value(Value_String, format_str(2, "%c", STR(var.value->value)[index - 1]), 1, 0);
+            Variable *var = get_var(interpreter, n->value->value, n->value->hash, n->line, n->file);
+
+            if (var->value->type == Value_String) {
+                return new_ast_value(Value_String, format_str(2, "%c", STR(var->value->value)[index - 1]), 1, 0);
             }
-            int64_t arr_len = NUM(var.value[0].value);
-            if (index >= arr_len) ERR("ERROR in %s on line %ld: Index %ld is out of bounds for array %s, length %ld\n", n->file, n->line, index, var.name, arr_len - 1)
+            int64_t arr_len = NUM(var->value[0].value);
+            if (index >= arr_len) ERR("ERROR in %s on line %ld: Index %ld is out of bounds for array %s, length %ld\n", n->file, n->line, index, var->name, arr_len - 1)
             else if (index < 1) ERR("ERROR in %s on line %ld: invalid index %ld, it is less than 1\n", n->file, n->line, index)
 
-            if (var.value[index].type == Value_String) {
-                int64_t len = strlen(var.value[index].value);
-                if (STR(var.value[index].value)[0] != '"') return new_ast_value(var.value[index].type, strdup(var.value[index].value), 1, 0);
-                else return new_ast_value(var.value[index].type, format_str(len - 1, "%.*s", len, STR(var.value[index].value) + 1), 1, 0);
-            } else if (var.value[index].type == Value_Number) {
+            if (var->value[index].type == Value_String) {
+                int64_t len = strlen(var->value[index].value);
+                if (STR(var->value[index].value)[0] != '"') return new_ast_value(var->value[index].type, strdup(var->value[index].value), 1, 0);
+                else return new_ast_value(var->value[index].type, format_str(len - 1, "%.*s", len, STR(var->value[index].value) + 1), 1, 0);
+            } else if (var->value[index].type == Value_Number) {
                 if (!mutable) {
-                    AST_Value *val = &var.value[index];
+                    AST_Value *val = &var->value[index];
                     val->mutable = false;
                     return val;
                 }
-                return new_ast_value(var.value[index].type, dup_int(NUM(var.value[index].value)), 1, 0);
-            } else if (var.value[index].type == Value_Identifier) {
-                Variable rtrn;// = get_var(var.value[index].value, interpreter, n->line, n->file);
+                return new_ast_value(var->value[index].type, dup_int(NUM(var->value[index].value)), 1, 0);
+            } else if (var->value[index].type == Value_Identifier) {
+                Variable rtrn;// = get_var(var->value[index].value, interpreter, n->line, n->file);
 
                 if (!mutable) {
                     AST_Value *new_val = rtrn.value;
@@ -425,7 +425,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
                     return array;
                 }
                 return new_ast_value(rtrn.value->type, strdup(rtrn.value->value), 1, 0);
-            } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_ast_value_type(var.value[index].type))
+            } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_ast_value_type(var->value[index].type))
             break;
         }
         case AST_Function_Call:

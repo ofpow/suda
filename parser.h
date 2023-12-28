@@ -375,7 +375,7 @@ Node *expr(Parser *p, Node *child) {
                 n->left = expr(p, NULL);
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
-                n = new_node(AST_At, new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                n = new_node(AST_At, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 p->tok_index++;
                 n->left = expr(p, NULL);
                 if (CURRENT_TOK.type == Tok_Assign) {
