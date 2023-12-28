@@ -633,26 +633,23 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 if (i->mutable) free_ast_value(i);
             }
 
-            Variable var;// = get_var(n->value->value, interpreter, n->line, n->file);
+            Variable *var = get_var(interpreter, n->value->value, n->value->hash, n->line, n->file);
 
             //if it was assigned after array was created, add quotes around value
-            if (new_val->type == Value_String && ((char*)new_val->value)[0] != '"' && var.value->type == Value_Array) {
+            if (new_val->type == Value_String && ((char*)new_val->value)[0] != '"' && var->value->type == Value_Array) {
                 char *temp = strdup(new_val->value);
                 free(new_val->value);
                 new_val->value = format_str((strlen(temp) + 3), "\"%s\"", temp);
                 free(temp);
             }
 
-            if (var.value->type == Value_String) {
-                ((char*)var.value->value)[index - 1] = ((char*)new_val->value)[0];
+            if (var->value->type == Value_String) {
+                ((char*)var->value->value)[index - 1] = ((char*)new_val->value)[0];
                 if (new_val->mutable) free_ast_value(new_val);
                 break;
             }
-            free(var.value[index].value);
-            //if (interpreter->local_vars != NULL)
-            //    interpreter->local_vars[var.index].value[index] = *new_val;
-            //else
-            //    interpreter->vars[var.index].value[index] = *new_val;
+            free((AST_Value*)var->value[index].value);
+            var->value[index] = *new_val;
             free(new_val);
 
             break;}
