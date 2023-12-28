@@ -62,6 +62,7 @@ typedef enum {
     Tok_Println,
     Tok_For,
     Tok_In,
+    Tok_Input,
 } Token_Type;
 
 char *find_tok_type(int type) {
@@ -119,6 +120,7 @@ char *find_tok_type(int type) {
         case Tok_Println: return "Tok_Println";
         case Tok_For: return "Tok_For";
         case Tok_In: return "Tok_In";
+        case Tok_Input: return "Tok_Input";
         default: ERR("unknown token type `%d`\n", type)
     }
     return "unreachable";
@@ -289,6 +291,8 @@ static Token_Type id_type(Lexer *l) {
                     case 'n':
                         if (l->start[2] == 'c')
                             return check_keyword(3, 4, "lude", Tok_Include, l);
+                        if (l->start[2] == 'p')
+                            return check_keyword(3, 2, "ut", Tok_Input, l);
                         else if (l->start[2] == ' ')
                             return Tok_In;
                 }

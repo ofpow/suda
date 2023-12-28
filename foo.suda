@@ -1,1 +1,6 @@
-println ((5 - 3) - 6)
+println "whats your name?"
+
+let name = input
+
+print "hello "
+println name

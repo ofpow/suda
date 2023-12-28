@@ -118,7 +118,8 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
     free(intrprtr.local_vars);
     call_stack_index--;
-    //free(call_info);
+    call_stack[call_stack_index] = NULL;
+    free(call_info);
     return NULL;
 }
 // TODO: use something like this for appending to array instead of append keyword
@@ -483,6 +484,16 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
             } else 
                 return new_ast_value(Value_String, format_str(num_len(NUM(val->value)) + 1, "%ld", NUM(val->value)), 1);
         }
+        case AST_Input:;
+            int input_capacity = 10;
+            int input_index = 0;
+            char *input = calloc(input_capacity, sizeof(char));
+            char c;
+            while ((c = fgetc(stdin))) {
+                if (c == '\n') break;
+                append(input, c, input_index, input_capacity)
+            }
+            return new_ast_value(Value_String, input, 1);
         default: ERR("ERROR in %s on line %ld: cant evaluate node type `%s`\n", n->file, n->line, find_ast_type(n->type))
     }
     return NULL;
