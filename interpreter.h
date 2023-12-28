@@ -156,16 +156,8 @@ void assign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, AS
 
 void reassign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, AST_Value *new_val, int64_t line, const char *file) {
     Variable *var = get_var(interpreter, var_name, key, line, file);
-    
-    if (interpreter->local_vars != NULL) {
-        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->local_vars[var.index].name, STR(interpreter->local_vars[var.index].value->value), STR(new_val->value))
-        //free_ast_value(interpreter->local_vars[var.index].value);
-        //interpreter->local_vars[var.index].value = new_val;
-    } else {
-        debug("REASSIGN variable `%s` from `%s` to `%s`\n", interpreter->vars[var.index].name, STR(interpreter->vars[var.index].value->value), STR(new_val->value))
-        //free_ast_value(interpreter->vars[var.index].value);
-        //interpreter->vars[var.index].value = new_val;
-    }
+    if (var->value->mutable == true) free_ast_value(var->value);
+    var->value = new_val;
 }
 
 void unassign_variable(Interpreter *interpreter, char *var_name, int64_t line, const char *file) {

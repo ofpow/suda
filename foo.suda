@@ -1,3 +1,5 @@
 let x = 5
 
+x = "hello"
+
 println x
