@@ -582,7 +582,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             } else ERR("ERROR in %s on line %ld: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
 
             if (index < 1) {
-                assign_variable(interpreter, n->left->value->value, 0, new_value, n->line, n->file);
+                assign_variable(interpreter, n->left->value->value, n->left->value->hash, new_value, n->line, n->file);
             }
             else if (index < (len - 1)) {
                 reassign_variable(interpreter, n->left->value->value, n->left->value->hash, new_value, n->line, n->file);
