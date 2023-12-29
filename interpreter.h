@@ -163,13 +163,11 @@ void reassign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, 
 }
 
 void unassign_variable(Interpreter *interpreter, char *var_name, u_int32_t hash, int64_t line, const char *file) {
-    print_map(interpreter->vars);
     if (interpreter->local_vars != NULL) 
         if (delete_entry(interpreter->local_vars, hash) == true) return;
 
     if (delete_entry(interpreter->vars, hash) == false)
         ERR("ERROR in %s on line %ld: cant unassign nonexistent variable %s\n", file, line, var_name)
-    print_map(interpreter->vars);
     //    Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, hash);
     //    if (entry->value != NULL) free_entry(*entry);
     //}

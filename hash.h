@@ -113,7 +113,7 @@ Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
 
     while (1) {
         Entry *entry = &entries[index];
-        if (entry->key <= 0) {
+        if (entry->key == 0) {
             if (entry->value == NULL) {
                 return tombstone != NULL ? tombstone : entry;
             } else {
@@ -163,13 +163,12 @@ bool insert_entry(Map *map, u_int32_t key, Entry_Type type, void *value) {
 }
 
 bool delete_entry(Map *map, u_int32_t key) {
-    if (map->count == 0) return false;
+    if (map->count < 0) return false;
 
     Entry *entry = get_entry(map->entries, map->capacity, key);
-    printf("delte entry %s\n", ((Variable*)entry->value)->name);
-    if (entry->key <= 0) return false;
-    free_entry(*entry);
-    entry->key = -1;
+    if (entry->key == 0) return false;
+    //free_entry(*entry);
+    entry->key = 0;
     entry->value = NULL;
     return true;
 }
