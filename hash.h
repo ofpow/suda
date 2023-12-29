@@ -60,7 +60,9 @@ void free_ast_value(AST_Value *value) {
         }
     }
     free(value->value);
+    value->value = NULL;
     free(value);
+    value = NULL;
 }
 
 void free_entry(Entry entry) {

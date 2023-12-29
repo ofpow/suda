@@ -151,7 +151,7 @@ void assign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, AS
 
 void reassign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, AST_Value *new_val, int64_t line, const char *file) {
     Variable *var = get_var(interpreter, var_name, key, line, file);
-    if (var->value->mutable == true) free_ast_value(var->value);
+    free_ast_value(var->value);
     var->value = new_val;
 }
 
@@ -541,6 +541,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             debug("FOR: index is `%s`\n", STR(n->value->value))
             AST_Value *list = eval_node(n->right, interpreter, 0);
             int64_t index = NUM(n->value->value);
+            free(n->value->value);
+            n->value->value = NULL;
            
             int64_t len;
             AST_Value *new_value;
@@ -549,6 +551,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 if (index >= (len - 1)) {
                     //TODO: only works if iterator is last variable in list, ie no variables created inside loop
                     unassign_variable(interpreter, n->left->value->value, n->left->value->hash, n->line, n->file);
+                    free_ast_value(n->value);
                     n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
                     interpreter->program_counter = n->jump_index;
                     break;
@@ -563,11 +566,12 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 len = strlen(list->value) + 1;
                 if (index >= (len - 1)) {
                     unassign_variable(interpreter, n->left->value->value, n->left->value->hash, n->line, n->file);
-                    n->value = new_ast_value(Value_Number, format_str(2, "0"), 1, 0);
+                    free_ast_value(n->value);
+                    n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
                     interpreter->program_counter = n->jump_index;
                     break;
                 }
-                new_value = new_ast_value(Value_String, format_str(2, "%c", ((char*)list->value)[index]), 1, 0);
+                new_value = new_ast_value(Value_String, format_str(2, "%c", STR(list->value)[index]), 1, 0);
             } else ERR("ERROR in %s on line %ld: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
 
             if (index < 1) {
@@ -577,7 +581,6 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 reassign_variable(interpreter, n->left->value->value, n->left->value->hash, new_value, n->line, n->file);
             }
             index++;
-            free(n->value->value);
             n->value->value = dup_int(index);
             break;
         case AST_Else:
