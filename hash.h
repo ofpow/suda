@@ -70,13 +70,9 @@ void free_entry(Entry entry) {
         case Entry_Empty:
             break;
         case Entry_Variable:;
-            if (entry.value != NULL) {
-                Variable *var = (Variable*)entry.value;
-                if (var->value != NULL) free_ast_value(var->value);
-                free(var);
-            } else {
-                free(entry.value);
-            }
+            Variable *var = (Variable*)entry.value;
+            if (var->value != NULL) free_ast_value(var->value);
+            free(var);
             break;
         default:
             ERR("cant free entry type %d\n", entry.type)
@@ -131,13 +127,12 @@ Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
 }
 
 void adjust_capacity(Map *map) {
-    map->capacity *= 2;
-    Entry *entries = calloc(map->capacity, sizeof(Entry));
+    Entry *entries = calloc(map->capacity * 2, sizeof(Entry));
 
     map->count = 0;
     for (int i = 0; i < map->capacity; i++) {
         Entry *entry = &map->entries[i];
-        if (entry->key == 0) continue;
+        if (entry->key == 0 || entry->value == NULL) continue;
 
         Entry *dest = get_entry(map->entries, map->capacity, entry->key);
         dest->key = entry->key;
@@ -146,17 +141,18 @@ void adjust_capacity(Map *map) {
     }
     free(map->entries);
     map->entries = entries;
+    map->capacity *= 2;
     return;
 }
 
 bool insert_entry(Map *map, u_int32_t key, Entry_Type type, void *value) {
-    if (map->count + 1 > map->capacity * 0.75) {
+    if ((int64_t)(map->count + 1) > (int64_t)(map->capacity * 0.8)) {
         adjust_capacity(map);
     }
 
     Entry *entry = get_entry(map->entries, map->capacity, key);
 
-    bool is_new = (entry == NULL);
+    bool is_new = (entry->key == 0);
     if (is_new && (entry->value == NULL)) map->count++;
 
     entry->key = key;

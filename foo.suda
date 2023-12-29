@@ -1,22 +1,40 @@
-let var_one = [1, 2, 3, "hello", "world"]
-println var_one
-
-println var_one@1
-println var_one@5
-
-var_one@1 = 30
-var_one@3 = "good"
-
-println var_one
-
-append var_one 5
-
-println var_one
-#println var_one@(1 + 2)
-#
-#println len(var_one)
-#println len(var_one@5)
-#
-#var_one = [1, 2, 3]
-#
-#println var_one
+let var1 = 1
+println var1
+let var2 = 2
+println var2
+let var3 = 3
+println var3
+let var4 = 4
+println var4
+let var5 = 5
+println var5
+let var6 = 6
+println var6
+let var7 = 7
+println var7
+let var8 = 8
+println var8
+let var9 = 9
+println var9
+let var10 = 10
+println var10
+let var11 = 11
+println var11
+let var12 = 12
+println var12
+let var13 = 13
+println var13
+let var14 = 14
+println var14
+let var15 = 15
+println var15
+let var16 = 16
+println var16
+let var17 = 17
+println var17
+let var18 = 18
+println var18
+let var19 = 19
+println var19
+let var20 = 20
+println var20
