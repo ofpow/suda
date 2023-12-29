@@ -1,6 +1,7 @@
 #pragma once
 
 typedef enum {
+    Entry_Empty,
     Entry_Variable,
 } Entry_Type;
 
@@ -53,26 +54,27 @@ void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
     if (value->type == Value_Array) {
         int64_t arr_len = NUM(value[0].value);
-        for (int j = 0; j < arr_len; j++) {
-            if (value[j].value != NULL) free(value[j].value);
-            value[j].value = NULL;
+        for (int i = 0; i < arr_len; i++) {
+            if (value[i].value != NULL) free(value[i].value);
+            value[i].value = NULL;
         }
     }
     free(value->value);
     free(value);
 }
 
-Entry *new_entry(u_int32_t key, void *value) {
-    Entry *entry = calloc(1, sizeof(Entry));
-    entry->key = key;
-    entry->value = value;
-    return entry;
-}
-
 void free_entry(Entry entry) {
     switch (entry.type) {
-        case Entry_Variable:
-            free(entry.value);
+        case Entry_Empty:
+            break;
+        case Entry_Variable:;
+            if (entry.value != NULL) {
+                Variable *var = (Variable*)entry.value;
+                if (var->value != NULL) free_ast_value(var->value);
+                free(var);
+            } else {
+                free(entry.value);
+            }
             break;
         default:
             ERR("cant free entry type %d\n", entry.type)
@@ -167,16 +169,8 @@ bool delete_entry(Map *map, u_int32_t key) {
 
     Entry *entry = get_entry(map->entries, map->capacity, key);
     if (entry->key == 0) return false;
-    //free_entry(*entry);
+    free_entry(*entry);
     entry->key = 0;
     entry->value = NULL;
     return true;
-}
-
-void print_map(Map *map) {
-    for (int i = 0; i < map->capacity; i++) {
-        if (map->entries[i].key > 0) {
-            printf("at index %d, there is an entry named %s\n", i, ((Variable*)map->entries[i].value)->name);
-        }
-    }
 }
