@@ -419,19 +419,26 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
         }
         case AST_Function_Call:
             return call_function(interpreter, n);
-        case AST_Len:
+        case AST_Len:{
             ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier || n->left->value->type == Value_Number), "ERROR in %s on line %ld: cant do len on value type %s\n", n->file, n->line, find_ast_value_type(n->left->value->type))
-            AST_Value *op = eval_node(n->left, interpreter, 0);
+            AST_Value *op = eval_node(n->left, interpreter, false);
+            AST_Value *result;
             switch (op->type) {
                 case Value_String:
-                    return new_ast_value(Value_Number, dup_int(strlen(op->value)), 1, 0);
+                    result = new_ast_value(Value_Number, dup_int(strlen(op->value)), 1, 0);
+                    if (op->mutable) free_ast_value(op);
+                    return result;
                 case Value_Array:;
-                    return new_ast_value(Value_Number, dup_int(NUM(op[0].value) - 1), 1, 0);
+                    result = new_ast_value(Value_Number, dup_int(NUM(op[0].value) - 1), 1, 0);
+                    if (op->mutable) free_ast_value(op);
+                    return result;
                 case Value_Number:;
-                    return new_ast_value(Value_Number, dup_int(num_len(NUM(op->value)) + 1), 1, 0);
+                    result = new_ast_value(Value_Number, dup_int(num_len(NUM(op->value)) + 1), 1, 0);
+                    if (op->mutable) free_ast_value(op);
+                    return result;
                 default: ERR("ERROR in %s on line %ld: cant evaluate length of value type %s\n", n->file, n->line, find_ast_value_type(op->type))
             }
-            break;
+            break;}
         case AST_Cast_Num: {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
             if (val->type == Value_Number) return val;
