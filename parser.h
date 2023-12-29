@@ -218,19 +218,6 @@ AST_Value *new_ast_value(int type, void *value, bool mutable, u_int32_t hash) {
     return val;
 }
 
-void free_ast_value(AST_Value *value) {
-    if (value == NULL) return;
-    if (value->type == Value_Array) {
-        int64_t arr_len = NUM(value[0].value);
-        for (int j = 0; j < arr_len; j++) {
-            if (value[j].value != NULL) free(value[j].value);
-            value[j].value = NULL;
-        }
-    }
-    free(value->value);
-    free(value);
-}
-
 Node *new_node(AST_Type type, AST_Value *value, int64_t jump_index, int64_t line, const char *file) {
 
     debug("NODE ( `%s` )\n", find_ast_type(type))

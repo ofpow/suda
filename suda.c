@@ -114,6 +114,7 @@ void free_mem(int exit_val) {
     free(p->jump_indices);
     //for (int i = 0; i < interpreter.vars_index; i++) free_ast_value(interpreter.vars[i].value);
     //free(interpreter.vars);
+    free_map(interpreter.vars);
     for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
     free(interpreter.funcs);
     for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
@@ -352,13 +353,6 @@ int main(int argc, char *argv[]) {
     interpreter.nodes = p->nodes;
     interpreter.stmts_capacity = p->nodes_index;
 
-    //interpreter.vars = calloc(10, sizeof(struct Variable));
-    //interpreter.vars_index = 0;
-    //interpreter.vars_capacity = 10;
-
-    //interpreter.local_vars = NULL;
-    //interpreter.local_vars_index = -1;
-    //interpreter.local_vars_capacity = -1;
     interpreter.vars = new_map(10);
     interpreter.local_vars = NULL;
 

@@ -82,13 +82,12 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
 
         //global variables inherited from call
         interpreter->vars,
-        interpreter->vars_index,
-        interpreter->vars_capacity,
         
         // arguments and local variables
-        calloc(func->arity + 1, sizeof(Variable)),
-        0,
-        func->arity + 1,
+        new_map(10),
+        //calloc(func->arity + 1, sizeof(Variable)),
+        //0,
+        //func->arity + 1,
 
         // other functions
         interpreter->funcs,
@@ -102,7 +101,10 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         //    eval_node(n->func_args[i], interpreter, 1),
         //    i,
         //};
-        intrprtr.local_vars_index++;
+        Variable *var = calloc(1, sizeof(Variable));
+        var->name = func->args[i]->value;
+        var->value = eval_node(n->func_args[i], interpreter, 1);
+        insert_entry(intrprtr.local_vars, func->args[i]->hash, Entry_Variable, var);
     }
 
     AST_Value *rtrn;
@@ -110,13 +112,13 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
         if (rtrn != NULL) {
             //for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-            free(intrprtr.local_vars);
+            //free(intrprtr.local_vars);
             return rtrn;
         }
         intrprtr.program_counter++;
     }
     //for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-    free(intrprtr.local_vars);
+    //free(intrprtr.local_vars);
     call_stack_index--;
     call_stack[call_stack_index] = NULL;
     free(call_info);
@@ -140,7 +142,7 @@ AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
 }
 
 void assign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, AST_Value *var_val, int64_t line, const char *file) {
-    if (check_variable(var_name, interpreter) >= 0) 
+    if (check_variable(interpreter, key) == true) 
         ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", file, line, var_name)
 
     Variable *var = calloc(1, sizeof(Variable));
@@ -160,18 +162,32 @@ void reassign_variable(Interpreter *interpreter, char *var_name, u_int32_t key, 
     var->value = new_val;
 }
 
-void unassign_variable(Interpreter *interpreter, char *var_name, int64_t line, const char *file) {
-    Variable var;// = get_var(var_name, interpreter, line, file);
+void unassign_variable(Interpreter *interpreter, char *var_name, u_int32_t hash, int64_t line, const char *file) {
+    print_map(interpreter->vars);
+    if (interpreter->local_vars != NULL) 
+        if (delete_entry(interpreter->local_vars, hash) == true) return;
 
-    if (interpreter->local_vars != NULL) {
-        debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
-        //free_ast_value(interpreter->local_vars[var.index].value);
-        interpreter->local_vars_index--;
-    } else {
-        debug("UNASSIGN variable `%s`\n", interpreter->vars[var.index].name)
-        //free_ast_value(interpreter->vars[var.index].value);
-        interpreter->vars_index--;
-    }
+    if (delete_entry(interpreter->vars, hash) == false)
+        ERR("ERROR in %s on line %ld: cant unassign nonexistent variable %s\n", file, line, var_name)
+    print_map(interpreter->vars);
+    //    Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, hash);
+    //    if (entry->value != NULL) free_entry(*entry);
+    //}
+    //Entry *entry = get_entry(interpreter->vars->entries, interpreter->vars->capacity, hash);
+    //if (entry->key == 0) ERR("ERROR in %s on line %ld: cant unassign nonexistent variable %s\n", file, line, var_name)
+
+    //free_entry(*entry);
+    //Variable var;// = get_var(var_name, interpreter, line, file);
+
+    //if (interpreter->local_vars != NULL) {
+    //    debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
+    //    //free_ast_value(interpreter->local_vars[var.index].value);
+    //    interpreter->local_vars_index--;
+    //} else {
+    //    debug("UNASSIGN variable `%s`\n", interpreter->vars[var.index].name)
+    //    //free_ast_value(interpreter->vars[var.index].value);
+    //    interpreter->vars_index--;
+    //}
 }
 
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file, bool mutable) {
@@ -407,24 +423,24 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
                 }
                 return new_ast_value(var->value[index].type, dup_int(NUM(var->value[index].value)), 1, 0);
             } else if (var->value[index].type == Value_Identifier) {
-                Variable rtrn;// = get_var(var->value[index].value, interpreter, n->line, n->file);
+                Variable *rtrn = get_var(interpreter, var->value[index].value, var->value[index].hash, n->line, n->file);
 
                 if (!mutable) {
-                    AST_Value *new_val = rtrn.value;
+                    AST_Value *new_val = rtrn->value;
                     new_val->mutable = false;
                     return new_val;
                 }
-                if (rtrn.value->type == Value_Array) {
-                    int64_t arr_len = NUM(rtrn.value->value);
-                    AST_Value *array = calloc(arr_len + 1, sizeof(rtrn.value[0]));
+                if (rtrn->value->type == Value_Array) {
+                    int64_t arr_len = NUM(rtrn->value->value);
+                    AST_Value *array = calloc(arr_len + 1, sizeof(rtrn->value[0]));
                     array->mutable = true;
                     for (int i = 0; i < arr_len; i++) {
-                        array[i].type = rtrn.value[i].type;
-                        array[i].value = strdup(rtrn.value[i].value);
+                        array[i].type = rtrn->value[i].type;
+                        array[i].value = strdup(rtrn->value[i].value);
                     }
                     return array;
                 }
-                return new_ast_value(rtrn.value->type, strdup(rtrn.value->value), 1, 0);
+                return new_ast_value(rtrn->value->type, strdup(rtrn->value->value), 1, 0);
             } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_ast_value_type(var->value[index].type))
             break;
         }
@@ -559,7 +575,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                 len = NUM(list[0].value);
                 if (index >= (len - 1)) {
                     //TODO: only works if iterator is last variable in list, ie no variables created inside loop
-                    unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                    unassign_variable(interpreter, n->left->value->value, n->left->value->hash, n->line, n->file);
                     n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
                     interpreter->program_counter = n->jump_index;
                     break;
@@ -573,7 +589,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             } else if (list->type == Value_String) {
                 len = strlen(list->value) + 1;
                 if (index >= (len - 1)) {
-                    unassign_variable(interpreter, n->left->value->value, n->line, n->file);
+                    unassign_variable(interpreter, n->left->value->value, n->left->value->hash, n->line, n->file);
                     n->value = new_ast_value(Value_Number, format_str(2, "0"), 1, 0);
                     interpreter->program_counter = n->jump_index;
                     break;
