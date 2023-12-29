@@ -96,11 +96,6 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     };
 
     for (int i = 0; i < func->arity; i++) {
-        //intrprtr.local_vars[intrprtr.local_vars_index] = (Variable) {
-        //    func->args[i]->value,
-        //    eval_node(n->func_args[i], interpreter, 1),
-        //    i,
-        //};
         Variable *var = calloc(1, sizeof(Variable));
         var->name = func->args[i]->value;
         var->value = eval_node(n->func_args[i], interpreter, 1);
@@ -111,14 +106,12 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     while (intrprtr.program_counter < intrprtr.stmts_capacity) {
         rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
         if (rtrn != NULL) {
-            //for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-            //free(intrprtr.local_vars);
+            free_map(intrprtr.local_vars);
             return rtrn;
         }
         intrprtr.program_counter++;
     }
-    //for (int i = 0; i < intrprtr.local_vars_index; i++) free_ast_value(intrprtr.local_vars[i].value);
-    //free(intrprtr.local_vars);
+    free_map(intrprtr.local_vars);
     call_stack_index--;
     call_stack[call_stack_index] = NULL;
     free(call_info);
@@ -168,24 +161,6 @@ void unassign_variable(Interpreter *interpreter, char *var_name, u_int32_t hash,
 
     if (delete_entry(interpreter->vars, hash) == false)
         ERR("ERROR in %s on line %ld: cant unassign nonexistent variable %s\n", file, line, var_name)
-    //    Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, hash);
-    //    if (entry->value != NULL) free_entry(*entry);
-    //}
-    //Entry *entry = get_entry(interpreter->vars->entries, interpreter->vars->capacity, hash);
-    //if (entry->key == 0) ERR("ERROR in %s on line %ld: cant unassign nonexistent variable %s\n", file, line, var_name)
-
-    //free_entry(*entry);
-    //Variable var;// = get_var(var_name, interpreter, line, file);
-
-    //if (interpreter->local_vars != NULL) {
-    //    debug("UNASSIGN variable `%s`\n", interpreter->local_vars[var.index].name)
-    //    //free_ast_value(interpreter->local_vars[var.index].value);
-    //    interpreter->local_vars_index--;
-    //} else {
-    //    debug("UNASSIGN variable `%s`\n", interpreter->vars[var.index].name)
-    //    //free_ast_value(interpreter->vars[var.index].value);
-    //    interpreter->vars_index--;
-    //}
 }
 
 AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, const char *file, bool mutable) {

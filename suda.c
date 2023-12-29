@@ -112,8 +112,6 @@ void free_mem(int exit_val) {
 
     free(tokens);
     free(p->jump_indices);
-    //for (int i = 0; i < interpreter.vars_index; i++) free_ast_value(interpreter.vars[i].value);
-    //free(interpreter.vars);
     free_map(interpreter.vars);
     for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
     free(interpreter.funcs);
