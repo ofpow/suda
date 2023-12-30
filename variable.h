@@ -44,7 +44,6 @@ typedef struct {
     int64_t auto_jump;
 } Interpreter;
 
-//TODO: variables as a hashmap
 Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64_t line, const char *file) {
     if (interpreter->local_vars != NULL) {
         Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, key);
@@ -55,6 +54,7 @@ Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64
 
     return entry->value;
 }
+
 bool check_variable(Interpreter *interpreter, u_int32_t key) {
     if (interpreter->local_vars != NULL) {
         Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, key);
