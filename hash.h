@@ -2,6 +2,7 @@
 
 typedef enum {
     Entry_Empty,
+    Entry_Tombstone,
     Entry_Variable,
 } Entry_Type;
 
@@ -68,6 +69,7 @@ void free_ast_value(AST_Value *value) {
 void free_entry(Entry entry) {
     switch (entry.type) {
         case Entry_Empty:
+        case Entry_Tombstone:
             break;
         case Entry_Variable:;
             Variable *var = (Variable*)entry.value;
@@ -107,6 +109,15 @@ u_int32_t hash(const char* key, int64_t length) {
     return hash;
 }
 
+void print_map(Map *map) {
+    for (int i = 0; i < map->capacity; i++) {
+        if (map->entries[i].key != 0) 
+            printf("index %d not empty\n", i);
+        else
+            printf("index %d empty\n", i);
+    }
+}
+
 Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
     u_int32_t index = key % capacity;
     Entry *tombstone = NULL;
@@ -114,7 +125,7 @@ Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
     while (1) {
         Entry *entry = &entries[index];
         if (entry->key == 0) {
-            if (entry->value == NULL) {
+            if (entry->type != Entry_Tombstone) {
                 return tombstone != NULL ? tombstone : entry;
             } else {
                 if (tombstone == NULL) tombstone = entry;
@@ -126,34 +137,33 @@ Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
     }
 }
 
-void adjust_capacity(Map *map) {
-    Entry *entries = calloc(map->capacity * 2, sizeof(Entry));
+void adjust_capacity(Map *map, int64_t capacity) {
+    Entry *entries = calloc(capacity, sizeof(Entry));
 
     map->count = 0;
     for (int i = 0; i < map->capacity; i++) {
         Entry *entry = &map->entries[i];
-        if (entry->key == 0 || entry->value == NULL) continue;
+        if (entry->key == 0) continue;
 
-        Entry *dest = get_entry(map->entries, map->capacity, entry->key);
+        Entry *dest = get_entry(entries, capacity, entry->key);
         dest->key = entry->key;
         dest->value = entry->value;
         map->count++;
     }
     free(map->entries);
     map->entries = entries;
-    map->capacity *= 2;
-    return;
+    map->capacity = capacity;
 }
 
 bool insert_entry(Map *map, u_int32_t key, Entry_Type type, void *value) {
-    if ((int64_t)(map->count + 1) > (int64_t)(map->capacity * 0.8)) {
-        adjust_capacity(map);
+    if ((int64_t)(map->count + 1) > (int64_t)(map->capacity * 0.75)) {
+        adjust_capacity(map, map->capacity * 2);
     }
 
     Entry *entry = get_entry(map->entries, map->capacity, key);
 
     bool is_new = (entry->key == 0);
-    if (is_new && (entry->value == NULL)) map->count++;
+    if (is_new) map->count++;
 
     entry->key = key;
     entry->type = type;
@@ -170,5 +180,6 @@ bool delete_entry(Map *map, u_int32_t key) {
     free_entry(*entry);
     entry->key = 0;
     entry->value = NULL;
+    entry->type = Entry_Tombstone;
     return true;
 }

@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
     interpreter.nodes = p->nodes;
     interpreter.stmts_capacity = p->nodes_index;
 
-    interpreter.vars = new_map(10);
+    interpreter.vars = new_map(8);
     interpreter.local_vars = NULL;
 
     interpreter.funcs_capacity = p->funcs_index;

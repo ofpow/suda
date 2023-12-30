@@ -84,7 +84,7 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         interpreter->vars,
         
         // arguments and local variables
-        new_map(10),
+        new_map(8),
         //calloc(func->arity + 1, sizeof(Variable)),
         //0,
         //func->arity + 1,
