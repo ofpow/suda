@@ -147,6 +147,7 @@ void adjust_capacity(Map *map, int64_t capacity) {
 
         Entry *dest = get_entry(entries, capacity, entry->key);
         dest->key = entry->key;
+        dest->type = entry->type;
         dest->value = entry->value;
         map->count++;
     }
