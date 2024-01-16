@@ -85,9 +85,6 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         
         // arguments and local variables
         new_map(8),
-        //calloc(func->arity + 1, sizeof(Variable)),
-        //0,
-        //func->arity + 1,
 
         // other functions
         interpreter->funcs,
@@ -107,6 +104,9 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
         if (rtrn != NULL) {
             free_map(intrprtr.local_vars);
+            call_stack_index--;
+            call_stack[call_stack_index] = NULL;
+            free(call_info);
             return rtrn;
         }
         intrprtr.program_counter++;
