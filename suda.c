@@ -11,12 +11,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <limits.h>
 
 void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!(expr)) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
-#define num_len(num) snprintf(NULL, 0, "%ld", (num))
 #define NUM(x) (*((int64_t*)(x)))
 #define STR(x) ((char*)(x))
 #define append(_array, _element, _index, _capacity) do {         \
@@ -27,6 +27,29 @@ void free_mem(int exit_val);
                                                                  \
     _array[_index++] = _element;                                 \
 } while (0);                                                     \
+
+int64_t num_len(int64_t n) {
+    if (n < 0) n = (n == LONG_MIN) ? LONG_MAX : -n;
+    if (n < 10) return 1;
+    if (n < 100) return 2;
+    if (n < 1000) return 3;
+    if (n < 10000) return 4;
+    if (n < 100000) return 5;
+    if (n < 1000000) return 6;
+    if (n < 10000000) return 7;
+    if (n < 100000000) return 8;
+    if (n < 1000000000) return 9;
+    if (n < 10000000000) return 10;
+    if (n < 100000000000) return 11;
+    if (n < 1000000000000) return 12;
+    if (n < 10000000000000) return 13;
+    if (n < 100000000000000) return 14;
+    if (n < 1000000000000000) return 15;
+    if (n < 10000000000000000) return 16;
+    if (n < 100000000000000000) return 17;
+    if (n < 1000000000000000000) return 18;
+    return 19;
+}
 
 char *format_str(int strlen, const char *format, ...) {
     char *result = malloc(strlen + 1);
