@@ -172,6 +172,10 @@ int main(int argc, char *argv[]) {
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
+    // suda's argc and argv
+    AST_Value *suda_argc = NULL;
+    AST_Value *suda_argv = NULL;
+
     //TODO: make debug a cli flag
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
@@ -185,6 +189,22 @@ int main(int argc, char *argv[]) {
             return 0;
         } else {
             file_path = argv[i];
+            if ((argc - 1) > i) {
+                suda_argc = new_ast_value(Value_Number, dup_int((argc - 1) - i), 1, hash("argc", 4));
+                i++;
+                int index = 1;
+                int capacity = 10;
+                suda_argv = calloc(2, sizeof(struct AST_Value));
+                while (i < argc) {
+                    int len = strlen(argv[i]);
+                    append(suda_argv, ((AST_Value){ Value_String, format_str(len + 3, "\"%s\"", strdup(argv[i])), 1, 0 }), index, capacity)
+                    i++;
+                }
+                suda_argv->hash = hash("argv", 4);
+                suda_argv->mutable = true;
+                suda_argv[0].type = Value_Array;
+                suda_argv[0].value = dup_int(index);
+            }
             break;
         }
     }
@@ -376,6 +396,16 @@ int main(int argc, char *argv[]) {
 
     interpreter.vars = new_map(8);
     interpreter.local_vars = NULL;
+    if (suda_argc == NULL) {
+        suda_argc = new_ast_value(Value_Number, dup_int(0), 1, hash("argc", 4));
+        suda_argv = calloc(1, sizeof(AST_Value));
+        suda_argv->hash = hash("argv", 4);
+        suda_argv->mutable = true;
+        suda_argv[0].value = dup_int(1);
+        suda_argv[0].type = Value_Array;
+    }
+    assign_variable(&interpreter, strdup("argc"), suda_argc->hash, suda_argc, -1, file_path);
+    assign_variable(&interpreter, strdup("argv"), suda_argv->hash, suda_argv, -1, file_path);
 
     interpreter.funcs_capacity = p->funcs_index;
     interpreter.funcs = p->funcs;
