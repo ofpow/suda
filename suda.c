@@ -410,8 +410,8 @@ int main(int argc, char *argv[]) {
         suda_argv[0].value = dup_int(1);
         suda_argv[0].type = Value_Array;
     }
-    assign_variable(&interpreter, strdup("argc"), suda_argc->hash, suda_argc, -1, file_path);
-    assign_variable(&interpreter, strdup("argv"), suda_argv->hash, suda_argv, -1, file_path);
+    assign_variable(&interpreter, "argc", suda_argc->hash, suda_argc, -1, file_path);
+    assign_variable(&interpreter, "argv", suda_argv->hash, suda_argv, -1, file_path);
 
     interpreter.funcs_capacity = p->funcs_index;
     interpreter.funcs = p->funcs;
