@@ -69,8 +69,11 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable);
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
 
-    char *call_info = format_str(strlen(func->name) + 3 + num_len(n->line), "%s:%ld", func->name, n->line);
-    append(call_stack, call_info, call_stack_index, call_stack_capacity)
+    char *call_info;
+    if (call_stack != NULL) {
+        call_info = format_str(strlen(func->name) + 3 + num_len(n->line), "%s:%ld", func->name, n->line);
+        append(call_stack, call_info, call_stack_index, call_stack_capacity)
+    }
 
     ASSERT((func->arity == n->func_args_index), "ERROR in %s on line %ld: cant call function %s with %ld arguments, it needs %ld arguments\n", n->file, n->line, func->name, n->func_args_index, func->arity)
 
@@ -104,17 +107,21 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
         rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
         if (rtrn != NULL) {
             free_map(intrprtr.local_vars);
-            call_stack_index--;
-            call_stack[call_stack_index] = NULL;
-            free(call_info);
+            if (call_stack != NULL) {
+                call_stack_index--;
+                call_stack[call_stack_index] = NULL;
+                free(call_info);
+            }
             return rtrn;
         }
         intrprtr.program_counter++;
     }
     free_map(intrprtr.local_vars);
-    call_stack_index--;
-    call_stack[call_stack_index] = NULL;
-    free(call_info);
+    if (call_stack != NULL) {
+        call_stack_index--;
+        call_stack[call_stack_index] = NULL;
+        free(call_info);
+    }
     return NULL;
 }
 // TODO: use something like this for appending to array instead of append keyword

@@ -108,7 +108,7 @@ typedef struct Programs {
     int64_t progs_capacity;
 } Programs;
 
-char **call_stack;
+char **call_stack = NULL;
 int call_stack_index;
 int call_stack_capacity;
 
@@ -145,18 +145,20 @@ void free_mem(int exit_val) {
     free(programs->progs);
     free(programs);
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
-    if (exit_val > 0 && call_stack_index > 0) {
-        printf("Stack trace:\n");
-        for (int i = call_stack_index - 1; i >= 0; i--) {
-            printf("%s\n", call_stack[i]);
-            free(call_stack[i]);
+    if (call_stack != NULL) {
+        if (exit_val > 0 && call_stack_index > 0) {
+            printf("Stack trace:\n");
+            for (int i = call_stack_index - 1; i >= 0; i--) {
+                printf("%s\n", call_stack[i]);
+                free(call_stack[i]);
+            }
+        } else {
+            for (int i = call_stack_index - 1; i >= 0; i--) {
+                free(call_stack[i]);
+            }
         }
-    } else {
-        for (int i = call_stack_index - 1; i >= 0; i--) {
-            free(call_stack[i]);
-        }
+        free(call_stack);
     }
-    free(call_stack);
     free(include_paths);
     exit(exit_val);
 }
@@ -180,12 +182,16 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
             time = 1;
-        }
-        else if (!strcmp(argv[i], "-h")) {
+        } else if (!strcmp(argv[i], "-c")) {
+            call_stack = calloc(10, sizeof(char*));
+            call_stack_index = 0;
+            call_stack_capacity = 10;
+        } else if (!strcmp(argv[i], "-h")) {
             printf("Usage: suda <args> [file] \n");
             printf("Arguments:\n");
             printf("  -h: print this message\n");
             printf("  -t: print timing info\n");
+            printf("  -c: print call stack on crash\n");
             return 0;
         } else {
             file_path = argv[i];
@@ -411,10 +417,6 @@ int main(int argc, char *argv[]) {
     interpreter.funcs = p->funcs;
 
     interpreter.auto_jump = 0;
-
-    call_stack = calloc(10, sizeof(char*));
-    call_stack_index = 0;
-    call_stack_capacity = 10;
 
     interpret(&interpreter);
 
