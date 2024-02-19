@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    bool time = 0;
+    bool time = false;
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     //TODO: make debug a cli flag
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
-            time = 1;
+            time = true;
         } else if (!strcmp(argv[i], "-c")) {
             call_stack = calloc(10, sizeof(char*));
             call_stack_index = 0;
