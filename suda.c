@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    int64_t time = 0;
+    bool time = 0;
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
