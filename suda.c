@@ -17,8 +17,8 @@ void free_mem(int exit_val);
 
 #define ERR(...) do {fprintf (stderr, __VA_ARGS__); free_mem(1);} while (0);
 #define ASSERT(expr, ...) do {if (!(expr)) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
-#define NUM(x) (*((int64_t*)(x)))
-#define STR(x) ((char*)(x))
+#define NUM(_val) (*((int64_t*)(_val)))
+#define STR(_val) ((char*)(_val))
 #define append(_array, _element, _index, _capacity) do {         \
     if (_index >= _capacity) {                                   \
         _capacity *= 2;                                          \
@@ -118,6 +118,7 @@ int call_stack_capacity;
 #include "parser.h"
 #include "function.h"
 #include "interpreter.h"
+#include "vm.h"
 
 //global variables for access to freeing from anywhere
 Token *tokens;
@@ -171,6 +172,7 @@ int main(int argc, char *argv[]) {
     }
 
     bool time = false;
+    bool bytecode = false;
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
@@ -182,6 +184,8 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
             time = true;
+        } else if (!strcmp(argv[i], "-b")) {
+            bytecode = true;
         } else if (!strcmp(argv[i], "-c")) {
             call_stack = calloc(10, sizeof(char*));
             call_stack_index = 0;
@@ -266,10 +270,6 @@ int main(int argc, char *argv[]) {
     Node **temp_nodes = NULL;
 
     while (1) {
-        if (p->nodes_index >= p->nodes_capacity) {
-            p->nodes_capacity *= 2;
-            p->nodes = realloc(p->nodes, p->nodes_capacity * sizeof(Node*));
-        }
         Node *n = statement(p);
         if (n->type == AST_End) {
             free_node(n);
@@ -396,39 +396,53 @@ int main(int argc, char *argv[]) {
     }
 
     debug("\n----------\nINTERPRETING\n")
+    if (bytecode) {
+        VM vm = {0};
+        vm.code = calloc(10, sizeof(u_int8_t));
+        vm.code_capacity = 10;
 
-    interpreter.nodes = p->nodes;
-    interpreter.stmts_capacity = p->nodes_index;
+        vm.constants = calloc(10, sizeof(Value));
+        vm.constants_capacity = 10;
 
-    interpreter.vars = new_map(8);
-    interpreter.local_vars = NULL;
-    if (suda_argc == NULL) {
-        suda_argc = new_ast_value(Value_Number, dup_int(0), 1, hash("argc", 4));
-        suda_argv = calloc(1, sizeof(AST_Value));
-        suda_argv->hash = hash("argv", 4);
-        suda_argv->mutable = true;
-        suda_argv[0].value = dup_int(1);
-        suda_argv[0].type = Value_Array;
+        vm.stack_top = vm.stack;
+
+        compile(p->nodes, p->nodes_index, &vm);
+
+        run(&vm);
+    } else {
+        interpreter.nodes = p->nodes;
+        interpreter.stmts_capacity = p->nodes_index;
+
+        interpreter.vars = new_map(8);
+        interpreter.local_vars = NULL;
+        if (suda_argc == NULL) {
+            suda_argc = new_ast_value(Value_Number, dup_int(0), 1, hash("argc", 4));
+            suda_argv = calloc(1, sizeof(AST_Value));
+            suda_argv->hash = hash("argv", 4);
+            suda_argv->mutable = true;
+            suda_argv[0].value = dup_int(1);
+            suda_argv[0].type = Value_Array;
+        }
+        assign_variable(&interpreter, "argc", suda_argc->hash, suda_argc, -1, file_path);
+        assign_variable(&interpreter, "argv", suda_argv->hash, suda_argv, -1, file_path);
+
+        interpreter.funcs_capacity = p->funcs_index;
+        interpreter.funcs = p->funcs;
+
+        interpreter.auto_jump = 0;
+
+        interpret(&interpreter);
+
+        if (time) {
+            clock_gettime(CLOCK_MONOTONIC, &tend);
+            printf("INTERPRETING time: %f seconds\n",
+                ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+            printf("OVERALL      time: %f seconds\n",
+                ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
+        }
+
+        free_mem(0);
     }
-    assign_variable(&interpreter, "argc", suda_argc->hash, suda_argc, -1, file_path);
-    assign_variable(&interpreter, "argv", suda_argv->hash, suda_argv, -1, file_path);
-
-    interpreter.funcs_capacity = p->funcs_index;
-    interpreter.funcs = p->funcs;
-
-    interpreter.auto_jump = 0;
-
-    interpret(&interpreter);
-
-    if (time) {
-        clock_gettime(CLOCK_MONOTONIC, &tend);
-        printf("INTERPRETING time: %f seconds\n",
-               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-        printf("OVERALL      time: %f seconds\n",
-               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-               ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
-    }
-
-    free_mem(0);
 }
