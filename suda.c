@@ -125,6 +125,8 @@ Token *tokens;
 Programs *programs;
 Parser *p;
 Interpreter interpreter;
+VM vm;
+bool bytecode = false;
 
 char **include_paths;
 int include_paths_index;
@@ -134,11 +136,18 @@ void free_mem(int exit_val) {
 
     debug("\n----------\nFREEING\n")
 
+    if (bytecode) {
+        free(vm.code);    
+        free(vm.constants);    
+        free(p->funcs);
+    }
+    if (!bytecode) {
+        free_map(interpreter.vars);
+        for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
+        free(interpreter.funcs);
+    }
     free(tokens);
     free(p->jump_indices);
-    free_map(interpreter.vars);
-    for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
-    free(interpreter.funcs);
     for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
     free(p->nodes);
     free(p);
@@ -146,7 +155,7 @@ void free_mem(int exit_val) {
     free(programs->progs);
     free(programs);
     for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
-    if (call_stack != NULL) {
+    if (call_stack != NULL && !bytecode) {
         if (exit_val > 0 && call_stack_index > 0) {
             printf("Stack trace:\n");
             for (int i = call_stack_index - 1; i >= 0; i--) {
@@ -172,7 +181,6 @@ int main(int argc, char *argv[]) {
     }
 
     bool time = false;
-    bool bytecode = false;
     struct timespec tstart, tend, tfinal;
     char *file_path;
 
@@ -397,7 +405,6 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
-        VM vm = {0};
         vm.code = calloc(10, sizeof(u_int8_t));
         vm.code_capacity = 10;
 
@@ -442,7 +449,7 @@ int main(int argc, char *argv[]) {
                 ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
                 ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
         }
-
-        free_mem(0);
     }
+
+    free_mem(0);
 }
