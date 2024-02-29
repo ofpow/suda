@@ -140,6 +140,7 @@ void free_mem(int exit_val) {
         free(vm.code);    
         free(vm.constants);    
         free(p->funcs);
+        free_map(vm.vars);
     }
     if (!bytecode) {
         free_map(interpreter.vars);
@@ -442,15 +443,16 @@ int main(int argc, char *argv[]) {
 
         interpret(&interpreter);
 
-        if (time) {
-            clock_gettime(CLOCK_MONOTONIC, &tend);
-            printf("INTERPRETING time: %f seconds\n",
-                ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-                ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-            printf("OVERALL      time: %f seconds\n",
-                ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-                ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
-        }
+    }
+
+    if (time) {
+        clock_gettime(CLOCK_MONOTONIC, &tend);
+        printf("INTERPRETING time: %f seconds\n",
+            ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+            ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
+        printf("OVERALL      time: %f seconds\n",
+            ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+            ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
     }
 
     free_mem(0);

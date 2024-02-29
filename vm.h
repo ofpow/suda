@@ -17,16 +17,6 @@ typedef enum {
     OP_DEFINE_VARIABLE,
 } Op_Code;
 
-typedef struct Value {
-    Value_Type type;
-    union {
-        int64_t num;
-        char *str;
-    } val;
-    bool mutable;
-    u_int32_t hash;
-} Value;
-
 typedef struct VM {
     u_int8_t *code;
     int64_t code_index;
@@ -64,7 +54,7 @@ void compile_constant(AST_Value *value, VM *vm) {
     else if (value->type == Value_String)
         append(vm->constants, ((Value){value->type, .val.str=value->value, false, 0}), vm->constants_index, vm->constants_capacity)
     else if (value->type == Value_Identifier)
-        append(vm->constants, ((Value){value->type, .val.str=value->value, false, 0}), vm->constants_index, vm->constants_capacity)
+        append(vm->constants, ((Value){value->type, .val.str=value->value, false, value->hash}), vm->constants_index, vm->constants_capacity)
     else
         ERR("cant compile constant of type %d\n", value->type)
 
@@ -120,6 +110,11 @@ void run(VM *vm) {
             case OP_DEFINE_VARIABLE:;
                 Value value = stack_pop;
                 Value name = stack_pop;
+                Variable *var = calloc(1, sizeof(Variable));
+                var->name = name.val.str;
+                var->value = value;
+                var->index = -1;
+                insert_entry(vm->vars, name.hash, Entry_Variable, var);
                 break;
             default: ERR("cant do op %d\n", vm->code[i])
         }

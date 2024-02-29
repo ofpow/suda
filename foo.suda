@@ -1,1 +1,2 @@
 let foo = 42
+let bar = "hi"

@@ -4,6 +4,7 @@ typedef enum {
     Entry_Empty,
     Entry_Tombstone,
     Entry_AST_Variable,
+    Entry_Variable,
 } Entry_Type;
 
 typedef struct Entry {
@@ -51,6 +52,22 @@ typedef struct AST_Variable {
     int64_t index;
 } AST_Variable;
 
+typedef struct Value {
+    Value_Type type;
+    union {
+        int64_t num;
+        char *str;
+    } val;
+    bool mutable;
+    u_int32_t hash;
+} Value;
+
+typedef struct Variable {
+    char *name;
+    Value value;
+    int64_t index;
+} Variable;
+
 void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
     if (value->type == Value_Array) {
@@ -71,11 +88,16 @@ void free_entry(Entry entry) {
         case Entry_Empty:
         case Entry_Tombstone:
             break;
-        case Entry_AST_Variable:;
+        case Entry_Variable:;{
+            Variable *var = (Variable*)entry.value;
+            if (var->value.mutable == true) free(var->value.val.str);
+            free(var);
+            break;}
+        case Entry_AST_Variable:;{
             AST_Variable *var = (AST_Variable*)entry.value;
             if (var->value != NULL) free_ast_value(var->value);
             free(var);
-            break;
+            break;}
         default:
             ERR("cant free entry type %d\n", entry.type)
             break;
