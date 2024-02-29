@@ -69,6 +69,9 @@ void compile_expr(Node *n, VM *vm) {
         case AST_Literal:
             compile_constant(n->value, vm);
             break;
+        case AST_Identifier:
+            compile_constant(n->value, vm);
+            break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
 }
@@ -100,12 +103,19 @@ void run(VM *vm) {
                 break;
             case OP_PRINTLN:;
                 Value print = stack_pop;
-                if (print.type == Value_Number)
+                if (print.type == Value_Number) {
                     printf("%ld\n", print.val.num);
-                else if (print.type == Value_String)
+                } else if (print.type == Value_String) {
                     printf("%s\n", print.val.str);
-                else
-                    ERR("TYPE %d\n", print.type)
+                }   else if (print.type == Value_Identifier) {
+                    Variable *val = get_entry(vm->vars->entries, vm->vars->capacity, print.hash)->value;
+                    if (val->value.type == Value_Number)
+                        printf("%ld\n", val->value.val.num);
+                    else if (val->value.type == Value_String)
+                        printf("%s\n", val->value.val.str);
+                    else ERR("cant print type %d\n", val->value.type)
+                } else
+                    ERR("cant print type %d\n", print.type)
                 break;
             case OP_DEFINE_VARIABLE:;
                 Value value = stack_pop;
