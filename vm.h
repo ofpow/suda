@@ -15,6 +15,7 @@ typedef enum {
     OP_CONSTANT,
     OP_PRINTLN,
     OP_DEFINE_VARIABLE,
+    OP_ADD,
 } Op_Code;
 
 typedef struct VM {
@@ -72,6 +73,11 @@ void compile_expr(Node *n, VM *vm) {
         case AST_Identifier:
             compile_constant(n->value, vm);
             break;
+        case AST_Add:
+            compile_expr(n->left, vm);
+            compile_expr(n->right, vm);
+            append(vm->code, OP_ADD, vm->code_index, vm->code_capacity)
+            break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
 }
@@ -125,6 +131,18 @@ void run(VM *vm) {
                 var->value = value;
                 var->index = -1;
                 insert_entry(vm->vars, name.hash, Entry_Variable, var);
+                break;
+            case OP_ADD:;
+                Value op1 = stack_pop;
+                Value op2 = stack_pop;
+                if (op1.type == Value_Number && op2.type == Value_Number) {
+                    stack_push(((Value) {
+                        Value_Number,
+                        .val.num=(op1.val.num + op2.val.num),
+                        false,
+                        0
+                    }));
+                } else ERR("cant add type %s and %s\n", find_ast_value_type(op1.type), find_ast_value_type(op2.type))
                 break;
             default: ERR("cant do op %d\n", vm->code[i])
         }

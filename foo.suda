@@ -1,5 +1,1 @@
-let foo = 42
-let bar = "hi"
-
-println foo
-println bar
+println 2 + 2
