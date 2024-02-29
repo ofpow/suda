@@ -413,6 +413,8 @@ int main(int argc, char *argv[]) {
 
         vm.stack_top = vm.stack;
 
+        vm.vars = new_map(8);
+
         compile(p->nodes, p->nodes_index, &vm);
 
         run(&vm);

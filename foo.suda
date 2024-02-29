@@ -1,2 +1,1 @@
-println 42
-println "hello"
+let foo = 42

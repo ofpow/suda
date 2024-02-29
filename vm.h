@@ -14,7 +14,7 @@
 typedef enum {
     OP_CONSTANT,
     OP_PRINTLN,
-    OP_ASSIGN_VARIABLE,
+    OP_DEFINE_VARIABLE,
 } Op_Code;
 
 typedef struct Value {
@@ -36,6 +36,8 @@ typedef struct VM {
     int64_t constants_index;
     int64_t constants_capacity;
 
+    Map *vars;
+
     Value stack[STACK_SIZE];
     Value *stack_top;
 } VM;
@@ -56,17 +58,26 @@ void disassemble(VM *vm) {
     }
 }
 
+void compile_constant(AST_Value *value, VM *vm) {
+    if (value->type == Value_Number)
+        append(vm->constants, ((Value){value->type, .val.num=NUM(value->value), false, 0}), vm->constants_index, vm->constants_capacity)
+    else if (value->type == Value_String)
+        append(vm->constants, ((Value){value->type, .val.str=value->value, false, 0}), vm->constants_index, vm->constants_capacity)
+    else if (value->type == Value_Identifier)
+        append(vm->constants, ((Value){value->type, .val.str=value->value, false, 0}), vm->constants_index, vm->constants_capacity)
+    else
+        ERR("cant compile constant of type %d\n", value->type)
+
+    u_int16_t index = vm->constants_index - 1;
+    append(vm->code, OP_CONSTANT, vm->code_index, vm->code_capacity)
+    append(vm->code, FIRST_BYTE(index), vm->code_index, vm->code_capacity)
+    append(vm->code, SECOND_BYTE(index), vm->code_index, vm->code_capacity)
+}
+
 void compile_expr(Node *n, VM *vm) {
     switch (n->type) {
         case AST_Literal:
-            if (n->value->type == Value_Number)
-                append(vm->constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}), vm->constants_index, vm->constants_capacity)
-            else if (n->value->type == Value_String)
-                append(vm->constants, ((Value){n->value->type, .val.str=n->value->value, false, 0}), vm->constants_index, vm->constants_capacity)
-            u_int16_t index = vm->constants_index - 1;
-            append(vm->code, OP_CONSTANT, vm->code_index, vm->code_capacity)
-            append(vm->code, FIRST_BYTE(index), vm->code_index, vm->code_capacity)
-            append(vm->code, SECOND_BYTE(index), vm->code_index, vm->code_capacity)
+            compile_constant(n->value, vm);
             break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
@@ -80,7 +91,9 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                 append(vm->code, OP_PRINTLN, vm->code_index, vm->code_capacity)
                 break;
             case AST_Var_Assign:
-                ERR("NONONONONNO\n");
+                compile_constant(nodes[i]->value, vm); // name
+                compile_expr(nodes[i]->left, vm); // value
+                append(vm->code, OP_DEFINE_VARIABLE, vm->code_index, vm->code_capacity)
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -103,6 +116,10 @@ void run(VM *vm) {
                     printf("%s\n", print.val.str);
                 else
                     ERR("TYPE %d\n", print.type)
+                break;
+            case OP_DEFINE_VARIABLE:;
+                Value value = stack_pop;
+                Value name = stack_pop;
                 break;
             default: ERR("cant do op %d\n", vm->code[i])
         }
