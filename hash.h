@@ -28,7 +28,7 @@ typedef enum {
     Value_Hash,
 } Value_Type;
 
-char *find_ast_value_type(Value_Type type) {
+char *find_value_type(Value_Type type) {
     switch (type) {
         case Value_Number: return "Value_Number";
         case Value_String: return "Value_String";

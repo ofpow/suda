@@ -142,7 +142,7 @@ void run(VM *vm) {
                         false,
                         0
                     }));
-                } else ERR("cant add type %s and %s\n", find_ast_value_type(op1.type), find_ast_value_type(op2.type))
+                } else ERR("cant add type %s and %s\n", find_value_type(op1.type), find_value_type(op2.type))
                 break;
             default: ERR("cant do op %d\n", vm->code[i])
         }

@@ -201,25 +201,25 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
             }
         case AST_Sub:
             if (op2 == NULL) return new_ast_value(Value_Number, dup_int(NUM(op1->value) * -1), 1, 0);
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant subtract type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant subtract type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) - NUM(op2->value)), 1, 0);
         case AST_Mult:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant multiply type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant multiply type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) * NUM(op2->value)), 1, 0);
         case AST_Div:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant divide type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant divide type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) / NUM(op2->value)), 1, 0);
         case AST_Less:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less than type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less than type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(<)
         case AST_Less_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less equal type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant less equal type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(<=)
         case AST_Greater:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater than type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater than type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(>)
         case AST_Greater_Equal:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater equal type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant greater equal type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(>=)
         case AST_Is_Equal:
             if (op1->type == Value_Number && op2->type == Value_Number) {
@@ -238,10 +238,10 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
             }
             break;
         case AST_And:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical and type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical and type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(&&)
         case AST_Or:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical or type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant logical or type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             do_op(||)
         case AST_Not:
             return new_ast_value(Value_Number, dup_int(!(NUM(op1->value))), 1, 0);
@@ -261,28 +261,28 @@ AST_Value *ast_math(AST_Value *op1, AST_Value *op2, int64_t op, int64_t line, co
                 return new_ast_value(Value_Number, dup_int(0), 1, 0);
             }
         case AST_Modulo:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant modulo type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant modulo type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) % NUM(op2->value)), 1, 0);
         case AST_Bit_Or:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise or type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise or type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) | NUM(op2->value)), 1, 0);
         case AST_Bit_And:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise and type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise and type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) & NUM(op2->value)), 1, 0);
         case AST_Bit_Xor:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise xor type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise xor type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) ^ NUM(op2->value)), 1, 0);
         case AST_Bit_Not:
-            ASSERT((op1->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise not type %s\n", file, line, find_ast_value_type(op1->type))
+            ASSERT((op1->type == Value_Number), "ERROR in %s on line %ld: Cant bitwise not type %s\n", file, line, find_value_type(op1->type))
             return new_ast_value(Value_Number, dup_int(~(NUM(op1->value))), 1, 0);
         case AST_Rshift:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant rshift type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant rshift type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) >> NUM(op2->value)), 1, 0);
         case AST_Lshift:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant lshift type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant lshift type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(NUM(op1->value) << NUM(op2->value)), 1, 0);
         case AST_Power:
-            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant exponentiate type %s and type %s\n", file, line, find_ast_value_type(op1->type), find_ast_value_type(op2->type))
+            ASSERT((op1->type == Value_Number && op2->type == Value_Number), "ERROR in %s on line %ld: Cant exponentiate type %s and type %s\n", file, line, find_value_type(op1->type), find_value_type(op2->type))
             return new_ast_value(Value_Number, dup_int(exponentiate(NUM(op1->value), NUM(op2->value))), 1, 0);
         default:
             ERR("ERROR in %s on line %ld: unknown math op %ld\n", file, line, op)
@@ -421,13 +421,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
                     return array;
                 }
                 return new_ast_value(rtrn->value->type, strdup(rtrn->value->value), 1, 0);
-            } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_ast_value_type(var->value[index].type))
+            } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_value_type(var->value[index].type))
             break;
         }
         case AST_Function_Call:
             return call_function(interpreter, n);
         case AST_Len:{
-            ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier || n->left->value->type == Value_Number), "ERROR in %s on line %ld: cant do len on value type %s\n", n->file, n->line, find_ast_value_type(n->left->value->type))
+            ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier || n->left->value->type == Value_Number), "ERROR in %s on line %ld: cant do len on value type %s\n", n->file, n->line, find_value_type(n->left->value->type))
             AST_Value *op = eval_node(n->left, interpreter, false);
             AST_Value *result;
             switch (op->type) {
@@ -443,13 +443,13 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
                     result = new_ast_value(Value_Number, dup_int(num_len(NUM(op->value)) + 1), 1, 0);
                     if (op->mutable) free_ast_value(op);
                     return result;
-                default: ERR("ERROR in %s on line %ld: cant evaluate length of value type %s\n", n->file, n->line, find_ast_value_type(op->type))
+                default: ERR("ERROR in %s on line %ld: cant evaluate length of value type %s\n", n->file, n->line, find_value_type(op->type))
             }
             break;}
         case AST_Cast_Num: {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
             if (val->type == Value_Number) return val;
-            ASSERT((val->type == Value_String), "ERROR in %s on line %ld: cant cast type %s to number\n", n->file, n->line, find_ast_value_type(val->type))
+            ASSERT((val->type == Value_String), "ERROR in %s on line %ld: cant cast type %s to number\n", n->file, n->line, find_value_type(val->type))
             if (val->mutable) {
                 int64_t *x = dup_int(strtoint(STR(val->value), strlen(STR(val->value))));
                 free(val->value);
@@ -462,7 +462,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
         case AST_Cast_Str: {
             AST_Value *val = eval_node(n->left, interpreter, mutable);
             if (val->type == Value_String) return val;
-            ASSERT((val->type == Value_Number), "ERROR in %s on line %ld: cant cast type %s to string\n", n->file, n->line, find_ast_value_type(val->type))
+            ASSERT((val->type == Value_Number), "ERROR in %s on line %ld: cant cast type %s to string\n", n->file, n->line, find_value_type(val->type))
             if (val->mutable) {
                 char *x = format_str(num_len(NUM(val->value)) + 1, "%ld", NUM(val->value));
                 free(val->value);
@@ -586,7 +586,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
                     break;
                 }
                 new_value = new_ast_value(Value_String, format_str(2, "%c", STR(list->value)[index]), 1, 0);
-            } else ERR("ERROR in %s on line %ld: cant iterate through type %s\n", n->file, n->line, find_ast_value_type(list->type))
+            } else ERR("ERROR in %s on line %ld: cant iterate through type %s\n", n->file, n->line, find_value_type(list->type))
 
             if (index < 1) {
                 ast_assign_variable(interpreter, n->left->value->value, n->left->value->hash, new_value, n->line, n->file);
