@@ -6,7 +6,7 @@
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
 #define stack_pop (*--vm->stack_top)
-#define stack_push(_val) do {     \
+#define stack_push(_val) do {       \
     *vm->stack_top = (_val);        \
     vm->stack_top++;                \
 } while (0);                        \
@@ -14,11 +14,15 @@
 typedef enum {
     OP_CONSTANT,
     OP_PRINTLN,
+    OP_ASSIGN_VARIABLE,
 } Op_Code;
 
 typedef struct Value {
     Value_Type type;
-    void *value;
+    union {
+        int64_t num;
+        char *str;
+    } val;
     bool mutable;
     u_int32_t hash;
 } Value;
@@ -55,7 +59,10 @@ void disassemble(VM *vm) {
 void compile_expr(Node *n, VM *vm) {
     switch (n->type) {
         case AST_Literal:
-            append(vm->constants, ((Value){n->value->type, n->value->value, false, 0}), vm->constants_index, vm->constants_capacity)
+            if (n->value->type == Value_Number)
+                append(vm->constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}), vm->constants_index, vm->constants_capacity)
+            else if (n->value->type == Value_String)
+                append(vm->constants, ((Value){n->value->type, .val.str=n->value->value, false, 0}), vm->constants_index, vm->constants_capacity)
             u_int16_t index = vm->constants_index - 1;
             append(vm->code, OP_CONSTANT, vm->code_index, vm->code_capacity)
             append(vm->code, FIRST_BYTE(index), vm->code_index, vm->code_capacity)
@@ -71,6 +78,9 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
             case AST_Println:
                 compile_expr(nodes[i]->left, vm);
                 append(vm->code, OP_PRINTLN, vm->code_index, vm->code_capacity)
+                break;
+            case AST_Var_Assign:
+                ERR("NONONONONNO\n");
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -88,9 +98,9 @@ void run(VM *vm) {
             case OP_PRINTLN:;
                 Value print = stack_pop;
                 if (print.type == Value_Number)
-                    printf("%ld\n", NUM(print.value));
+                    printf("%ld\n", print.val.num);
                 else if (print.type == Value_String)
-                    printf("%s\n", STR(print.value));
+                    printf("%s\n", print.val.str);
                 else
                     ERR("TYPE %d\n", print.type)
                 break;
