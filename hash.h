@@ -3,7 +3,7 @@
 typedef enum {
     Entry_Empty,
     Entry_Tombstone,
-    Entry_Variable,
+    Entry_AST_Variable,
 } Entry_Type;
 
 typedef struct Entry {
@@ -45,11 +45,11 @@ typedef struct AST_Value {
     u_int32_t hash;
 } AST_Value;
 
-typedef struct Variable {
+typedef struct AST_Variable {
     char *name;
     AST_Value *value;
     int64_t index;
-} Variable;
+} AST_Variable;
 
 void free_ast_value(AST_Value *value) {
     if (value == NULL) return;
@@ -71,8 +71,8 @@ void free_entry(Entry entry) {
         case Entry_Empty:
         case Entry_Tombstone:
             break;
-        case Entry_Variable:;
-            Variable *var = (Variable*)entry.value;
+        case Entry_AST_Variable:;
+            AST_Variable *var = (AST_Variable*)entry.value;
             if (var->value != NULL) free_ast_value(var->value);
             free(var);
             break;

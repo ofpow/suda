@@ -44,7 +44,7 @@ typedef struct {
     int64_t auto_jump;
 } Interpreter;
 
-Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64_t line, const char *file) {
+AST_Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64_t line, const char *file) {
     if (interpreter->local_vars != NULL) {
         Entry *entry = get_entry(interpreter->local_vars->entries, interpreter->local_vars->capacity, key);
         if (entry->value != NULL) return entry->value;
