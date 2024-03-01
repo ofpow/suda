@@ -126,8 +126,8 @@ typedef struct Programs {
 
 typedef struct Include_Paths {
     char **data;
-    int index;
-    int capacity;
+    int64_t index;
+    int64_t capacity;
 } Include_Paths;
 
 char **call_stack = NULL;
@@ -157,16 +157,15 @@ void free_mem(int exit_val) {
     if (bytecode) {
         free(vm.code);    
         free(vm.constants);    
-        free(p->funcs);
+        free_array(p->funcs);
         free_map(vm.vars);
     }
     if (!bytecode) {
         free_map(interpreter.vars);
-        for (int i = 0; i < interpreter.funcs_capacity; i++) free_function(interpreter.funcs[i]);
-        free(interpreter.funcs);
+        free_array(interpreter.funcs);
     }
     free(tokens);
-    free(p->jump_indices);
+    free(p->jumps.data);
     for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
     free(p->nodes);
     free(p);
@@ -276,18 +275,22 @@ int main(int argc, char *argv[]) {
     p->tokens = tokens;
     p->tok_index = 0;
 
-    p->jumps_index = 0;
-    p->jumps_capacity = 10;
-    p->jump_indices = calloc(10, sizeof(int));
+    p->jumps = (Jump_Indices){
+        calloc(10, sizeof(int64_t)),
+        0,
+        10,
+    };
 
     p->nodes_index = 0;
     p->nodes_capacity = 10;
 
     p->nodes = calloc(p->nodes_capacity, sizeof(Node*));
     
-    p->funcs_index = 0;
-    p->funcs_capacity = 10;
-    p->funcs = calloc(p->funcs_capacity, sizeof(Function*));
+    p->funcs = (Functions){
+        calloc(10, sizeof(Function*)),
+        0,
+        10,
+    };
 
     //variables to store main state when parsing a function
     Function *func;
@@ -299,40 +302,40 @@ int main(int argc, char *argv[]) {
         Node *n = statement(p);
         if (n->type == AST_End) {
             free_node(n);
-            if (p->jumps_index > 0) {
+            if (p->jumps.index > 0) {
                 ERR("unclosed block\n")
             }
             break;
         } else if (n->type == AST_If) {
             debug("IF: push index %ld\n", p->nodes_index)
-            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
+            append_new(p->jumps, p->nodes_index);
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_While) {
             debug("WHILE: push index %ld\n", p->nodes_index)
-            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
+            append_new(p->jumps, p->nodes_index);
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_For) {
             debug("For: push index %ld\n", p->nodes_index)
-            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
+            append_new(p->jumps, p->nodes_index);
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Else) {
-            debug("ELSE: change %ld to %ld\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
-            p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index;
-            n->jump_index = p->jump_indices[p->jumps_index - 1];
-            p->jumps_index--;
-            append(p->jump_indices, p->nodes_index, p->jumps_index, p->jumps_capacity)
+            debug("ELSE: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes_index)
+            p->nodes[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes_index;
+            n->jump_index = p->jumps.data[p->jumps.index - 1];
+            p->jumps.index--;
+            append_new(p->jumps, p->nodes_index);
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Elif) {
-            debug("ELIF: change %ld to %ld\n", p->jump_indices[p->jumps_index - 1], p->nodes_index)
-            p->nodes[p->jump_indices[p->jumps_index - 1]]->jump_index = p->nodes_index - 1;
-            p->jump_indices[p->jumps_index - 1] = p->nodes_index;
+            debug("ELIF: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes_index)
+            p->nodes[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes_index - 1;
+            p->jumps.data[p->jumps.index - 1] = p->nodes_index;
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Semicolon) {
-            if (p->parsing_function && p->jumps_index <= 0) {
+            if (p->parsing_function && p->jumps.index <= 0) {
                 free_node(n);
                 func->nodes = p->nodes;
                 func->nodes_size = p->nodes_index;
-                append(p->funcs, func, p->funcs_index, p->funcs_capacity);
+                append_new(p->funcs, func);
 
                 p->nodes = temp_nodes;
                 p->nodes_index = temp_nodes_index;
@@ -340,30 +343,30 @@ int main(int argc, char *argv[]) {
                 temp_nodes = NULL;
                 continue;
             }
-            p->jumps_index--;
-            if (p->jumps_index < 0) ERR("ERROR in %s on line %ld: extra semicolon\n", n->file, n->line)
-            debug("SEMICOLON: pop index %ld\n", p->jump_indices[p->jumps_index])
-            if (p->nodes[p->jump_indices[p->jumps_index]]->type == AST_Break) {
-                n->jump_index = p->nodes[p->jump_indices[p->jumps_index]]->jump_index;
-                p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
+            p->jumps.index--;
+            if (p->jumps.index < 0) ERR("ERROR in %s on line %ld: extra semicolon\n", n->file, n->line)
+            debug("SEMICOLON: pop index %ld\n", p->jumps.data[p->jumps.index])
+            if (p->nodes[p->jumps.data[p->jumps.index]]->type == AST_Break) {
+                n->jump_index = p->nodes[p->jumps.data[p->jumps.index]]->jump_index;
+                p->nodes[p->jumps.data[p->jumps.index]]->jump_index = p->nodes_index;
             } else {
-                p->nodes[p->jump_indices[p->jumps_index]]->jump_index = p->nodes_index;
-                n->jump_index = p->jump_indices[p->jumps_index];
+                p->nodes[p->jumps.data[p->jumps.index]]->jump_index = p->nodes_index;
+                n->jump_index = p->jumps.data[p->jumps.index];
             }
             append(p->nodes, n, p->nodes_index, p->nodes_capacity)
         } else if (n->type == AST_Break) {
-            for (int i = p->jumps_index - 1; i > -1; i--) {
-                if (p->nodes[p->jump_indices[i]]->type == AST_While || p->nodes[p->jump_indices[i]]->type == AST_Break) {
-                    n->jump_index = p->jump_indices[i];
-                    p->jump_indices[i] = p->nodes_index;
+            for (int i = p->jumps.index - 1; i > -1; i--) {
+                if (p->nodes[p->jumps.data[i]]->type == AST_While || p->nodes[p->jumps.data[i]]->type == AST_Break) {
+                    n->jump_index = p->jumps.data[i];
+                    p->jumps.data[i] = p->nodes_index;
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
             if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use break outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Continue) {
-            for (int i = p->jumps_index - 1; i > -1; i--) {
-                if (p->nodes[p->jump_indices[i]]->type == AST_While) {
-                    n->jump_index = p->jump_indices[i];
+            for (int i = p->jumps.index - 1; i > -1; i--) {
+                if (p->nodes[p->jumps.data[i]]->type == AST_While) {
+                    n->jump_index = p->jumps.data[i];
                     append(p->nodes, n, p->nodes_index, p->nodes_capacity)
                 }
             }
@@ -373,10 +376,10 @@ int main(int argc, char *argv[]) {
             func = calloc(1, sizeof(Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
             func->line = CURRENT_TOK.line;
-            if (check_func(p->funcs, p->funcs_index, func->name) > 0) ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
+            if (check_func(&p->funcs, func->name) > 0) ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
 
             p->tok_index++;
-            ASSERT((p->jumps_index >= 0), "ERROR in %s on line %ld: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
+            ASSERT((p->jumps.index >= 0), "ERROR in %s on line %ld: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
             ASSERT((CURRENT_TOK.type == Tok_Left_Paren), "ERROR in %s on line %ld: need left paren to open function arguments\n",  CURRENT_TOK.file,CURRENT_TOK.line)
             p->tok_index++;
 
@@ -388,7 +391,7 @@ int main(int argc, char *argv[]) {
             p->nodes = calloc(10, sizeof(Node*));
             p->nodes_index = 0;
             p->nodes_capacity = 10;
-            p->parsing_function = 1;
+            p->parsing_function = true;
 
             //parse arguments into func->args
             int64_t args_capacity = 1;
@@ -453,7 +456,6 @@ int main(int argc, char *argv[]) {
         ast_assign_variable(&interpreter, "argc", suda_argc->hash, suda_argc, -1, file_path);
         ast_assign_variable(&interpreter, "argv", suda_argv->hash, suda_argv, -1, file_path);
 
-        interpreter.funcs_capacity = p->funcs_index;
         interpreter.funcs = p->funcs;
 
         interpreter.auto_jump = 0;

@@ -28,6 +28,12 @@ typedef struct Function {
     int64_t line;
 } Function;
 
+typedef struct Functions {
+    Function **data;
+    int64_t index;
+    int64_t capacity;
+} Functions;
+
 typedef struct {
     Node **nodes;
     int64_t stmts_capacity;
@@ -38,8 +44,7 @@ typedef struct {
 
     Map *local_vars;
 
-    Function **funcs;
-    int64_t funcs_capacity;
+    Functions funcs;
 
     int64_t auto_jump;
 } Interpreter;

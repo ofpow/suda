@@ -67,7 +67,7 @@ char *format_array(AST_Value *array) {
 AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable);
 
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
-    Function *func = get_func(interpreter->funcs, interpreter->funcs_capacity, n->value->value, n->line);
+    Function *func = get_func(&interpreter->funcs, n->value->value, n->line);
 
     char *call_info;
     if (call_stack != NULL) {
@@ -91,8 +91,9 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
 
         // other functions
         interpreter->funcs,
-        interpreter->funcs_capacity,
-        0,
+
+        //autojump
+        false
     };
 
     for (int i = 0; i < func->arity; i++) {
