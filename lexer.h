@@ -141,6 +141,12 @@ typedef struct Token {
     const char *file;
 } Token;
 
+typedef struct Tokens {
+    Token *data;
+    int64_t index;
+    int64_t capacity;
+} Tokens;
+
 static Token make_token(Token_Type type, Lexer *l) {
     Token tok;
     tok.type = type;
@@ -433,35 +439,34 @@ Token scan_token(Lexer *l) {
 
 Token *lex_file(const char *file_path, Programs *programs) {
     debug("LEX FILE %s\n", file_path)
-    char **include_paths = calloc(2, sizeof(char*));
-    int64_t include_paths_index = 0;
-    int64_t include_paths_capacity = 2;
+    Include_Paths include_paths = {
+        calloc(2, sizeof(char*)),
+        0,
+        2,
+    };
 
     char *program = read_file(file_path);
     Lexer lexer = { program, program, 1, file_path };
-    int64_t tokens_index = 0;
-    int64_t tokens_capacity = 10;
 
-    Token *tokens = calloc(tokens_capacity, sizeof(struct Token));
+    Tokens tokens = {
+        calloc(10, sizeof(Token)),
+        0,
+        10
+    };
 
     while (1) {
-        if (tokens_index >= tokens_capacity) {
-            tokens_capacity *= 2;
-            tokens = realloc(tokens, tokens_capacity * sizeof(struct Token));
-        }
         Token tok = scan_token(&lexer);
         if (tok.type == Tok_Eof) {
-            tokens[tokens_index] = tok;
-            tokens_index++;
+            append_new(tokens, tok);
             break;
         } else if (tok.type == Tok_Comment) {
         } else if (tok.type == Tok_Include) {
             tok = scan_token(&lexer);
             char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
-            int64_t included = 0;
-            for (int i = 0; i < include_paths_index; i++) {
-                if (!strcmp(include_path, include_paths[i])) {
-                    included = 1;
+            bool included = false;
+            for (int i = 0; i < include_paths.index; i++) {
+                if (!strcmp(include_path, include_paths.data[i])) {
+                    included = true;
                 }
             }
 
@@ -470,37 +475,36 @@ Token *lex_file(const char *file_path, Programs *programs) {
                 continue;
             }
 
-            append(include_paths, include_path, include_paths_index, include_paths_capacity);
+            append_new(include_paths, include_path);
 
-            int64_t new_tokens_index = 0;
-            int64_t new_tokens_capacity = 10;
+            Tokens new_tokens = {
+                calloc(10, sizeof(Token)),
+                0, 
+                10,
+            };
 
-            Token *new_tokens = calloc(new_tokens_capacity, sizeof(struct Token));
             Token *to_include = lex_file(include_path, programs);
 
             for (int i = 0; to_include[i].type != Tok_Eof; i++) {
-                append(new_tokens, to_include[i], new_tokens_index, new_tokens_capacity)
+                append_new(new_tokens, to_include[i]);
             }
-            for (int i = 0; i < tokens_index; i++) {
-                append(new_tokens, tokens[i], new_tokens_index, new_tokens_capacity)
+            for (int i = 0; i < tokens.index; i++) {
+                append_new(new_tokens, tokens.data[i]);
             }
 
             free(to_include);
-            free(tokens);
 
-            tokens = new_tokens;
-            tokens_index = new_tokens_index;
-            tokens_capacity = new_tokens_capacity;
+            tokens.data = new_tokens.data;
+            tokens.index = new_tokens.index;
+            tokens.capacity = new_tokens.capacity;
         } else {
-            tokens[tokens_index] = tok;
-            tokens_index++;
+            append_new(tokens, tok);
         }
         debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), (int)tok.length, tok.start)
     } 
-    for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
-    free(include_paths);
+    free_array(include_paths);
 
-    append(programs->progs, program, programs->progs_index, programs->progs_capacity)
+    append_new((*programs), program);
 
-    return tokens;
+    return tokens.data;
 }

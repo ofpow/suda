@@ -28,6 +28,22 @@ void free_mem(int exit_val);
     _array[_index++] = _element;                                 \
 } while (0);                                                     \
 
+#define append_new(_array, _element) do {                                               \
+    if (_array.index >= _array.capacity) {                                              \
+        _array.capacity *= 2;                                                           \
+        _array.data = realloc(_array.data, _array.capacity * sizeof(_array.data[0]));   \
+    }                                                                                   \
+                                                                                        \
+    _array.data[_array.index++] = _element;                                             \
+} while (0)                                                                             \
+
+#define free_array(_array) do {               \
+    for (int i = 0; i < _array.index; i++) {  \
+        free(_array.data[i]);                 \
+    }                                         \
+    free(_array.data);                        \
+} while (0)                                   \
+
 int64_t num_len(int64_t n) {
     if (n < 0) n = (n == LONG_MIN) ? LONG_MAX : -n;
     if (n < 10) return 1;
@@ -103,10 +119,16 @@ char *read_file(const char *file_path) {
 }
 
 typedef struct Programs {
-    char **progs;
-    int64_t progs_index;
-    int64_t progs_capacity;
+    char **data;
+    int64_t index;
+    int64_t capacity;
 } Programs;
+
+typedef struct Include_Paths {
+    char **data;
+    int index;
+    int capacity;
+} Include_Paths;
 
 char **call_stack = NULL;
 int call_stack_index;
@@ -122,15 +144,11 @@ int call_stack_capacity;
 
 //global variables for access to freeing from anywhere
 Token *tokens;
-Programs *programs;
+Programs programs = {0};
 Parser *p;
 Interpreter interpreter;
 VM vm;
 bool bytecode = false;
-
-char **include_paths;
-int include_paths_index;
-int include_paths_capacity;
 
 void free_mem(int exit_val) {
 
@@ -152,10 +170,6 @@ void free_mem(int exit_val) {
     for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
     free(p->nodes);
     free(p);
-    for (int i = 0; i < programs->progs_index; i++) free(programs->progs[i]);
-    free(programs->progs);
-    free(programs);
-    for (int i = 0; i < include_paths_index; i++) free(include_paths[i]);
     if (call_stack != NULL && !bytecode) {
         if (exit_val > 0 && call_stack_index > 0) {
             printf("Stack trace:\n");
@@ -170,7 +184,7 @@ void free_mem(int exit_val) {
         }
         free(call_stack);
     }
-    free(include_paths);
+    free_array(programs);
     exit(exit_val);
 }
 
@@ -238,11 +252,13 @@ int main(int argc, char *argv[]) {
     
     //tokenize program
     debug("\n----------\nLEXING\n")
-    programs = calloc(1, sizeof(Programs));
-    programs->progs = calloc(2, sizeof(char*));
-    programs->progs_index = 0;
-    programs->progs_capacity = 2;
-    tokens = lex_file(file_path, programs);
+
+    programs.data = calloc(2, sizeof(char*));
+    programs.index = 0;
+    programs.capacity = 2;
+
+    tokens = lex_file(file_path, &programs);
+
 
     if (time) {
         clock_gettime(CLOCK_MONOTONIC, &tend);
@@ -259,6 +275,7 @@ int main(int argc, char *argv[]) {
     p = calloc(1, sizeof(Parser));
     p->tokens = tokens;
     p->tok_index = 0;
+
     p->jumps_index = 0;
     p->jumps_capacity = 10;
     p->jump_indices = calloc(10, sizeof(int));
