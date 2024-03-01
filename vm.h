@@ -11,19 +11,21 @@
     vm->stack_top++;                \
 } while (0);                        \
 
-#define binary_op(op, msg) do {                                             \
-    Value op1 = stack_pop;                                                  \
-    Value op2 = stack_pop;                                                  \
-    if (op1.type == Value_Number && op2.type == Value_Number) {             \
-        stack_push(((Value) {                                               \
-            Value_Number,                                                   \
-            .val.num=(op1.val.num op op2.val.num),                          \
-            false,                                                          \
-            0                                                               \
-        }));                                                                \
-    } else ERR(msg, find_value_type(op1.type), find_value_type(op2.type))   \
-    break;                                                                  \
-} while (0)                                                                 \
+#define binary_op(op, msg) do {                                                                                                    \
+    Value op1 = stack_pop;                                                                                                         \
+    Value op2 = stack_pop;                                                                                                         \
+    if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value; \
+    if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value; \
+    if (op1.type == Value_Number && op2.type == Value_Number) {                                                                    \
+        stack_push(((Value) {                                                                                                      \
+            Value_Number,                                                                                                          \
+            .val.num=(op1.val.num op op2.val.num),                                                                                 \
+            false,                                                                                                                 \
+            0                                                                                                                      \
+        }));                                                                                                                       \
+    } else ERR(msg, find_value_type(op1.type), find_value_type(op2.type))                                                          \
+    break;                                                                                                                         \
+} while (0)                                                                                                                        \
 
 typedef enum {
     OP_CONSTANT,
@@ -205,6 +207,10 @@ void run(VM *vm) {
             case OP_ADD:;
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
+
+                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
+                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
+
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
                         Value_Number,
@@ -268,6 +274,10 @@ void run(VM *vm) {
             case OP_NOT_EQUAL:{
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
+
+                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
+                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
+
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
                         Value_Number,
@@ -287,6 +297,10 @@ void run(VM *vm) {
             case OP_IS_EQUAL: {
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
+
+                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
+                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
+
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
                         Value_Number,
@@ -306,6 +320,7 @@ void run(VM *vm) {
             case OP_SET_VARIABLE:{
                 Value value = stack_pop;
                 Value name = stack_pop;
+
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 var->value = value;
                 break;}

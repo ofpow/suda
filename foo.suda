@@ -1,3 +1,3 @@
 let foo = 42
-foo = "hi"
+foo = (foo + 1)
 println foo
