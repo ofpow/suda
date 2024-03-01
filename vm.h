@@ -42,6 +42,7 @@ typedef enum {
     OP_OR,
     OP_NOT,
     OP_NOT_EQUAL,
+    OP_SET_VARIABLE,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -157,6 +158,11 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                 compile_constant(nodes[i]->value, vm); // name
                 compile_expr(nodes[i]->left, vm); // value
                 append(vm->code, OP_DEFINE_VARIABLE, vm->code_index, vm->code_capacity)
+                break;
+            case AST_Identifier:
+                compile_constant(nodes[i]->value, vm); // name
+                compile_expr(nodes[i]->left, vm); // value
+                append(vm->code, OP_SET_VARIABLE, vm->code_index, vm->code_capacity)
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -296,6 +302,12 @@ void run(VM *vm) {
                         0
                     }));
                 } else ERR("cant is equal type %s and %s\n", find_value_type(op1.type), find_value_type(op2.type))
+                break;}
+            case OP_SET_VARIABLE:{
+                Value value = stack_pop;
+                Value name = stack_pop;
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
+                var->value = value;
                 break;}
             default: ERR("cant do op %d\n", vm->code[i])
         }
