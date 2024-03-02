@@ -166,8 +166,8 @@ void free_mem(int exit_val) {
     }
     free(tokens);
     free(p->jumps.data);
-    for (int i = 0; i < p->nodes_index; i++) free_node(p->nodes[i]);
-    free(p->nodes);
+    for (int i = 0; i < p->nodes.index; i++) free_node(p->nodes.data[i]);
+    free(p->nodes.data);
     free(p);
     if (call_stack != NULL && !bytecode) {
         if (exit_val > 0 && call_stack_index > 0) {
@@ -281,10 +281,11 @@ int main(int argc, char *argv[]) {
         10,
     };
 
-    p->nodes_index = 0;
-    p->nodes_capacity = 10;
-
-    p->nodes = calloc(p->nodes_capacity, sizeof(Node*));
+    p->nodes = (Nodes){
+        calloc(10, sizeof(Node*)),
+        0,
+        10,
+    };
     
     p->funcs = (Functions){
         calloc(10, sizeof(Function*)),
@@ -307,67 +308,66 @@ int main(int argc, char *argv[]) {
             }
             break;
         } else if (n->type == AST_If) {
-            debug("IF: push index %ld\n", p->nodes_index)
-            append_new(p->jumps, p->nodes_index);
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            debug("IF: push index %ld\n", p->nodes.index)
+            append_new(p->jumps, p->nodes.index);
+            append_new(p->nodes, n);
         } else if (n->type == AST_While) {
-            debug("WHILE: push index %ld\n", p->nodes_index)
-            append_new(p->jumps, p->nodes_index);
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            debug("WHILE: push index %ld\n", p->nodes.index)
+            append_new(p->jumps, p->nodes.index);
+            append_new(p->nodes, n);
         } else if (n->type == AST_For) {
-            debug("For: push index %ld\n", p->nodes_index)
-            append_new(p->jumps, p->nodes_index);
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            debug("For: push index %ld\n", p->nodes.index)
+            append_new(p->jumps, p->nodes.index);
+            append_new(p->nodes, n);
         } else if (n->type == AST_Else) {
-            debug("ELSE: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes_index)
-            p->nodes[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes_index;
+            debug("ELSE: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes.index)
+            p->nodes.data[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes.index;
             n->jump_index = p->jumps.data[p->jumps.index - 1];
             p->jumps.index--;
-            append_new(p->jumps, p->nodes_index);
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            append_new(p->jumps, p->nodes.index);
+            append_new(p->nodes, n);
         } else if (n->type == AST_Elif) {
-            debug("ELIF: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes_index)
-            p->nodes[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes_index - 1;
-            p->jumps.data[p->jumps.index - 1] = p->nodes_index;
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            debug("ELIF: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes.index)
+            p->nodes.data[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes.index - 1;
+            p->jumps.data[p->jumps.index - 1] = p->nodes.index;
+            append_new(p->nodes, n);
         } else if (n->type == AST_Semicolon) {
             if (p->parsing_function && p->jumps.index <= 0) {
                 free_node(n);
                 func->nodes = p->nodes;
-                func->nodes_size = p->nodes_index;
                 append_new(p->funcs, func);
 
-                p->nodes = temp_nodes;
-                p->nodes_index = temp_nodes_index;
-                p->nodes_capacity = temp_nodes_capacity;
+                p->nodes.data = temp_nodes;
+                p->nodes.index = temp_nodes_index;
+                p->nodes.capacity = temp_nodes_capacity;
                 temp_nodes = NULL;
                 continue;
             }
             p->jumps.index--;
             if (p->jumps.index < 0) ERR("ERROR in %s on line %ld: extra semicolon\n", n->file, n->line)
             debug("SEMICOLON: pop index %ld\n", p->jumps.data[p->jumps.index])
-            if (p->nodes[p->jumps.data[p->jumps.index]]->type == AST_Break) {
-                n->jump_index = p->nodes[p->jumps.data[p->jumps.index]]->jump_index;
-                p->nodes[p->jumps.data[p->jumps.index]]->jump_index = p->nodes_index;
+            if (p->nodes.data[p->jumps.data[p->jumps.index]]->type == AST_Break) {
+                n->jump_index = p->nodes.data[p->jumps.data[p->jumps.index]]->jump_index;
+                p->nodes.data[p->jumps.data[p->jumps.index]]->jump_index = p->nodes.index;
             } else {
-                p->nodes[p->jumps.data[p->jumps.index]]->jump_index = p->nodes_index;
+                p->nodes.data[p->jumps.data[p->jumps.index]]->jump_index = p->nodes.index;
                 n->jump_index = p->jumps.data[p->jumps.index];
             }
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            append_new(p->nodes, n);
         } else if (n->type == AST_Break) {
             for (int i = p->jumps.index - 1; i > -1; i--) {
-                if (p->nodes[p->jumps.data[i]]->type == AST_While || p->nodes[p->jumps.data[i]]->type == AST_Break) {
+                if (p->nodes.data[p->jumps.data[i]]->type == AST_While || p->nodes.data[p->jumps.data[i]]->type == AST_Break) {
                     n->jump_index = p->jumps.data[i];
-                    p->jumps.data[i] = p->nodes_index;
-                    append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+                    p->jumps.data[i] = p->nodes.index;
+                    append_new(p->nodes, n);
                 }
             }
-            if (p->nodes[p->nodes_index - 1]->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use break outside a while loop\n", n->file, n->line)
+            if (p->nodes.data[p->nodes.index - 1]->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use break outside a while loop\n", n->file, n->line)
         } else if (n->type == AST_Continue) {
             for (int i = p->jumps.index - 1; i > -1; i--) {
-                if (p->nodes[p->jumps.data[i]]->type == AST_While) {
+                if (p->nodes.data[p->jumps.data[i]]->type == AST_While) {
                     n->jump_index = p->jumps.data[i];
-                    append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+                    append_new(p->nodes, n);
                 }
             }
             if (n->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use continue outside a while loop\n", n->file, n->line)
@@ -385,12 +385,12 @@ int main(int argc, char *argv[]) {
 
             //switch parser to parse the function
             if (temp_nodes != NULL) ERR("ERROR in %s on line %ld: cant define functions inside other functions\n", CURRENT_TOK.file, LAST_TOK.line)
-            temp_nodes = p->nodes;
-            temp_nodes_index = p->nodes_index;
-            temp_nodes_capacity = p->nodes_capacity;
-            p->nodes = calloc(10, sizeof(Node*));
-            p->nodes_index = 0;
-            p->nodes_capacity = 10;
+            temp_nodes = p->nodes.data;
+            temp_nodes_index = p->nodes.index;
+            temp_nodes_capacity = p->nodes.capacity;
+            p->nodes.data = calloc(10, sizeof(Node*));
+            p->nodes.index = 0;
+            p->nodes.capacity = 10;
             p->parsing_function = true;
 
             //parse arguments into func->args
@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
                 } else ERR("ERROR in %s on line %ld: cant parse token type %s as part of function arguments\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
             }
         } else {
-            append(p->nodes, n, p->nodes_index, p->nodes_capacity)
+            append_new(p->nodes, n);
         }
     }
 
@@ -436,12 +436,11 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        compile(p->nodes, p->nodes_index, &vm);
+        compile(p->nodes.data, p->nodes.index, &vm);
 
         run(&vm);
     } else {
         interpreter.nodes = p->nodes;
-        interpreter.stmts_capacity = p->nodes_index;
 
         interpreter.vars = new_map(8);
         interpreter.local_vars = NULL;

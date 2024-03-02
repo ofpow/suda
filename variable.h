@@ -17,10 +17,16 @@ typedef struct Node {
     int64_t func_args_capacity;
 } Node;
 
+typedef struct Nodes {
+    Node **data;
+    int64_t index;
+    int64_t capacity;
+} Nodes;
+
 typedef struct Function {
     char *name;
-    Node **nodes;
-    int64_t nodes_size;
+
+    Nodes nodes;
 
     int64_t arity;
     AST_Value **args;
@@ -34,9 +40,8 @@ typedef struct Functions {
     int64_t capacity;
 } Functions;
 
-typedef struct {
-    Node **nodes;
-    int64_t stmts_capacity;
+typedef struct Interpreter {
+    Nodes nodes;
 
     int64_t program_counter;
 
@@ -46,7 +51,7 @@ typedef struct {
 
     Functions funcs;
 
-    int64_t auto_jump;
+    bool auto_jump;
 } Interpreter;
 
 AST_Variable *get_var(Interpreter *interpreter, char *var_name, u_int32_t key, int64_t line, const char *file) {

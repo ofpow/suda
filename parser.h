@@ -195,12 +195,6 @@ typedef struct Jump_Indices {
     int64_t capacity;
 } Jump_Indices;
 
-typedef struct Nodes {
-    Node **data;
-    int64_t index;
-    int64_t capacity;
-}
-
 typedef struct Parser {
     Token *tokens;
     int64_t tok_index;
@@ -291,8 +285,7 @@ void free_node(Node *n) {
 }
 
 void free_function(Function *func) {
-    for (int i = 0; i < func->nodes_size; i++) if (func->nodes) free_node(func->nodes[i]);
-    free(func->nodes);
+    for (int i = 0; i < func->nodes.index; i++) free_node(func->nodes.data[i]);
     for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
     free(func->args);
     free(func->name);

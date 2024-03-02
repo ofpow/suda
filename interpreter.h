@@ -80,7 +80,8 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     Interpreter intrprtr = {
         // nodes to execute
         func->nodes,
-        func->nodes_size,
+        
+        //program counter
         0,
 
         //global variables inherited from call
@@ -104,8 +105,8 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     }
 
     AST_Value *rtrn;
-    while (intrprtr.program_counter < intrprtr.stmts_capacity) {
-        rtrn = do_statement(intrprtr.nodes[intrprtr.program_counter], &intrprtr);
+    while (intrprtr.program_counter < intrprtr.nodes.index) {
+        rtrn = do_statement(intrprtr.nodes.data[intrprtr.program_counter], &intrprtr);
         if (rtrn != NULL) {
             free_map(intrprtr.local_vars);
             if (call_stack != NULL) {
@@ -538,7 +539,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;
         case AST_Elif:;{
             if (interpreter->auto_jump == 1) {
-                if (interpreter->nodes[n->jump_index]->type == AST_Else)
+                if (interpreter->nodes.data[n->jump_index]->type == AST_Else)
                     interpreter->program_counter = n->jump_index - 1;
                 else
                     interpreter->program_counter = n->jump_index;
@@ -602,7 +603,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             interpreter->program_counter = n->jump_index;
             break;
         case AST_Semicolon:
-            if (interpreter->nodes[n->jump_index]->type == AST_While || interpreter->nodes[n->jump_index]->type == AST_For) {
+            if (interpreter->nodes.data[n->jump_index]->type == AST_While || interpreter->nodes.data[n->jump_index]->type == AST_For) {
                 interpreter->program_counter = n->jump_index - 1;
             }
             interpreter->auto_jump = 0;
@@ -702,8 +703,8 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
 }
 
 void interpret(Interpreter *interpreter) {
-    while (interpreter->program_counter < interpreter->stmts_capacity) {
-        do_statement(interpreter->nodes[interpreter->program_counter], interpreter);
+    while (interpreter->program_counter < interpreter->nodes.index) {
+        do_statement(interpreter->nodes.data[interpreter->program_counter], interpreter);
         interpreter->program_counter++;
     }
 }
