@@ -153,8 +153,8 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     if (bytecode) {
-        free(vm.code);    
-        free(vm.constants);    
+        free(vm.code.data);    
+        free(vm.constants.data);    
         free_array(p->funcs);
         free_map(vm.vars);
     }
@@ -424,11 +424,17 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
-        vm.code = calloc(10, sizeof(u_int8_t));
-        vm.code_capacity = 10;
-
-        vm.constants = calloc(10, sizeof(Value));
-        vm.constants_capacity = 10;
+        vm.code = (Code){
+            calloc(10, sizeof(u_int8_t)),
+            0,
+            10,
+        };
+        
+        vm.constants = (Constants){
+            calloc(10, sizeof(Value)),
+            0,
+            10,
+        };
 
         vm.stack_top = vm.stack;
 
