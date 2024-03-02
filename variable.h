@@ -17,16 +17,12 @@ typedef struct Node {
     int64_t func_args_capacity;
 } Node;
 
-typedef struct Nodes {
-    Node **data;
-    int64_t index;
-    int64_t capacity;
-} Nodes;
+define_array(Node_Array, Node*);
 
 typedef struct Function {
     char *name;
 
-    Nodes nodes;
+    Node_Array nodes;
 
     int64_t arity;
     AST_Value **args;
@@ -34,14 +30,10 @@ typedef struct Function {
     int64_t line;
 } Function;
 
-typedef struct Functions {
-    Function **data;
-    int64_t index;
-    int64_t capacity;
-} Functions;
+define_array(Function_Array, Function*);
 
 typedef struct Interpreter {
-    Nodes nodes;
+    Node_Array nodes;
 
     int64_t program_counter;
 
@@ -49,7 +41,7 @@ typedef struct Interpreter {
 
     Map *local_vars;
 
-    Functions funcs;
+    Function_Array funcs;
 
     bool auto_jump;
 } Interpreter;

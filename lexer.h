@@ -141,11 +141,7 @@ typedef struct Token {
     const char *file;
 } Token;
 
-typedef struct Tokens {
-    Token *data;
-    int64_t index;
-    int64_t capacity;
-} Tokens;
+define_array(Token_Array, Token);
 
 static Token make_token(Token_Type type, Lexer *l) {
     Token tok;
@@ -448,7 +444,7 @@ Token *lex_file(const char *file_path, Programs *programs) {
     char *program = read_file(file_path);
     Lexer lexer = { program, program, 1, file_path };
 
-    Tokens tokens = {
+    Token_Array tokens = {
         calloc(10, sizeof(Token)),
         0,
         10
@@ -477,7 +473,7 @@ Token *lex_file(const char *file_path, Programs *programs) {
 
             append_new(include_paths, include_path);
 
-            Tokens new_tokens = {
+            Token_Array new_tokens = {
                 calloc(10, sizeof(Token)),
                 0, 
                 10,

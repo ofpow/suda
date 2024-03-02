@@ -44,6 +44,13 @@ void free_mem(int exit_val);
     free(_array.data);                        \
 } while (0)                                   \
 
+#define define_array(_name, _type) \
+    typedef struct _name {         \
+        _type *data;               \
+        int64_t index;             \
+        int64_t capacity;          \
+    } _name                        \
+
 int64_t num_len(int64_t n) {
     if (n < 0) n = (n == LONG_MIN) ? LONG_MAX : -n;
     if (n < 10) return 1;
@@ -118,17 +125,8 @@ char *read_file(const char *file_path) {
     return program;
 }
 
-typedef struct Programs {
-    char **data;
-    int64_t index;
-    int64_t capacity;
-} Programs;
-
-typedef struct Include_Paths {
-    char **data;
-    int64_t index;
-    int64_t capacity;
-} Include_Paths;
+define_array(Programs, char*);
+define_array(Include_Paths, char*);
 
 char **call_stack = NULL;
 int call_stack_index;
@@ -281,13 +279,13 @@ int main(int argc, char *argv[]) {
         10,
     };
 
-    p->nodes = (Nodes){
+    p->nodes = (Node_Array){
         calloc(10, sizeof(Node*)),
         0,
         10,
     };
     
-    p->funcs = (Functions){
+    p->funcs = (Function_Array){
         calloc(10, sizeof(Function*)),
         0,
         10,

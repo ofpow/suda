@@ -189,21 +189,17 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
     return -1;
 }
 
-typedef struct Jump_Indices {
-    int64_t *data;
-    int64_t index;
-    int64_t capacity;
-} Jump_Indices;
+define_array(Jump_Indices, int64_t);
 
 typedef struct Parser {
     Token *tokens;
     int64_t tok_index;
 
-    Nodes nodes;
+    Node_Array nodes;
 
     Jump_Indices jumps;
 
-    Functions funcs;
+    Function_Array funcs;
 
     bool parsing_function;
 } Parser;
