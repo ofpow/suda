@@ -1,3 +1,4 @@
-let foo = 42
-foo = (foo + 1)
-println foo
+if 1
+    println 42
+;
+println "done"

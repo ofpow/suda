@@ -45,6 +45,7 @@ typedef enum {
     OP_NOT,
     OP_NOT_EQUAL,
     OP_SET_VARIABLE,
+    OP_JUMP_IF_FALSE,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -74,6 +75,8 @@ define_array(Code, u_int8_t);
 define_array(Constants, Value);
 
 typedef struct VM {
+    Jump_Indices jump_indices;
+
     Code code;
 
     Constants constants;
@@ -164,6 +167,20 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                 compile_constant(nodes[i]->value, vm); // name
                 compile_expr(nodes[i]->left, vm); // value
                 append_new(vm->code, OP_SET_VARIABLE);
+                break;
+            case AST_If:
+                compile_expr(nodes[i]->left, vm);
+
+                append_new(vm->jump_indices, vm->code.index);
+                append_new(vm->code, OP_JUMP_IF_FALSE);
+                append_new(vm->code, 0);
+                append_new(vm->code, 0);
+                break;
+            case AST_Semicolon:;
+                int64_t index = vm->jump_indices.data[vm->jump_indices.index - 1];
+                u_int16_t offset = vm->code.index - index;
+                vm->code.data[index + 1] = FIRST_BYTE(offset);
+                vm->code.data[index + 2] = SECOND_BYTE(offset);
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -323,6 +340,14 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 var->value = value;
                 break;}
+            case OP_JUMP_IF_FALSE:{
+                Value val = stack_pop;
+                if (!val.val.num) {
+                    i += COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
+                } else {
+                    i += 2;
+                }
+            break;}
             default: ERR("cant do op %d\n", vm->code.data[i])
         }
     }
