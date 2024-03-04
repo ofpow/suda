@@ -51,6 +51,16 @@ void free_mem(int exit_val);
         int64_t capacity;          \
     } _name                        \
 
+#define report_time(_msg) do {                                      \
+    if (time) {                                                     \
+        clock_gettime(CLOCK_MONOTONIC, &tend);                      \
+        printf(_msg,                                                \
+               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) -        \
+               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));    \
+        tstart = tend;                                              \
+    }                                                               \
+} while (0)                                                         \
+
 int64_t num_len(int64_t n) {
     if (n < 0) n = (n == LONG_MIN) ? LONG_MAX : -n;
     if (n < 10) return 1;
@@ -255,14 +265,7 @@ int main(int argc, char *argv[]) {
 
     tokens = lex_file(file_path, &programs);
 
-
-    if (time) {
-        clock_gettime(CLOCK_MONOTONIC, &tend);
-        printf("LEXING       time: %f seconds\n",
-               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-        tstart = tend;
-    }
+    report_time("LEXING       time: %f seconds\n");
 
 
     debug("\n----------\nPARSING\n")
@@ -413,13 +416,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (time) {
-        clock_gettime(CLOCK_MONOTONIC, &tend);
-        printf("PARSING      time: %f seconds\n",
-               ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-               ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
-        tstart = tend;
-    }
+    report_time("PARSING      time: %f seconds\n");
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
@@ -440,8 +437,10 @@ int main(int argc, char *argv[]) {
         vm.vars = new_map(8);
 
         compile(p->nodes.data, p->nodes.index, &vm);
+        report_time("COMPILING    time: %f seconds\n");
 
         run(&vm);
+        report_time("RUNNING      time: %f seconds\n");
     } else {
         interpreter.nodes = p->nodes;
 
@@ -464,13 +463,10 @@ int main(int argc, char *argv[]) {
 
         interpret(&interpreter);
 
+        report_time("INTERPRETING time: %f seconds\n");
     }
 
     if (time) {
-        clock_gettime(CLOCK_MONOTONIC, &tend);
-        printf("INTERPRETING time: %f seconds\n",
-            ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-            ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec));
         printf("OVERALL      time: %f seconds\n",
             ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
             ((double)tfinal.tv_sec + 1.0e-9*tfinal.tv_nsec));
