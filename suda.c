@@ -125,8 +125,7 @@ char *read_file(const char *file_path) {
     return program;
 }
 
-define_array(Programs, char*);
-define_array(Include_Paths, char*);
+define_array(String_Array, char*);
 
 char **call_stack = NULL;
 int call_stack_index;
@@ -142,7 +141,7 @@ int call_stack_capacity;
 
 //global variables for access to freeing from anywhere
 Token *tokens;
-Programs programs = {0};
+String_Array programs = {0};
 Parser *p;
 Interpreter interpreter;
 VM vm;

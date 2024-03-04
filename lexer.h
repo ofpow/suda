@@ -433,9 +433,9 @@ Token scan_token(Lexer *l) {
     exit(1);
 }
 
-Token *lex_file(const char *file_path, Programs *programs) {
+Token *lex_file(const char *file_path, String_Array *programs) {
     debug("LEX FILE %s\n", file_path)
-    Include_Paths include_paths = {
+    String_Array include_paths = {
         calloc(2, sizeof(char*)),
         0,
         2,
