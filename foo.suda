@@ -1,4 +1,7 @@
 if 1
+    if 0
+        println "hi"
+    ;
     println 42
 ;
 println "done"

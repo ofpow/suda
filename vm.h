@@ -181,6 +181,7 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                 u_int16_t offset = vm->code.index - index;
                 vm->code.data[index + 1] = FIRST_BYTE(offset);
                 vm->code.data[index + 2] = SECOND_BYTE(offset);
+                vm->jump_indices.index--;
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
