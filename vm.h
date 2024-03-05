@@ -242,7 +242,7 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
             case AST_Semicolon:;
                 u_int16_t index = vm->jump_indices.data[--vm->jump_indices.index];
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
-                    u_int16_t x = vm->code.index + 3;
+                    u_int16_t x = vm->code.index + 3 - index;
                     vm->code.data[index + 1] = FIRST_BYTE(x);
                     vm->code.data[index + 2] = SECOND_BYTE(x);
 
@@ -250,7 +250,6 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                     append_new(vm->code, OP_JUMP);
                     append_new(vm->code, FIRST_BYTE(index));
                     append_new(vm->code, SECOND_BYTE(index));
-                    index += 3;
                 } else {
                     u_int16_t offset = vm->code.index - index;
                     vm->code.data[index + 1] = FIRST_BYTE(offset);
