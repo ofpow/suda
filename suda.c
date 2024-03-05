@@ -217,6 +217,7 @@ int main(int argc, char *argv[]) {
         } else if (!strcmp(argv[i], "-b")) {
             bytecode = true;
         } else if (!strcmp(argv[i], "-d")) {
+            bytecode = true;
             disassembly = true;
         } else if (!strcmp(argv[i], "-c")) {
             call_stack = calloc(10, sizeof(char*));

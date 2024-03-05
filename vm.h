@@ -12,8 +12,8 @@
 } while (0);                        \
 
 #define binary_op(op, msg) do {                                                                                                    \
-    Value op1 = stack_pop;                                                                                                         \
     Value op2 = stack_pop;                                                                                                         \
+    Value op1 = stack_pop;                                                                                                         \
     if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value; \
     if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value; \
     if (op1.type == Value_Number && op2.type == Value_Number) {                                                                    \
