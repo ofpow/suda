@@ -156,6 +156,7 @@ Parser *p;
 Interpreter interpreter;
 VM vm;
 bool bytecode = false;
+bool disassembly = false;
 
 void free_mem(int exit_val) {
 
@@ -215,6 +216,8 @@ int main(int argc, char *argv[]) {
             time = true;
         } else if (!strcmp(argv[i], "-b")) {
             bytecode = true;
+        } else if (!strcmp(argv[i], "-d")) {
+            disassembly = true;
         } else if (!strcmp(argv[i], "-c")) {
             call_stack = calloc(10, sizeof(char*));
             call_stack_index = 0;
@@ -225,6 +228,8 @@ int main(int argc, char *argv[]) {
             printf("  -h: print this message\n");
             printf("  -t: print timing info\n");
             printf("  -c: print call stack on crash\n");
+            printf("  -b: use bytecode interpreter\n");
+            printf("  -d: diassemble bytecode instead of running\n");
             return 0;
         } else {
             file_path = argv[i];
@@ -445,7 +450,9 @@ int main(int argc, char *argv[]) {
         compile(p->nodes.data, p->nodes.index, &vm);
         report_time("COMPILING    time: %f seconds\n");
 
-        run(&vm);
+        if (disassembly) disassemble(&vm);
+        else run(&vm);
+
         report_time("RUNNING      time: %f seconds\n");
     } else {
         interpreter.nodes = p->nodes;
