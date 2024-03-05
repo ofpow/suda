@@ -91,14 +91,63 @@ void disassemble(VM *vm) {
     for (int i = 0; i < vm->code.index; i++) {
         switch(vm->code.data[i]) {
             case OP_CONSTANT:
-                printf("OP_CONSTANT: index %d\n", (((u_int16_t)vm->code.data[i + 1] << 8) | vm->code.data[i + 2]));
+                printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_PRINTLN:
-                printf("OP_PRINTLN\n");
+                printf("%-6d OP_PRINTLN\n", i);
+                break;
+            case OP_DEFINE_VARIABLE:
+                printf("%-6d OP_DEFINE_VARIABLE\n", i);
+                break;
+            case OP_ADD:
+                printf("%-6d OP_ADD\n", i);
+                break;
+            case OP_SUBTRACT:
+                printf("%-6d OP_SUBTRACT\n", i);
+                break;
+            case OP_MULTIPLY:
+                printf("%-6d OP_MULTIPLY\n", i);
+                break;
+            case OP_DIVIDE:
+                printf("%-6d OP_DIVIDE\n", i);
+                break;
+            case OP_LESS:
+                printf("%-6d OP_LESS\n", i);
+                break;
+            case OP_LESS_EQUAL:
+                printf("%-6d OP_LESS_EQUAL\n", i);
+                break;
+            case OP_GREATER:
+                printf("%-6d OP_GREATER\n", i);
+                break;
+            case OP_GREATER_EQUAL:
+                printf("%-6d OP_GREATER_EQUAL\n", i);
+                break;
+            case OP_IS_EQUAL:
+                printf("%-6d OP_IS_EQUAL\n", i);
+                break;
+            case OP_AND:
+                printf("%-6d OP_AND\n", i);
+                break;
+            case OP_OR:
+                printf("%-6d OP_OR\n", i);
+                break;
+            case OP_NOT:
+                printf("%-6d OP_NOT\n", i);
+                break;
+            case OP_NOT_EQUAL:
+                printf("%-6d OP_NOT_EQUAL\n", i);
+                break;
+            case OP_SET_VARIABLE:
+                printf("%-6d OP_SET_VARIABLE \n", i);
+                break;
+            case OP_JUMP_IF_FALSE:
+                printf("%-6d OP_JUMP_IF_FALSE: index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
                 break;
             default:
-                ERR("cant handle op type %d\n", vm->code.data[i]);
+                ERR("cant disassemble op type %d\n", vm->code.data[i]);
         }
     }
 }
