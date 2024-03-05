@@ -163,6 +163,7 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     if (bytecode) {
+        free(vm.jump_indices.data);
         free(vm.code.data);    
         free(vm.constants.data);    
         free_array(p->funcs);
