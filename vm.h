@@ -24,8 +24,8 @@
             0                                                                                                                      \
         }));                                                                                                                       \
     } else ERR(msg, find_value_type(op1.type), find_value_type(op2.type))                                                          \
-    break;                                                                                                                         \
-} while (0)                                                                                                                        \
+} while (0);                                                                                                                       \
+break                                                                                                                              \
 
 typedef enum {
     OP_CONSTANT,
