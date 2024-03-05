@@ -46,6 +46,7 @@ typedef enum {
     OP_NOT_EQUAL,
     OP_SET_VARIABLE,
     OP_JUMP_IF_FALSE,
+    OP_JUMP,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -146,6 +147,10 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_JUMP_IF_FALSE: index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
+            case OP_JUMP:
+                printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
             default:
                 ERR("cant disassemble op type %d\n", vm->code.data[i]);
         }
@@ -225,12 +230,32 @@ void compile(Node **nodes, int64_t nodes_size, VM *vm) {
                 append_new(vm->code, 0);
                 append_new(vm->code, 0);
                 break;
+            case AST_While:
+                append_new(vm->jump_indices, vm->code.index);
+                compile_expr(nodes[i]->left, vm);
+
+                append_new(vm->jump_indices, vm->code.index);
+                append_new(vm->code, OP_JUMP_IF_FALSE);
+                append_new(vm->code, 0);
+                append_new(vm->code, 0);
+                break;
             case AST_Semicolon:;
-                int64_t index = vm->jump_indices.data[vm->jump_indices.index - 1];
-                u_int16_t offset = vm->code.index - index;
-                vm->code.data[index + 1] = FIRST_BYTE(offset);
-                vm->code.data[index + 2] = SECOND_BYTE(offset);
-                vm->jump_indices.index--;
+                u_int16_t index = vm->jump_indices.data[--vm->jump_indices.index];
+                if (nodes[nodes[i]->jump_index]->type == AST_While) {
+                    u_int16_t x = vm->code.index + 3;
+                    vm->code.data[index + 1] = FIRST_BYTE(x);
+                    vm->code.data[index + 2] = SECOND_BYTE(x);
+
+                    index = vm->jump_indices.data[--vm->jump_indices.index];
+                    append_new(vm->code, OP_JUMP);
+                    append_new(vm->code, FIRST_BYTE(index));
+                    append_new(vm->code, SECOND_BYTE(index));
+                    index += 3;
+                } else {
+                    u_int16_t offset = vm->code.index - index;
+                    vm->code.data[index + 1] = FIRST_BYTE(offset);
+                    vm->code.data[index + 2] = SECOND_BYTE(offset);
+                }
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -398,6 +423,9 @@ void run(VM *vm) {
                     i += 2;
                 }
             break;}
+            case OP_JUMP:
+                i = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
+                break;
             default: ERR("cant do op %d\n", vm->code.data[i])
         }
     }
