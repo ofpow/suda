@@ -1,8 +1,7 @@
-let i = 1
-
-while (i <= 10)
-    println i
-    i = (i + 1)
+if 1
+    println 1
+else
+    println 2
 ;
 
 println "done"

@@ -260,9 +260,20 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 } else {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
                     u_int16_t offset = c->code.index - index;
+                    if (c->code.data[index] == OP_JUMP) offset += index;
                     c->code.data[index + 1] = FIRST_BYTE(offset);
                     c->code.data[index + 2] = SECOND_BYTE(offset);
                 }
+                break;
+            case AST_Else:;
+                u_int16_t index = c->if_indices.data[--c->if_indices.index];
+                u_int16_t offset = c->code.index - index + 3;
+                c->code.data[index + 1] = FIRST_BYTE(offset);
+                c->code.data[index + 2] = SECOND_BYTE(offset);
+                append_new(c->if_indices, c->code.index);
+                append_new(c->code, OP_JUMP);
+                append_new(c->code, 0);
+                append_new(c->code, 0);
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
