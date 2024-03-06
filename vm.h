@@ -144,7 +144,7 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_SET_VARIABLE \n", i);
                 break;
             case OP_JUMP_IF_FALSE:
-                printf("%-6d OP_JUMP_IF_FALSE: index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_JUMP:
@@ -421,7 +421,7 @@ void run(VM *vm) {
                 } else {
                     i += 2;
                 }
-            break;}
+                break;}
             case OP_JUMP:
                 i = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
                 break;
