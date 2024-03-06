@@ -75,9 +75,16 @@ Op_Code ast_to_op_code(AST_Type type) {
 define_array(Code, u_int8_t);
 define_array(Constants, Value);
 
-typedef struct VM {
-    Jump_Indices jump_indices;
+typedef struct Compiler {
+    Jump_Indices if_indices;
+    Jump_Indices while_indices;
 
+    Code code;
+
+    Constants constants;
+} Compiler;
+
+typedef struct VM {
     Code code;
 
     Constants constants;
@@ -157,29 +164,29 @@ void disassemble(VM *vm) {
     }
 }
 
-void compile_constant(AST_Value *value, VM *vm) {
+void compile_constant(AST_Value *value, Compiler *c) {
     if (value->type == Value_Number)
-        append_new(vm->constants, ((Value){value->type, .val.num=NUM(value->value), false, 0}));
+        append_new(c->constants, ((Value){value->type, .val.num=NUM(value->value), false, 0}));
     else if (value->type == Value_String)
-        append_new(vm->constants, ((Value){value->type, .val.str=value->value, false, 0}));
+        append_new(c->constants, ((Value){value->type, .val.str=value->value, false, 0}));
     else if (value->type == Value_Identifier)
-        append_new(vm->constants, ((Value){value->type, .val.str=value->value, false, value->hash}));
+        append_new(c->constants, ((Value){value->type, .val.str=value->value, false, value->hash}));
     else
         ERR("cant compile constant of type %d\n", value->type)
 
-    u_int16_t index = vm->constants.index - 1;
-    append_new(vm->code, OP_CONSTANT);
-    append_new(vm->code, FIRST_BYTE(index));
-    append_new(vm->code, SECOND_BYTE(index));
+    u_int16_t index = c->constants.index - 1;
+    append_new(c->code, OP_CONSTANT);
+    append_new(c->code, FIRST_BYTE(index));
+    append_new(c->code, SECOND_BYTE(index));
 }
 
-void compile_expr(Node *n, VM *vm) {
+void compile_expr(Node *n, Compiler *c) {
     switch (n->type) {
         case AST_Literal:
-            compile_constant(n->value, vm);
+            compile_constant(n->value, c);
             break;
         case AST_Identifier:
-            compile_constant(n->value, vm);
+            compile_constant(n->value, c);
             break;
         case AST_Add:
         case AST_Sub:
@@ -193,67 +200,68 @@ void compile_expr(Node *n, VM *vm) {
         case AST_And:
         case AST_Or:
         case AST_Not_Equal:
-            compile_expr(n->left, vm);
-            compile_expr(n->right, vm);
-            append_new(vm->code, ast_to_op_code(n->type));
+            compile_expr(n->left, c);
+            compile_expr(n->right, c);
+            append_new(c->code, ast_to_op_code(n->type));
             break;
         case AST_Not:
-            compile_expr(n->left, vm);
-            append_new(vm->code, OP_NOT);
+            compile_expr(n->left, c);
+            append_new(c->code, OP_NOT);
             break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
 }
 
-void compile(Node **nodes, int64_t nodes_size, VM *vm) {
+void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
     for (int i = 0; i < nodes_size; i++) {
         switch (nodes[i]->type) {
             case AST_Println:
-                compile_expr(nodes[i]->left, vm);
-                append_new(vm->code, OP_PRINTLN);
+                compile_expr(nodes[i]->left, c);
+                append_new(c->code, OP_PRINTLN);
                 break;
             case AST_Var_Assign:
-                compile_constant(nodes[i]->value, vm); // name
-                compile_expr(nodes[i]->left, vm); // value
-                append_new(vm->code, OP_DEFINE_VARIABLE);
+                compile_constant(nodes[i]->value, c); // name
+                compile_expr(nodes[i]->left, c); // value
+                append_new(c->code, OP_DEFINE_VARIABLE);
                 break;
             case AST_Identifier:
-                compile_constant(nodes[i]->value, vm); // name
-                compile_expr(nodes[i]->left, vm); // value
-                append_new(vm->code, OP_SET_VARIABLE);
+                compile_constant(nodes[i]->value, c); // name
+                compile_expr(nodes[i]->left, c); // value
+                append_new(c->code, OP_SET_VARIABLE);
                 break;
             case AST_If:
-                compile_expr(nodes[i]->left, vm);
+                compile_expr(nodes[i]->left, c);
 
-                append_new(vm->jump_indices, vm->code.index);
-                append_new(vm->code, OP_JUMP_IF_FALSE);
-                append_new(vm->code, 0);
-                append_new(vm->code, 0);
+                append_new(c->if_indices, c->code.index);
+                append_new(c->code, OP_JUMP_IF_FALSE);
+                append_new(c->code, 0);
+                append_new(c->code, 0);
                 break;
             case AST_While:
-                append_new(vm->jump_indices, vm->code.index);
-                compile_expr(nodes[i]->left, vm);
+                append_new(c->while_indices, c->code.index);
+                compile_expr(nodes[i]->left, c);
 
-                append_new(vm->jump_indices, vm->code.index);
-                append_new(vm->code, OP_JUMP_IF_FALSE);
-                append_new(vm->code, 0);
-                append_new(vm->code, 0);
+                append_new(c->while_indices, c->code.index);
+                append_new(c->code, OP_JUMP_IF_FALSE);
+                append_new(c->code, 0);
+                append_new(c->code, 0);
                 break;
             case AST_Semicolon:;
-                u_int16_t index = vm->jump_indices.data[--vm->jump_indices.index];
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
-                    u_int16_t x = vm->code.index + 3 - index;
-                    vm->code.data[index + 1] = FIRST_BYTE(x);
-                    vm->code.data[index + 2] = SECOND_BYTE(x);
+                    u_int16_t index = c->while_indices.data[--c->while_indices.index];
+                    u_int16_t x = c->code.index + 3 - index;
+                    c->code.data[index + 1] = FIRST_BYTE(x);
+                    c->code.data[index + 2] = SECOND_BYTE(x);
 
-                    index = vm->jump_indices.data[--vm->jump_indices.index];
-                    append_new(vm->code, OP_JUMP);
-                    append_new(vm->code, FIRST_BYTE(index));
-                    append_new(vm->code, SECOND_BYTE(index));
+                    index = c->while_indices.data[--c->while_indices.index];
+                    append_new(c->code, OP_JUMP);
+                    append_new(c->code, FIRST_BYTE(index));
+                    append_new(c->code, SECOND_BYTE(index));
                 } else {
-                    u_int16_t offset = vm->code.index - index;
-                    vm->code.data[index + 1] = FIRST_BYTE(offset);
-                    vm->code.data[index + 2] = SECOND_BYTE(offset);
+                    u_int16_t index = c->if_indices.data[--c->if_indices.index];
+                    u_int16_t offset = c->code.index - index;
+                    c->code.data[index + 1] = FIRST_BYTE(offset);
+                    c->code.data[index + 2] = SECOND_BYTE(offset);
                 }
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))

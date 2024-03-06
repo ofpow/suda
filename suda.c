@@ -155,6 +155,7 @@ String_Array programs = {0};
 Parser *p;
 Interpreter interpreter;
 VM vm;
+Compiler c;
 bool bytecode = false;
 bool disassembly = false;
 
@@ -163,7 +164,8 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     if (bytecode) {
-        free(vm.jump_indices.data);
+        free(c.if_indices.data);
+        free(c.while_indices.data);
         free(vm.code.data);    
         free(vm.constants.data);    
         free_array(p->funcs);
@@ -427,19 +429,24 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
-        vm.jump_indices = (Jump_Indices){
+        c.if_indices = (Jump_Indices){
+            calloc(10, sizeof(int64_t)),
+            0,
+            10
+        };
+        c.while_indices = (Jump_Indices){
             calloc(10, sizeof(int64_t)),
             0,
             10
         };
 
-        vm.code = (Code){
+        c.code = (Code){
             calloc(10, sizeof(u_int8_t)),
             0,
             10,
         };
         
-        vm.constants = (Constants){
+        c.constants = (Constants){
             calloc(10, sizeof(Value)),
             0,
             10,
@@ -449,8 +456,11 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        compile(p->nodes.data, p->nodes.index, &vm);
+        compile(p->nodes.data, p->nodes.index, &c);
         report_time("COMPILING    time: %f seconds\n");
+
+        vm.code = c.code;
+        vm.constants = c.constants;
 
         if (disassembly) disassemble(&vm);
         else run(&vm);
