@@ -117,7 +117,7 @@ void print_array(VM *vm, Value *val) {
             strcat(str, num);
             strcat(str, ", ");
             free(num);
-        } else if (array[i].type == Value_String) {
+        } else if (array[i].type == Value_String || array[i].type == Value_Identifier) {
             str_len += (strlen(array[i].val.str) + 2);
             str = realloc(str, str_len);
             strcat(str, array[i].val.str);

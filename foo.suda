@@ -1,2 +1,2 @@
-let foo = [1, 2, 3, "hello", "world"]
+let foo = [1, 2, foo, "hello", "world"]
 println foo
