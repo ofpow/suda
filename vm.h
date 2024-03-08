@@ -47,6 +47,7 @@ typedef enum {
     OP_SET_VARIABLE,
     OP_JUMP_IF_FALSE,
     OP_JUMP,
+    OP_ARRAY,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -74,6 +75,7 @@ Op_Code ast_to_op_code(AST_Type type) {
 
 define_array(Code, u_int8_t);
 define_array(Constants, Value);
+define_array(Arrays, Value*);
 
 typedef struct Compiler {
     Jump_Indices if_indices;
@@ -82,6 +84,8 @@ typedef struct Compiler {
     Code code;
 
     Constants constants;
+
+    Arrays arrays;
 } Compiler;
 
 typedef struct VM {
@@ -89,17 +93,52 @@ typedef struct VM {
 
     Constants constants;
 
+    Arrays arrays;
+
     Map *vars;
 
     Value stack[STACK_SIZE];
     Value *stack_top;
 } VM;
 
+void print_array(VM *vm, Value *val) {
+    Value *array = vm->arrays.data[val->val.num];
+    if (array[0].val.num < 2) printf("[]\n");
+
+    int64_t str_len = 2;
+    char *str = format_str(str_len, "[");
+
+    for (int i = 1; i < array[0].val.num; i++) {
+        if (array[i].type == Value_Number) {
+            int64_t len = num_len(array[i].val.num) + 2;
+            char *num = format_str(len, "%d", array[i].val.num);
+            str_len += len;
+            str = realloc(str, str_len);
+            strcat(str, num);
+            strcat(str, ", ");
+            free(num);
+        } else if (array[i].type == Value_String) {
+            str_len += (strlen(array[i].val.str) + 2);
+            str = realloc(str, str_len);
+            strcat(str, array[i].val.str);
+            strcat(str, ", ");
+        } else ERR("cant print %s as part of array\n", find_value_type(array[i].type))
+    }
+    str[str_len - 3] = ']';
+    str[str_len - 2] = 0;
+    printf("%s\n", str);
+    free(str);
+}
+
 void disassemble(VM *vm) {
     for (int i = 0; i < vm->code.index; i++) {
         switch(vm->code.data[i]) {
             case OP_CONSTANT:
                 printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
+            case OP_ARRAY:
+                printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_PRINTLN:
@@ -208,6 +247,42 @@ void compile_expr(Node *n, Compiler *c) {
             compile_expr(n->left, c);
             append_new(c->code, OP_NOT);
             break;
+        case AST_Array:{
+            int64_t array_len = NUM(n->value[0].value);
+            Value *array = calloc(array_len, sizeof(Value));
+            for (int i = 0; i < array_len; i++) {
+                switch (n->value[i].type) {
+                    case Value_Array:
+                        array[i].type = Value_Array;
+                        array[i].val.num = NUM(n->value[i].value);
+                        break;
+                    case Value_Number:
+                        array[i].type = Value_Number;
+                        array[i].val.num = NUM(n->value[i].value);
+                        break;
+                    case Value_String:
+                        array[i].type = Value_String;
+                        array[i].val.str = STR(n->value[i].value);
+                        array[i].mutable = true;
+                        n->value[i].value = NULL;
+                        break;
+                    case Value_Identifier:
+                        array[i].type = Value_Identifier;
+                        array[i].val.str = STR(n->value[i].value);
+                        array[i].mutable = true;
+                        array[i].hash = n->value[i].hash;
+                        n->value[i].value = NULL;
+                        break;
+                    default: ERR("cant do array type %s\n", find_value_type(n->value[i].type))
+                }
+            }
+
+            append_new(c->arrays, array);
+            append_new(c->code, OP_ARRAY);
+            u_int16_t index = c->arrays.index - 1;
+            append_new(c->code, FIRST_BYTE(index));
+            append_new(c->code, SECOND_BYTE(index));
+            break;}
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
 }
@@ -294,12 +369,15 @@ void run(VM *vm) {
                     printf("%ld\n", print.val.num);
                 } else if (print.type == Value_String) {
                     printf("%s\n", print.val.str);
+                } else if (print.type == Value_Array) {
                 }   else if (print.type == Value_Identifier) {
                     Variable *val = get_entry(vm->vars->entries, vm->vars->capacity, print.hash)->value;
                     if (val->value.type == Value_Number)
                         printf("%ld\n", val->value.val.num);
                     else if (val->value.type == Value_String)
                         printf("%s\n", val->value.val.str);
+                    else if (val->value.type == Value_Array)
+                        print_array(vm, &val->value);
                     else ERR("cant print type %d\n", val->value.type)
                 } else
                     ERR("cant print type %d\n", print.type)
@@ -444,6 +522,16 @@ void run(VM *vm) {
             case OP_JUMP:
                 i = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
                 break;
+            case OP_ARRAY:{
+                u_int16_t index = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
+                stack_push(((Value) {
+                    Value_Array,      
+                    .val.num=index,   
+                    false,            
+                    0                 
+                }));                  
+                i += 2;
+                break;}
             default: ERR("cant do op %d\n", vm->code.data[i])
         }
     }

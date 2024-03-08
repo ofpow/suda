@@ -1,7 +1,2 @@
-if 1
-    println 1
-else
-    println 2
-;
-
-println "done"
+let foo = [1, 2, 3, "hello", "world"]
+println foo

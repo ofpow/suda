@@ -169,6 +169,13 @@ void free_mem(int exit_val) {
         free(vm.code.data);    
         free(vm.constants.data);    
         free_array(p->funcs);
+        for (int i = 0; i < vm.arrays.index; i++) {
+            for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
+                if (vm.arrays.data[i][j].mutable == true)
+                    free(vm.arrays.data[i][j].val.str);
+            }
+        }
+        free_array(vm.arrays);
         free_map(vm.vars);
     }
     if (!bytecode) {
@@ -439,15 +446,18 @@ int main(int argc, char *argv[]) {
             0,
             10
         };
-
         c.code = (Code){
             calloc(10, sizeof(u_int8_t)),
             0,
             10,
         };
-        
         c.constants = (Constants){
             calloc(10, sizeof(Value)),
+            0,
+            10,
+        };
+        c.arrays = (Arrays){
+            calloc(10, sizeof(Value*)),
             0,
             10,
         };
@@ -461,6 +471,7 @@ int main(int argc, char *argv[]) {
 
         vm.code = c.code;
         vm.constants = c.constants;
+        vm.arrays = c.arrays;
 
         if (disassembly) disassemble(&vm);
         else run(&vm);
