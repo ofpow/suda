@@ -48,7 +48,8 @@ typedef enum {
     OP_JUMP_IF_FALSE,
     OP_JUMP,
     OP_ARRAY,
-    OP_INDEX,
+    OP_GET_ELEMENT,
+    OP_SET_ELEMENT,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -150,8 +151,11 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
-            case OP_INDEX:
-                printf("%-6d OP_INDEX\n", i);
+            case OP_GET_ELEMENT:
+                printf("%-6d OP_GET_ELEMENT\n", i);
+                break;
+            case OP_SET_ELEMENT:
+                printf("%-6d OP_SET_ELEMENT\n", i);
                 break;
             case OP_PRINTLN:
                 printf("%-6d OP_PRINTLN\n", i);
@@ -300,7 +304,7 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_At:{
             compile_expr(n->left, c); // the index
             compile_constant(n->value, c); //var name
-            append_new(c->code, OP_INDEX);
+            append_new(c->code, OP_GET_ELEMENT);
             break;}
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
@@ -368,6 +372,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_new(c->code, OP_JUMP);
                 append_new(c->code, 0);
                 append_new(c->code, 0);
+                break;
+            case AST_At:
+                compile_constant(nodes[i]->value, c); // var name
+                compile_expr(nodes[i]->left, c); // index
+                compile_expr(nodes[i]->right, c); // new value
+                append_new(c->code, OP_SET_ELEMENT);
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
         }
@@ -552,13 +562,22 @@ void run(VM *vm) {
                 }));                  
                 i += 2;
                 break;}
-            case OP_INDEX:{
-                Value var_name = stack_pop;
+            case OP_GET_ELEMENT:{
+                Value array = stack_pop;
                 Value index = stack_pop;
 
-                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value.val.num;
+                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
 
                 stack_push(vm->arrays.data[var_index][index.val.num]);
+
+                break;}
+            case OP_SET_ELEMENT:{
+                Value new_val = stack_pop;
+                Value index = stack_pop;
+                Value array = stack_pop;
+
+                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
+                vm->arrays.data[var_index][index.val.num] = new_val;
 
                 break;}
             default: ERR("cant do op %d\n", vm->code.data[i])
