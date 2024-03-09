@@ -9,7 +9,7 @@
 #define stack_push(_val) do {       \
     *vm->stack_top = (_val);        \
     vm->stack_top++;                \
-} while (0);                        \
+} while (0)                         \
 
 #define binary_op(op, msg) do {                                                                                                    \
     Value op2 = stack_pop;                                                                                                         \
@@ -48,6 +48,7 @@ typedef enum {
     OP_JUMP_IF_FALSE,
     OP_JUMP,
     OP_ARRAY,
+    OP_INDEX,
 } Op_Code;
 
 Op_Code ast_to_op_code(AST_Type type) {
@@ -117,11 +118,19 @@ void print_array(VM *vm, Value *val) {
             strcat(str, num);
             strcat(str, ", ");
             free(num);
-        } else if (array[i].type == Value_String || array[i].type == Value_Identifier) {
+        } else if (array[i].type == Value_Identifier) {
             str_len += (strlen(array[i].val.str) + 2);
             str = realloc(str, str_len);
             strcat(str, array[i].val.str);
             strcat(str, ", ");
+        } else if (array[i].type == Value_String) {
+            int len = strlen(array[i].val.str) + 4;
+            str_len += len;
+            str = realloc(str, str_len);
+            char *x = format_str(len + 1, "\"%s\"", array[i].val.str);
+            strcat(str, x);
+            strcat(str, ", ");
+            free(x);
         } else ERR("cant print %s as part of array\n", find_value_type(array[i].type))
     }
     str[str_len - 3] = ']';
@@ -140,6 +149,9 @@ void disassemble(VM *vm) {
             case OP_ARRAY:
                 printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
+                break;
+            case OP_INDEX:
+                printf("%-6d OP_INDEX\n", i);
                 break;
             case OP_PRINTLN:
                 printf("%-6d OP_PRINTLN\n", i);
@@ -262,8 +274,10 @@ void compile_expr(Node *n, Compiler *c) {
                         break;
                     case Value_String:
                         array[i].type = Value_String;
-                        array[i].val.str = STR(n->value[i].value);
+                        char *s = format_str(strlen(n->value[i].value), "%.*s", strlen(n->value[i].value) - 2, STR(n->value[i].value) + 1);
+                        array[i].val.str = s;
                         array[i].mutable = true;
+                        free(n->value[i].value);
                         n->value[i].value = NULL;
                         break;
                     case Value_Identifier:
@@ -282,6 +296,11 @@ void compile_expr(Node *n, Compiler *c) {
             u_int16_t index = c->arrays.index - 1;
             append_new(c->code, FIRST_BYTE(index));
             append_new(c->code, SECOND_BYTE(index));
+            break;}
+        case AST_At:{
+            compile_expr(n->left, c); // the index
+            compile_constant(n->value, c); //var name
+            append_new(c->code, OP_INDEX);
             break;}
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
@@ -360,7 +379,7 @@ void run(VM *vm) {
         switch (vm->code.data[i]) {
             case OP_CONSTANT:;
                 u_int16_t index = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
-                stack_push(vm->constants.data[index])
+                stack_push(vm->constants.data[index]);
                 i += 2;
                 break;
             case OP_PRINTLN:;
@@ -531,6 +550,15 @@ void run(VM *vm) {
                     0                 
                 }));                  
                 i += 2;
+                break;}
+            case OP_INDEX:{
+                Value var_name = stack_pop;
+                Value index = stack_pop;
+
+                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value.val.num;
+
+                stack_push(vm->arrays.data[var_index][index.val.num]);
+
                 break;}
             default: ERR("cant do op %d\n", vm->code.data[i])
         }
