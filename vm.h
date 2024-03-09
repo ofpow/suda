@@ -389,6 +389,7 @@ void run(VM *vm) {
                 } else if (print.type == Value_String) {
                     printf("%s\n", print.val.str);
                 } else if (print.type == Value_Array) {
+                    print_array(vm, &print);
                 }   else if (print.type == Value_Identifier) {
                     Variable *val = get_entry(vm->vars->entries, vm->vars->capacity, print.hash)->value;
                     if (val->value.type == Value_Number)

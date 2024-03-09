@@ -1,7 +1,1 @@
-let foo = [foo, 2, 3, "hello", "world"]
-
-println foo
-println foo@3
-println foo@5
-
-println ((foo@2) + (foo@3))
+println [1, 2, 3]
