@@ -401,6 +401,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
 
 void run(VM *vm) {
     for (int i = 0; i < vm->code.index; i++) {
+        debug("%-6d %s\n", i, find_op_code(vm->code.data[i]));
         switch (vm->code.data[i]) {
             case OP_CONSTANT:;
                 u_int16_t index = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
