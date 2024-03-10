@@ -34,113 +34,71 @@
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal) || (expr == AST_And) || (expr == AST_Or) || (expr == AST_Not) || (expr == AST_Not_Equal) || (expr == AST_Modulo) || (expr == AST_Bit_And) || (expr == AST_Bit_Or) || (expr == AST_Bit_Xor) || (expr == AST_Bit_Not) || (expr == AST_Lshift) || (expr == AST_Rshift) || (expr == AST_Power))
 #define TOK_IS_EVALUATABLE(type) ((type == Tok_String || type == Tok_Number || IS_TOK_MATH_OP(type) || type == Tok_Identifier || type == Tok_At || type == Tok_Function || type == Tok_Len || type == Tok_Cast_Num || type == Tok_Cast_Str))
 
+#define ast_types\
+    X(AST_End)\
+    X(AST_Literal)\
+    X(AST_Add)\
+    X(AST_Sub)\
+    X(AST_Mult)\
+    X(AST_Div)\
+    X(AST_Print)\
+    X(AST_Var_Assign)\
+    X(AST_Identifier)\
+    X(AST_Greater)\
+    X(AST_Greater_Equal)\
+    X(AST_Less)\
+    X(AST_Less_Equal)\
+    X(AST_Assign)\
+    X(AST_If)\
+    X(AST_Semicolon)\
+    X(AST_Else)\
+    X(AST_While)\
+    X(AST_Array)\
+    X(AST_At)\
+    X(AST_Is_Equal)\
+    X(AST_Function)\
+    X(AST_Comma)\
+    X(AST_Right_Paren)\
+    X(AST_Return)\
+    X(AST_Function_Call)\
+    X(AST_Len)\
+    X(AST_Break)\
+    X(AST_Exit)\
+    X(AST_Continue)\
+    X(AST_And)\
+    X(AST_Or)\
+    X(AST_Not)\
+    X(AST_Not_Equal)\
+    X(AST_Modulo)\
+    X(AST_Elif)\
+    X(AST_Bit_And)\
+    X(AST_Bit_Or)\
+    X(AST_Bit_Xor)\
+    X(AST_Bit_Not)\
+    X(AST_Lshift)\
+    X(AST_Rshift)\
+    X(AST_Power)\
+    X(AST_Append)\
+    X(AST_Cast_Str)\
+    X(AST_Cast_Num)\
+    X(AST_Println)\
+    X(AST_For)\
+    X(AST_In)\
+    X(AST_Input)\
+
 typedef enum {
-    AST_End,
-    AST_Literal,
-    AST_Add,
-    AST_Sub,
-    AST_Mult,
-    AST_Div,
-    AST_Print,
-    AST_Var_Assign,
-    AST_Identifier,
-    AST_Greater,
-    AST_Greater_Equal,
-    AST_Less,
-    AST_Less_Equal,
-    AST_Assign,
-    AST_If,
-    AST_Semicolon,
-    AST_Else,
-    AST_While,
-    AST_Array,
-    AST_At,
-    AST_Is_Equal,
-    AST_Function,
-    AST_Comma,
-    AST_Right_Paren,
-    AST_Return,
-    AST_Function_Call,
-    AST_Len,
-    AST_Break,
-    AST_Exit,
-    AST_Continue,
-    AST_And,
-    AST_Or,
-    AST_Not,
-    AST_Not_Equal,
-    AST_Modulo,
-    AST_Elif,
-    AST_Bit_And,
-    AST_Bit_Or,
-    AST_Bit_Xor,
-    AST_Bit_Not,
-    AST_Lshift,
-    AST_Rshift,
-    AST_Power,
-    AST_Append,
-    AST_Cast_Str,
-    AST_Cast_Num,
-    AST_Println,
-    AST_For,
-    AST_In,
-    AST_Input,
+#define X(x) x,
+    ast_types
+#undef X
 } AST_Type;
 
 char *find_ast_type(int type) {
     switch (type) {
-        case AST_End: return "AST_End";
-        case AST_Literal: return "AST_Literal";
-        case AST_Add: return "AST_Add";
-        case AST_Sub: return "AST_Sub";
-        case AST_Mult: return "AST_Mult";
-        case AST_Div: return "AST_Div";
-        case AST_Print: return "AST_Print";
-        case AST_Var_Assign: return "AST_Var_Assign";
-        case AST_Identifier: return "AST_Identifier";
-        case AST_Greater: return "AST_Greater";
-        case AST_Greater_Equal: return "AST_Greater_Equal";
-        case AST_Less: return "AST_Less";
-        case AST_Less_Equal: return "AST_Less_Equal";
-        case AST_Assign: return "AST_Assign";
-        case AST_If: return "AST_If";
-        case AST_Semicolon: return "AST_Semicolon";
-        case AST_Else: return "AST_Else";
-        case AST_While: return "AST_While";
-        case AST_Array: return "AST_Array";
-        case AST_At: return "AST_At";
-        case AST_Is_Equal: return "AST_Is_Equal";
-        case AST_Function: return "AST_Function";
-        case AST_Comma: return "AST_Comma";
-        case AST_Right_Paren: return "AST_Right_Paren";
-        case AST_Return: return "AST_Return";
-        case AST_Function_Call: return "AST_Function_Call";
-        case AST_Len: return "AST_Len";
-        case AST_Break: return "AST_Break";
-        case AST_Exit: return "AST_Exit";
-        case AST_Continue: return "AST_Continue";
-        case AST_And: return "AST_And";
-        case AST_Or: return "AST_Or";
-        case AST_Not: return "AST_Not";
-        case AST_Not_Equal: return "AST_Not_Equal";
-        case AST_Modulo: return "AST_Modulo";
-        case AST_Elif: return "AST_Elif";
-        case AST_Bit_And: return "AST_Bit_And";
-        case AST_Bit_Or: return "AST_Bit_Or";
-        case AST_Bit_Xor: return "AST_Bit_Xor";
-        case AST_Bit_Not: return "AST_Bit_Not";
-        case AST_Lshift: return "AST_Lshift";
-        case AST_Rshift: return "AST_Rshift";
-        case AST_Power: return "AST_Power";
-        case AST_Append: return "AST_Append";
-        case AST_Cast_Str: return "AST_Cast_Str";
-        case AST_Cast_Num: return "AST_Cast_Num";
-        case AST_Println: return "AST_Println";
-        case AST_For: return "AST_For";
-        case AST_In: return "AST_In";
-        case AST_Input: return "AST_Input";
-        default: return "ast type not found";
+#define X(x) case x: return #x;
+        ast_types
+#undef X
     }
+    return "unreachable";
 }
 
 AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {

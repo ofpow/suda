@@ -27,30 +27,45 @@
 } while (0);                                                                                                                       \
 break                                                                                                                              \
 
+#define ops \
+    X(OP_CONSTANT)\
+    X(OP_PRINTLN)\
+    X(OP_DEFINE_VARIABLE)\
+    X(OP_ADD)\
+    X(OP_SUBTRACT)\
+    X(OP_MULTIPLY)\
+    X(OP_DIVIDE)\
+    X(OP_LESS)\
+    X(OP_LESS_EQUAL)\
+    X(OP_GREATER)\
+    X(OP_GREATER_EQUAL)\
+    X(OP_IS_EQUAL)\
+    X(OP_AND)\
+    X(OP_OR)\
+    X(OP_NOT)\
+    X(OP_NOT_EQUAL)\
+    X(OP_SET_VARIABLE)\
+    X(OP_JUMP_IF_FALSE)\
+    X(OP_JUMP)\
+    X(OP_ARRAY)\
+    X(OP_GET_ELEMENT)\
+    X(OP_SET_ELEMENT)\
+    X(OP_START_IF)\
+
 typedef enum {
-    OP_CONSTANT,
-    OP_PRINTLN,
-    OP_DEFINE_VARIABLE,
-    OP_ADD,
-    OP_SUBTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_LESS,
-    OP_LESS_EQUAL,
-    OP_GREATER,
-    OP_GREATER_EQUAL,
-    OP_IS_EQUAL,
-    OP_AND,
-    OP_OR,
-    OP_NOT,
-    OP_NOT_EQUAL,
-    OP_SET_VARIABLE,
-    OP_JUMP_IF_FALSE,
-    OP_JUMP,
-    OP_ARRAY,
-    OP_GET_ELEMENT,
-    OP_SET_ELEMENT,
+#define X(x) x,
+    ops
+#undef X
 } Op_Code;
+
+char *find_op_code(Op_Code code) {
+    switch (code) {
+#define X(x) case x: return #x;
+        ops
+#undef X
+    }
+    return "unreachable";
+}
 
 Op_Code ast_to_op_code(AST_Type type) {
     switch (type) {

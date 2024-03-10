@@ -8,120 +8,73 @@ void shunt(char* dest, char* src) {
   }
 }
 
+#define toks\
+    X(Tok_Eof)\
+    X(Tok_Assign)\
+    X(Tok_Not)\
+    X(Tok_Not_Equal)\
+    X(Tok_Greater)\
+    X(Tok_Greater_Equal)\
+    X(Tok_Less)\
+    X(Tok_Less_Equal)\
+    X(Tok_At)\
+    X(Tok_Semicolon)\
+    X(Tok_Left_Paren)\
+    X(Tok_Right_Paren)\
+    X(Tok_Left_Bracket)\
+    X(Tok_Right_Bracket)\
+    X(Tok_Comma)\
+    X(Tok_Identifier)\
+    X(Tok_String)\
+    X(Tok_Number)\
+    X(Tok_And)\
+    X(Tok_If)\
+    X(Tok_Else)\
+    X(Tok_Function)\
+    X(Tok_Or)\
+    X(Tok_Print)\
+    X(Tok_Return)\
+    X(Tok_While)\
+    X(Tok_Add)\
+    X(Tok_Sub)\
+    X(Tok_Mult)\
+    X(Tok_Div)\
+    X(Tok_Let)\
+    X(Tok_Continue)\
+    X(Tok_Break)\
+    X(Tok_Comment)\
+    X(Tok_Is_Equal)\
+    X(Tok_Len)\
+    X(Tok_Exit)\
+    X(Tok_Modulo)\
+    X(Tok_Elif)\
+    X(Tok_Bit_And)\
+    X(Tok_Bit_Or)\
+    X(Tok_Bit_Xor)\
+    X(Tok_Bit_Not)\
+    X(Tok_Lshift)\
+    X(Tok_Rshift)\
+    X(Tok_Include)\
+    X(Tok_Power)\
+    X(Tok_Append)\
+    X(Tok_Cast_Str)\
+    X(Tok_Cast_Num)\
+    X(Tok_Println)\
+    X(Tok_For)\
+    X(Tok_In)\
+    X(Tok_Input)\
+
 typedef enum {
-    Tok_Eof,
-    Tok_Assign,
-    Tok_Not,
-    Tok_Not_Equal,
-    Tok_Greater,
-    Tok_Greater_Equal,
-    Tok_Less,
-    Tok_Less_Equal,
-    Tok_At,
-    Tok_Semicolon,
-    Tok_Left_Paren,
-    Tok_Right_Paren,
-    Tok_Left_Bracket,
-    Tok_Right_Bracket,
-    Tok_Comma,
-    Tok_Identifier,
-    Tok_String,
-    Tok_Number,
-    Tok_And,
-    Tok_If,
-    Tok_Else,
-    Tok_Function,
-    Tok_Or,
-    Tok_Print,
-    Tok_Return,
-    Tok_While,
-    Tok_Add,
-    Tok_Sub,
-    Tok_Mult,
-    Tok_Div,
-    Tok_Let,
-    Tok_Continue,
-    Tok_Break,
-    Tok_Comment,
-    Tok_Is_Equal,
-    Tok_Len,
-    Tok_Exit,
-    Tok_Modulo,
-    Tok_Elif,
-    Tok_Bit_And,
-    Tok_Bit_Or,
-    Tok_Bit_Xor,
-    Tok_Bit_Not,
-    Tok_Lshift,
-    Tok_Rshift,
-    Tok_Include,
-    Tok_Power,
-    Tok_Append,
-    Tok_Cast_Str,
-    Tok_Cast_Num,
-    Tok_Println,
-    Tok_For,
-    Tok_In,
-    Tok_Input,
+#define X(x) x,
+    toks
+#undef X
 } Token_Type;
 
 char *find_tok_type(int type) {
     switch (type) {
-        case Tok_Eof: return "Tok_Eof";
-        case Tok_Assign: return "Tok_Assign";
-        case Tok_Not: return "Tok_Not";
-        case Tok_Not_Equal: return "Tok_Not_Equal";
-        case Tok_Greater: return "Tok_Greater";
-        case Tok_Greater_Equal: return "Tok_Greater_Equal";
-        case Tok_Less: return "Tok_Less";
-        case Tok_Less_Equal: return "Tok_Less_Equal";
-        case Tok_At: return "Tok_At";
-        case Tok_Semicolon: return "Tok_Semicolon";
-        case Tok_Left_Paren: return "Tok_Left_Paren";
-        case Tok_Right_Paren: return "Tok_Right_Paren";
-        case Tok_Left_Bracket: return "Tok_Left_Bracket";
-        case Tok_Right_Bracket: return "Tok_Right_Bracket";
-        case Tok_Comma: return "Tok_Comma";
-        case Tok_Identifier: return "Tok_Identifier";
-        case Tok_String: return "Tok_String";
-        case Tok_Number: return "Tok_Number";
-        case Tok_And: return "Tok_And";
-        case Tok_If: return "Tok_If";
-        case Tok_Else: return "Tok_Else";
-        case Tok_Function: return "Tok_Function";
-        case Tok_Or: return "Tok_Or";
-        case Tok_Print: return "Tok_Print";
-        case Tok_Return: return "Tok_Return";
-        case Tok_While: return "Tok_While";
-        case Tok_Add: return "Tok_Add";
-        case Tok_Sub: return "Tok_Sub";
-        case Tok_Mult: return "Tok_Mult";
-        case Tok_Div: return "Tok_Div";
-        case Tok_Let: return "Tok_Let";
-        case Tok_Continue: return "Tok_Continue";
-        case Tok_Break: return "Tok_Break";
-        case Tok_Comment: return "Tok_Comment";
-        case Tok_Is_Equal: return "Tok_Is_Equal";
-        case Tok_Len: return "Tok_Len";
-        case Tok_Exit: return "Tok_Exit";
-        case Tok_Modulo: return "Tok_Modulo";
-        case Tok_Elif: return "Tok_Elif";
-        case Tok_Bit_And: return "Tok_Bit_And";
-        case Tok_Bit_Or: return "Tok_Bit_Or";
-        case Tok_Bit_Xor: return "Tok_Bit_Xor";
-        case Tok_Bit_Not: return "Tok_Bit_Not";
-        case Tok_Lshift: return "Tok_Lshift";
-        case Tok_Rshift: return "Tok_Rshift";
-        case Tok_Include: return "Tok_Include";
-        case Tok_Power: return "Tok_Power";
-        case Tok_Append: return "Tok_Append";
-        case Tok_Cast_Str: return "Tok_Cast_Str";
-        case Tok_Cast_Num: return "Tok_Cast_Num";
-        case Tok_Println: return "Tok_Println";
-        case Tok_For: return "Tok_For";
-        case Tok_In: return "Tok_In";
-        case Tok_Input: return "Tok_Input";
-        default: ERR("unknown token type `%d`\n", type)
+#define X(x) case x: return #x;
+    toks
+#undef X
     }
     return "unreachable";
 }
