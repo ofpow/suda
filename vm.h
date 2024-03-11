@@ -6,10 +6,10 @@
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
 #define stack_pop (*--vm->stack_top)
-#define stack_push(_val) do {       \
-    *vm->stack_top = (_val);        \
-    vm->stack_top++;                \
-} while (0)                         \
+#define stack_push(_val) do { \
+    *vm->stack_top = (_val);  \
+    vm->stack_top++;          \
+} while (0)                   \
 
 #define binary_op(op, msg) do {                                                                                                    \
     Value op2 = stack_pop;                                                                                                         \
@@ -224,6 +224,10 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
                 break;
+            case OP_START_IF:
+                printf("%-6d OP_START_IF:      offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
             case OP_JUMP:
                 printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
@@ -346,7 +350,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c);
 
                 append_new(c->if_indices, c->code.index);
-                append_new(c->code, OP_JUMP_IF_FALSE);
+                append_new(c->if_indices, c->code.index);
+                append_new(c->code, OP_START_IF);
                 append_new(c->code, 0);
                 append_new(c->code, 0);
                 break;
@@ -371,11 +376,14 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_new(c->code, FIRST_BYTE(index));
                     append_new(c->code, SECOND_BYTE(index));
                 } else {
-                    u_int16_t index = c->if_indices.data[--c->if_indices.index];
-                    u_int16_t offset = c->code.index - index;
-                    if (c->code.data[index] == OP_JUMP) offset += index;
-                    c->code.data[index + 1] = FIRST_BYTE(offset);
-                    c->code.data[index + 2] = SECOND_BYTE(offset);
+                    while (1) {
+                        u_int16_t index = c->if_indices.data[--c->if_indices.index];
+                        if (c->code.data[index] == OP_START_IF) break;
+                        u_int16_t offset = c->code.index - index;
+                        if (c->code.data[index] == OP_JUMP) offset += index;
+                        c->code.data[index + 1] = FIRST_BYTE(offset);
+                        c->code.data[index + 2] = SECOND_BYTE(offset);
+                    }
                 }
                 break;
             case AST_Else:;
@@ -388,6 +396,24 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_new(c->code, 0);
                 append_new(c->code, 0);
                 break;
+            case AST_Elif:{
+                u_int16_t index = c->if_indices.data[--c->if_indices.index];
+                u_int16_t offset = c->code.index - index + 3;
+                c->code.data[index + 1] = FIRST_BYTE(offset);
+                c->code.data[index + 2] = SECOND_BYTE(offset);
+
+                append_new(c->if_indices, c->code.index);
+                append_new(c->code, OP_JUMP);
+                append_new(c->code, 0);
+                append_new(c->code, 0);
+                
+                compile_expr(nodes[i]->left, c);
+
+                append_new(c->if_indices, c->code.index);
+                append_new(c->code, OP_JUMP_IF_FALSE);
+                append_new(c->code, 0);
+                append_new(c->code, 0);
+                break;}
             case AST_At:
                 compile_constant(nodes[i]->value, c); // var name
                 compile_expr(nodes[i]->left, c); // index
@@ -557,6 +583,7 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 var->value = value;
                 break;}
+            case OP_START_IF:
             case OP_JUMP_IF_FALSE:{
                 Value val = stack_pop;
                 if (!val.val.num) {
