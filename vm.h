@@ -440,6 +440,7 @@ void run(VM *vm) {
                     printf("%ld\n", print.val.num);
                 } else if (print.type == Value_String) {
                     printf("%s\n", print.val.str);
+                    if (print.mutable == true) free(print.val.str);
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
                 }   else if (print.type == Value_Identifier) {
@@ -480,16 +481,20 @@ void run(VM *vm) {
                 } else {
                     char *str1;
                     char *str2;
-                    int64_t op1_len;
-                    int64_t op2_len;
+                    int64_t op1_len = 0;
+                    int64_t op2_len = 0;
 
-                    if (op1.type == Value_String) str1 = op1.val.str;
-                    else if (op1.type == Value_Number) {
+                    if (op1.type == Value_String) {
+                        op1_len = strlen(op1.val.str);
+                        str1 = op1.val.str;
+                    } else if (op1.type == Value_Number) {
                         op1_len = num_len(op1.val.num);
                         str1 = format_str(op1_len + 1, "%ld", op1.val.num);
                     }
-                    if (op2.type == Value_String) str2 = op2.val.str;
-                    else if (op2.type == Value_Number) {
+                    if (op2.type == Value_String) {
+                        op2_len = strlen(op2.val.str);
+                        str2 = op2.val.str;
+                    } else if (op2.type == Value_Number) {
                         op2_len = num_len(op2.val.num);
                         str2 = format_str(op2_len + 1, "%ld", op2.val.num);
                     }
@@ -500,6 +505,9 @@ void run(VM *vm) {
                         true,
                         0
                     }));
+
+                    if (op1.type == Value_Number) free(str1);
+                    if (op2.type == Value_Number) free(str2);
                 }
                 break;
             case OP_SUBTRACT:
