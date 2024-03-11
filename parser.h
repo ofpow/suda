@@ -157,7 +157,7 @@ typedef struct Parser {
 
     Jump_Indices jumps;
 
-    Function_Array funcs;
+    AST_Function_Array funcs;
 
     bool parsing_function;
 } Parser;
@@ -238,7 +238,7 @@ void free_node(Node *n) {
         ERR("ERROR in %s on line %ld: not everything freed correctly\n", n->file, n->line)
 }
 
-void free_function(AST_Function *func) {
+void free_ast_function(AST_Function *func) {
     for (int i = 0; i < func->nodes.index; i++) free_node(func->nodes.data[i]);
     for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
     free(func->args);

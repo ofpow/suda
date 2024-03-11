@@ -30,7 +30,7 @@ typedef struct AST_Function {
     int64_t line;
 } AST_Function;
 
-define_array(Function_Array, AST_Function*);
+define_array(AST_Function_Array, AST_Function*);
 
 typedef struct Interpreter {
     Node_Array nodes;
@@ -41,7 +41,7 @@ typedef struct Interpreter {
 
     Map *local_vars;
 
-    Function_Array funcs;
+    AST_Function_Array funcs;
 
     bool auto_jump;
 } Interpreter;

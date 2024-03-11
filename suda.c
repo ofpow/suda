@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
         10,
     };
     
-    p->funcs = (Function_Array){
+    p->funcs = (AST_Function_Array){
         calloc(10, sizeof(AST_Function*)),
         0,
         10,

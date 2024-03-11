@@ -1,6 +1,6 @@
 #pragma once
 
-AST_Function *get_func(Function_Array *funcs, char *func_name, int64_t line) {
+AST_Function *get_func(AST_Function_Array *funcs, char *func_name, int64_t line) {
     for (int i = 0; i < funcs->index; i++) {
         if (!strcmp(funcs->data[i]->name, func_name)) return funcs->data[i];
     }
@@ -8,7 +8,7 @@ AST_Function *get_func(Function_Array *funcs, char *func_name, int64_t line) {
     return NULL;
 }
 
-int check_func(Function_Array *funcs, char *func_name) {
+int check_func(AST_Function_Array *funcs, char *func_name) {
     for (int i = 0; i < funcs->index; i++) {
         if (!strcmp(funcs->data[i]->name, func_name)) return i;
     }
