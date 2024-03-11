@@ -19,7 +19,7 @@ typedef struct Node {
 
 define_array(Node_Array, Node*);
 
-typedef struct Function {
+typedef struct AST_Function {
     char *name;
 
     Node_Array nodes;
@@ -28,9 +28,9 @@ typedef struct Function {
     AST_Value **args;
 
     int64_t line;
-} Function;
+} AST_Function;
 
-define_array(Function_Array, Function*);
+define_array(Function_Array, AST_Function*);
 
 typedef struct Interpreter {
     Node_Array nodes;

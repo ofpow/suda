@@ -56,11 +56,11 @@
     X(AST_Array)\
     X(AST_At)\
     X(AST_Is_Equal)\
-    X(AST_Function)\
+    X(AST_Fn)\
     X(AST_Comma)\
     X(AST_Right_Paren)\
     X(AST_Return)\
-    X(AST_Function_Call)\
+    X(AST_Fn_Call)\
     X(AST_Len)\
     X(AST_Break)\
     X(AST_Exit)\
@@ -136,7 +136,7 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
         case Tok_Continue: return AST_Continue;
         case Tok_Semicolon: return AST_Semicolon;
         case Tok_Else: return AST_Else;
-        case Tok_Function: return AST_Function;
+        case Tok_Function: return AST_Fn;
         case Tok_Elif: return AST_Elif;
         case Tok_Println: return AST_Println;
         case Tok_For: return AST_For;
@@ -238,7 +238,7 @@ void free_node(Node *n) {
         ERR("ERROR in %s on line %ld: not everything freed correctly\n", n->file, n->line)
 }
 
-void free_function(Function *func) {
+void free_function(AST_Function *func) {
     for (int i = 0; i < func->nodes.index; i++) free_node(func->nodes.data[i]);
     for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
     free(func->args);
@@ -325,7 +325,7 @@ Node *expr(Parser *p, Node *child) {
                 }
                 return n;
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
-                n = new_node(AST_Function_Call, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                n = new_node(AST_Fn_Call, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 n->value = new_ast_value(Value_String, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, 0);
                 n->func_args = calloc(10, sizeof(Node*));
                 n->func_args_index = 0;

@@ -1,6 +1,6 @@
 #pragma once
 
-#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Function || type == AST_Function_Call || type == AST_Len || type == AST_Cast_Num || type == AST_Cast_Str || type == AST_Array))
+#define AST_IS_EVALUATABLE(type) ((type == AST_Literal || IS_AST_MATH_OP(type) || type == AST_Identifier || type == AST_At || type == AST_Fn || type == AST_Fn_Call || type == AST_Len || type == AST_Cast_Num || type == AST_Cast_Str || type == AST_Array))
 
 #define do_op(op) do {                                          \
     result = NUM(op1->value) op NUM(op2->value);                \
@@ -67,7 +67,7 @@ char *format_array(AST_Value *array) {
 AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable);
 
 AST_Value *call_function(Interpreter *interpreter, Node *n) {
-    Function *func = get_func(&interpreter->funcs, n->value->value, n->line);
+    AST_Function *func = get_func(&interpreter->funcs, n->value->value, n->line);
 
     char *call_info;
     if (call_stack != NULL) {
@@ -426,7 +426,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
             } else ERR("ERROR in %s on line %ld: Can't evaluate %s as part of array\n", n->file, n->line, find_value_type(var->value[index].type))
             break;
         }
-        case AST_Function_Call:
+        case AST_Fn_Call:
             return call_function(interpreter, n);
         case AST_Len:{
             ASSERT((n->left->value->type == Value_Array || n->left->value->type == Value_String || n->left->value->type == Value_Identifier || n->left->value->type == Value_Number), "ERROR in %s on line %ld: cant do len on value type %s\n", n->file, n->line, find_value_type(n->left->value->type))
@@ -663,7 +663,7 @@ AST_Value *do_statement(Node *n, Interpreter *interpreter) {
             break;}
         case AST_Return:
             return eval_node(n->left, interpreter, 1);
-        case AST_Function_Call:;
+        case AST_Fn_Call:;
             AST_Value *result = call_function(interpreter, n);
             if (result == NULL) break;
             if (result->mutable) free_ast_value(result);

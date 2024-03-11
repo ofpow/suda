@@ -304,13 +304,13 @@ int main(int argc, char *argv[]) {
     };
     
     p->funcs = (Function_Array){
-        calloc(10, sizeof(Function*)),
+        calloc(10, sizeof(AST_Function*)),
         0,
         10,
     };
 
     //variables to store main state when parsing a function
-    Function *func;
+    AST_Function *func;
     int64_t temp_nodes_capacity;
     int64_t temp_nodes_index;
     Node **temp_nodes = NULL;
@@ -387,9 +387,9 @@ int main(int argc, char *argv[]) {
                 }
             }
             if (n->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use continue outside a while loop\n", n->file, n->line)
-        } else if (n->type == AST_Function) {
+        } else if (n->type == AST_Fn) {
             free_node(n);
-            func = calloc(1, sizeof(Function));
+            func = calloc(1, sizeof(AST_Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
             func->line = CURRENT_TOK.line;
             if (check_func(&p->funcs, func->name) > 0) ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
