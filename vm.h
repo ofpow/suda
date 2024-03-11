@@ -14,8 +14,6 @@
 #define binary_op(op, msg) do {                                                                                                    \
     Value op2 = stack_pop;                                                                                                         \
     Value op1 = stack_pop;                                                                                                         \
-    if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value; \
-    if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value; \
     if (op1.type == Value_Number && op2.type == Value_Number) {                                                                    \
         stack_push(((Value) {                                                                                                      \
             Value_Number,                                                                                                          \
@@ -31,6 +29,8 @@ break                                                                           
     X(OP_CONSTANT)\
     X(OP_PRINTLN)\
     X(OP_DEFINE_VARIABLE)\
+    X(OP_SET_VARIABLE)\
+    X(OP_GET_VARIABLE)\
     X(OP_ADD)\
     X(OP_SUBTRACT)\
     X(OP_MULTIPLY)\
@@ -44,7 +44,6 @@ break                                                                           
     X(OP_OR)\
     X(OP_NOT)\
     X(OP_NOT_EQUAL)\
-    X(OP_SET_VARIABLE)\
     X(OP_JUMP_IF_FALSE)\
     X(OP_JUMP)\
     X(OP_ARRAY)\
@@ -220,6 +219,9 @@ void disassemble(VM *vm) {
             case OP_SET_VARIABLE:
                 printf("%-6d OP_SET_VARIABLE \n", i);
                 break;
+            case OP_GET_VARIABLE:
+                printf("%-6d OP_GET_VARIABLE \n", i);
+                break;
             case OP_JUMP_IF_FALSE:
                 printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
                 i += 2;
@@ -261,6 +263,7 @@ void compile_expr(Node *n, Compiler *c) {
             break;
         case AST_Identifier:
             compile_constant(n->value, c);
+            append_new(c->code, OP_GET_VARIABLE);
             break;
         case AST_Add:
         case AST_Sub:
@@ -443,15 +446,6 @@ void run(VM *vm) {
                     if (print.mutable == true) free(print.val.str);
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
-                }   else if (print.type == Value_Identifier) {
-                    Variable *val = get_entry(vm->vars->entries, vm->vars->capacity, print.hash)->value;
-                    if (val->value.type == Value_Number)
-                        printf("%ld\n", val->value.val.num);
-                    else if (val->value.type == Value_String)
-                        printf("%s\n", val->value.val.str);
-                    else if (val->value.type == Value_Array)
-                        print_array(vm, &val->value);
-                    else ERR("cant print type %d\n", val->value.type)
                 } else
                     ERR("cant print type %d\n", print.type)
                 break;
@@ -467,9 +461,6 @@ void run(VM *vm) {
             case OP_ADD:;
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
-
-                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
-                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
 
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
@@ -542,9 +533,6 @@ void run(VM *vm) {
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
 
-                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
-                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
-
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
                         Value_Number,
@@ -564,9 +552,6 @@ void run(VM *vm) {
             case OP_IS_EQUAL: {
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
-
-                if (op1.type == Value_Identifier) op1 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op1.hash)->value)->value;
-                if (op2.type == Value_Identifier) op2 = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, op2.hash)->value)->value;
 
                 if (op1.type == Value_Number && op2.type == Value_Number) {
                     stack_push(((Value) {
@@ -630,6 +615,10 @@ void run(VM *vm) {
                 int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
                 vm->arrays.data[var_index][index.val.num] = new_val;
 
+                break;}
+            case OP_GET_VARIABLE:{
+                Value var_name = stack_pop;
+                stack_push(((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value);
                 break;}
             default: ERR("cant do op %d\n", vm->code.data[i])
         }
