@@ -1,3 +1,5 @@
-let x = 42
+if 0
+    println 5
+;
 
-println x
+println "done"
