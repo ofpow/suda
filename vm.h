@@ -54,6 +54,7 @@ break                                                                           
     X(OP_SET_ELEMENT)\
     X(OP_START_IF)\
     X(OP_POP)\
+    X(OP_LEN)\
 
 typedef enum {
 #define X(x) x,
@@ -273,6 +274,9 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])); 
                 i += 2;
                 break;
+            case OP_LEN:
+                printf("%-6d OP_LEN\n", i);
+                break;
             default:
                 ERR("cant disassemble op type %d\n", vm->code.data[i]);
         }
@@ -375,6 +379,10 @@ void compile_expr(Node *n, Compiler *c) {
             compile_constant(n->value, c); //var name
             append_new(c->code, OP_GET_ELEMENT);
             break;}
+        case AST_Len:
+            compile_expr(n->left, c);
+            append_new(c->code, OP_LEN);
+            break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
 }
@@ -717,7 +725,16 @@ void run(VM *vm) {
                 vm->stack_top -= COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
                 i += 2;
                 break;
-            default: ERR("cant do op %s\n", find_op_code(vm->code.data[i]))
+            case OP_LEN:;
+                Value array = stack_pop;
+                stack_push(((Value) {
+                    Value_Number,      
+                    .val.num=vm->arrays.data[array.val.num][0].val.num - 1,   
+                    false,            
+                    0                 
+                }));                  
+                break;
+            default: ERR("cant do %s\n", find_op_code(vm->code.data[i]))
         }
     }
 }
