@@ -1,6 +1,7 @@
 #pragma once
 
 #define STACK_SIZE 16384
+#define LOCALS_MAX (STACK_SIZE / 4)
 
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
@@ -28,9 +29,11 @@ break                                                                           
 #define ops \
     X(OP_CONSTANT)\
     X(OP_PRINTLN)\
-    X(OP_DEFINE_VARIABLE)\
-    X(OP_SET_VARIABLE)\
-    X(OP_GET_VARIABLE)\
+    X(OP_DEFINE_GLOBAL)\
+    X(OP_SET_GLOBAL)\
+    X(OP_GET_GLOBAL)\
+    X(OP_SET_LOCAL)\
+    X(OP_GET_LOCAL)\
     X(OP_ADD)\
     X(OP_SUBTRACT)\
     X(OP_MULTIPLY)\
@@ -50,6 +53,7 @@ break                                                                           
     X(OP_GET_ELEMENT)\
     X(OP_SET_ELEMENT)\
     X(OP_START_IF)\
+    X(OP_POP)\
 
 typedef enum {
 #define X(x) x,
@@ -70,7 +74,7 @@ Op_Code ast_to_op_code(AST_Type type) {
     switch (type) {
         case AST_Literal: return OP_CONSTANT;
         case AST_Println: return OP_PRINTLN;
-        case AST_Var_Assign: return OP_DEFINE_VARIABLE;
+        case AST_Var_Assign: return OP_DEFINE_GLOBAL;
         case AST_Add: return OP_ADD;
         case AST_Sub: return OP_SUBTRACT;
         case AST_Mult: return OP_MULTIPLY;
@@ -93,6 +97,11 @@ define_array(Code, u_int8_t);
 define_array(Constants, Value);
 define_array(Arrays, Value*);
 
+typedef struct Local {
+    AST_Value *name;
+    int depth;
+} Local;
+
 typedef struct Compiler {
     Jump_Indices if_indices;
     Jump_Indices while_indices;
@@ -102,6 +111,10 @@ typedef struct Compiler {
     Constants constants;
 
     Arrays arrays;
+
+    Local locals[LOCALS_MAX];
+    int locals_count;
+    int64_t depth;
 } Compiler;
 
 typedef struct VM {
@@ -116,6 +129,20 @@ typedef struct VM {
     Value stack[STACK_SIZE];
     Value *stack_top;
 } VM;
+
+u_int16_t resolve_local(AST_Value *name, Compiler *c) {
+    for (int i = c->locals_count - 1; i >= 0; i--) {
+        if (ast_value_equal(name, c->locals[i].name)) return i;
+    }
+    return 0;
+}
+
+bool is_local(AST_Value *name, Compiler *c) {
+    for (int i = c->locals_count - 1; i >= 0; i--) {
+        if (ast_value_equal(name, c->locals[i].name)) return true;
+    }
+    return false;
+}
 
 void print_array(VM *vm, Value *val) {
     Value *array = vm->arrays.data[val->val.num];
@@ -174,8 +201,8 @@ void disassemble(VM *vm) {
             case OP_PRINTLN:
                 printf("%-6d OP_PRINTLN\n", i);
                 break;
-            case OP_DEFINE_VARIABLE:
-                printf("%-6d OP_DEFINE_VARIABLE\n", i);
+            case OP_DEFINE_GLOBAL:
+                printf("%-6d OP_DEFINE_GLOBAL\n", i);
                 break;
             case OP_ADD:
                 printf("%-6d OP_ADD\n", i);
@@ -216,11 +243,11 @@ void disassemble(VM *vm) {
             case OP_NOT_EQUAL:
                 printf("%-6d OP_NOT_EQUAL\n", i);
                 break;
-            case OP_SET_VARIABLE:
-                printf("%-6d OP_SET_VARIABLE \n", i);
+            case OP_SET_GLOBAL:
+                printf("%-6d OP_SET_GLOBAL \n", i);
                 break;
-            case OP_GET_VARIABLE:
-                printf("%-6d OP_GET_VARIABLE \n", i);
+            case OP_GET_GLOBAL:
+                printf("%-6d OP_GET_GLOBAL \n", i);
                 break;
             case OP_JUMP_IF_FALSE:
                 printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
@@ -232,6 +259,18 @@ void disassemble(VM *vm) {
                 break;
             case OP_JUMP:
                 printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
+            case OP_SET_LOCAL:
+                printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
+            case OP_GET_LOCAL:
+                printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                i += 2;
+                break;
+            case OP_POP:
+                printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])); 
                 i += 2;
                 break;
             default:
@@ -262,8 +301,16 @@ void compile_expr(Node *n, Compiler *c) {
             compile_constant(n->value, c);
             break;
         case AST_Identifier:
-            compile_constant(n->value, c);
-            append_new(c->code, OP_GET_VARIABLE);
+            if (is_local(n->value, c)) {
+                u_int16_t index = resolve_local(n->value, c);
+
+                append_new(c->code, OP_GET_LOCAL);
+                append_new(c->code, FIRST_BYTE(index));
+                append_new(c->code, SECOND_BYTE(index));
+            } else {
+                compile_constant(n->value, c); // name
+                append_new(c->code, OP_GET_GLOBAL);
+            }
             break;
         case AST_Add:
         case AST_Sub:
@@ -340,14 +387,38 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_new(c->code, OP_PRINTLN);
                 break;
             case AST_Var_Assign:
-                compile_constant(nodes[i]->value, c); // name
                 compile_expr(nodes[i]->left, c); // value
-                append_new(c->code, OP_DEFINE_VARIABLE);
+                
+                if (c->depth > 0) {
+                    if (c->locals_count > LOCALS_MAX) ERR("too many local vars\n")
+                    
+                    for (int i = c->locals_count - 1; i >= 0; i--) {
+                        if (c->locals[i].depth != -1 && c->locals[i].depth < c->depth) break;
+
+                        if (ast_value_equal(c->locals[i].name, nodes[i]->value)) ERR("cant redefine local variable %s\n", STR(nodes[i]->value->value))
+                    }
+
+                    c->locals[c->locals_count].name = nodes[i]->value;
+                    c->locals[c->locals_count].depth = c->depth;
+                    c->locals_count++;
+                } else {
+                    compile_constant(nodes[i]->value, c); // name
+                    append_new(c->code, OP_DEFINE_GLOBAL);
+                }
                 break;
             case AST_Identifier:
-                compile_constant(nodes[i]->value, c); // name
                 compile_expr(nodes[i]->left, c); // value
-                append_new(c->code, OP_SET_VARIABLE);
+                
+                if (is_local(nodes[i]->value, c)) {
+                    u_int16_t index = resolve_local(nodes[i]->value, c);
+
+                    append_new(c->code, OP_SET_LOCAL);
+                    append_new(c->code, FIRST_BYTE(index));
+                    append_new(c->code, SECOND_BYTE(index));
+                } else {
+                    compile_constant(nodes[i]->value, c); // name
+                    append_new(c->code, OP_SET_GLOBAL);
+                }
                 break;
             case AST_If:
                 compile_expr(nodes[i]->left, c);
@@ -357,6 +428,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_new(c->code, OP_START_IF);
                 append_new(c->code, 0);
                 append_new(c->code, 0);
+
+                c->depth++;
                 break;
             case AST_While:
                 append_new(c->while_indices, c->code.index);
@@ -366,8 +439,20 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_new(c->code, OP_JUMP_IF_FALSE);
                 append_new(c->code, 0);
                 append_new(c->code, 0);
+                c->depth++;
                 break;
             case AST_Semicolon:;
+                c->depth--;
+
+                u_int16_t amount = 0;
+                while(c->locals_count > 0 && c->locals[c->locals_count - 1].depth > c->depth) { amount++; c->locals_count--; }
+
+                if (amount > 0) {
+                    append_new(c->code, OP_POP);
+                    append_new(c->code, FIRST_BYTE(amount));
+                    append_new(c->code, SECOND_BYTE(amount));
+                }
+
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
                     u_int16_t index = c->while_indices.data[--c->while_indices.index];
                     u_int16_t x = c->code.index + 3 - index;
@@ -447,11 +532,11 @@ void run(VM *vm) {
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
                 } else
-                    ERR("cant print type %d\n", print.type)
+                    ERR("cant print type %s\n", find_value_type(print.type))
                 break;
-            case OP_DEFINE_VARIABLE:;
-                Value value = stack_pop;
+            case OP_DEFINE_GLOBAL:;
                 Value name = stack_pop;
+                Value value = stack_pop;
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str;
                 var->value = value;
@@ -569,9 +654,9 @@ void run(VM *vm) {
                     }));
                 } else ERR("cant is equal type %s and %s\n", find_value_type(op1.type), find_value_type(op2.type))
                 break;}
-            case OP_SET_VARIABLE:{
-                Value value = stack_pop;
+            case OP_SET_GLOBAL:{
                 Value name = stack_pop;
+                Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 var->value = value;
@@ -616,11 +701,23 @@ void run(VM *vm) {
                 vm->arrays.data[var_index][index.val.num] = new_val;
 
                 break;}
-            case OP_GET_VARIABLE:{
+            case OP_GET_GLOBAL:{
                 Value var_name = stack_pop;
                 stack_push(((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value);
                 break;}
-            default: ERR("cant do op %d\n", vm->code.data[i])
+            case OP_GET_LOCAL: {
+                stack_push(vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])]);
+                i += 2;
+                break;}
+            case OP_SET_LOCAL: {
+                vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])] = stack_pop;
+                i += 2;
+                break;}
+            case OP_POP:
+                vm->stack_top -= COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
+                i += 2;
+                break;
+            default: ERR("cant do op %s\n", find_op_code(vm->code.data[i]))
         }
     }
 }

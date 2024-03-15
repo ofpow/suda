@@ -143,7 +143,7 @@ void print_map(Map *map) {
 }
 
 Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
-    u_int32_t index = key % capacity;
+    u_int32_t index = key & (capacity - 1);
     Entry *tombstone = NULL;
 
     while (1) {
@@ -157,7 +157,7 @@ Entry *get_entry(Entry *entries, int64_t capacity, u_int32_t key) {
         } else if (entry->key == key) {
             return entry;
         }
-        index = (index + 1) % capacity;
+        index = (index + 1) & (capacity - 1);
     }
 }
 

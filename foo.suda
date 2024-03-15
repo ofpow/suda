@@ -1,5 +1,5 @@
-if 0
-    println 5
+if 1
+    let i = 1
+    i = (i + 1)
+    println i
 ;
-
-println "done"

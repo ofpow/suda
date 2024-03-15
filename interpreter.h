@@ -11,6 +11,16 @@
     return new_ast_value(Value_Number, dup_int(result), 1, 0);  \
 } while (0);                                             
 
+bool ast_value_equal(AST_Value *val1, AST_Value *val2) {
+    if (val1->type == Value_Number && val2->type == Value_Number) {
+        return (NUM(val1->value) == NUM(val2->value));
+    } else if (val1->type == Value_String && val2->type == Value_String) {
+        return (!strcmp(STR(val1->value), STR(val2->value)));
+    } else if (val1->type == Value_Identifier && val2->type == Value_Identifier) {
+        return (!strcmp(STR(val1->value), STR(val2->value)));
+    } else return false;
+}
+
 int exponentiate(int base, int64_t power) {
     int64_t result = 1;
 
