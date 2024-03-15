@@ -55,6 +55,8 @@ break                                                                           
     X(OP_START_IF)\
     X(OP_POP)\
     X(OP_LEN)\
+    X(OP_CAST_STR)\
+    X(OP_CAST_NUM)\
 
 typedef enum {
 #define X(x) x,
@@ -277,6 +279,12 @@ void disassemble(VM *vm) {
             case OP_LEN:
                 printf("%-6d OP_LEN\n", i);
                 break;
+            case OP_CAST_STR:
+                printf("%-6d OP_CAST_STR\n", i);
+                break;
+            case OP_CAST_NUM:
+                printf("%-6d OP_CAST_NUM\n", i);
+                break;
             default:
                 ERR("cant disassemble op type %d\n", vm->code.data[i]);
         }
@@ -382,6 +390,14 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Len:
             compile_expr(n->left, c);
             append_new(c->code, OP_LEN);
+            break;
+        case AST_Cast_Str:
+            compile_expr(n->left, c);
+            append_new(c->code, OP_CAST_STR);
+            break;
+        case AST_Cast_Num:
+            compile_expr(n->left, c);
+            append_new(c->code, OP_CAST_NUM);
             break;
         default: ERR("cant handle node type %s\n", find_ast_type(n->type));
     }
@@ -667,6 +683,7 @@ void run(VM *vm) {
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
+                if (var == NULL) ERR("tried to set nonexistent global %s\n", name.val.str)
                 var->value = value;
                 break;}
             case OP_START_IF:
@@ -711,10 +728,24 @@ void run(VM *vm) {
                 break;}
             case OP_GET_GLOBAL:{
                 Value var_name = stack_pop;
-                stack_push(((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value);
+                Value val = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value;
+                if (val.type == Value_String && val.mutable) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=val.val.str,
+                    false,
+                    0
+                }));
+                else stack_push(val);
                 break;}
             case OP_GET_LOCAL: {
-                stack_push(vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])]);
+                Value val = vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])];
+                if (val.type == Value_String && val.mutable) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=val.val.str,
+                    false,
+                    0
+                }));
+                else stack_push(val);
                 i += 2;
                 break;}
             case OP_SET_LOCAL: {
@@ -732,8 +763,30 @@ void run(VM *vm) {
                     .val.num=vm->arrays.data[array.val.num][0].val.num - 1,   
                     false,            
                     0                 
-                }));                  
+                }));                 
                 break;
+            case OP_CAST_STR:{
+                Value val = stack_pop;
+                if (val.type == Value_String) stack_push(val);
+                else if (val.type == Value_Number) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=format_str(num_len(val.val.num), "%ld", val.val.num),
+                    true,
+                    0
+                }));
+                else ERR("cant cast type %s as string\n", find_value_type(val.type))
+                break;}
+            case OP_CAST_NUM:{
+                Value val = stack_pop;
+                if (val.type == Value_Number) stack_push(val);
+                else if (val.type == Value_String) stack_push(((Value) {
+                    Value_Number,
+                    .val.num=strtoint(val.val.str, strlen(val.val.str)),
+                    false,
+                    0
+                }));
+                else ERR("cant cast type %s as number\n", find_value_type(val.type))
+                break;}
             default: ERR("cant do %s\n", find_op_code(vm->code.data[i]))
         }
     }
