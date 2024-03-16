@@ -490,11 +490,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 } else {
                     while (1) {
                         u_int16_t index = c->if_indices.data[--c->if_indices.index];
+                        if (c->code.data[index] == OP_START_IF) break;
                         u_int16_t offset = c->code.index - index;
                         if (c->code.data[index] == OP_JUMP) offset += index;
                         c->code.data[index + 1] = FIRST_BYTE(offset);
                         c->code.data[index + 2] = SECOND_BYTE(offset);
-                        if (c->code.data[index] == OP_START_IF) break;
                     }
                 }
                 break;
