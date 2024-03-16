@@ -6,6 +6,7 @@
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
+#define read_index (COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]))
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
     *vm->stack_top = (_val);  \
@@ -542,7 +543,7 @@ void run(VM *vm) {
         debug("%-6d %s\n", i, find_op_code(vm->code.data[i]));
         switch (vm->code.data[i]) {
             case OP_CONSTANT:;
-                u_int16_t index = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
+                u_int16_t index = read_index;
                 stack_push(vm->constants.data[index]);
                 i += 2;
                 break;
@@ -690,16 +691,16 @@ void run(VM *vm) {
             case OP_JUMP_IF_FALSE:{
                 Value val = stack_pop;
                 if (!val.val.num) {
-                    i += COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
+                    i += read_index - 1;
                 } else {
                     i += 2;
                 }
                 break;}
             case OP_JUMP:
-                i = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]) - 1;
+                i = read_index - 1;
                 break;
             case OP_ARRAY:{
-                u_int16_t index = COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
+                u_int16_t index = read_index;
                 stack_push(((Value) {
                     Value_Array,      
                     .val.num=index,   
@@ -738,7 +739,7 @@ void run(VM *vm) {
                 else stack_push(val);
                 break;}
             case OP_GET_LOCAL: {
-                Value val = vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])];
+                Value val = vm->stack[read_index];
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,
@@ -749,11 +750,11 @@ void run(VM *vm) {
                 i += 2;
                 break;}
             case OP_SET_LOCAL: {
-                vm->stack[COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])] = stack_pop;
+                vm->stack[read_index] = stack_pop;
                 i += 2;
                 break;}
             case OP_POP:
-                vm->stack_top -= COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]);
+                vm->stack_top -= read_index;
                 i += 2;
                 break;
             case OP_LEN:;
