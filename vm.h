@@ -794,7 +794,7 @@ void run(VM *vm) {
                 if (val.type == Value_String) stack_push(val);
                 else if (val.type == Value_Number) stack_push(((Value) {
                     Value_String, 
-                    .val.str=format_str(num_len(val.val.num), "%ld", val.val.num),
+                    .val.str=format_str(num_len(val.val.num) + 1, "%ld", val.val.num),
                     true,
                     0
                 }));
