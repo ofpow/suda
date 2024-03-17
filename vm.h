@@ -534,7 +534,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
             case AST_At:
                 compile_constant(nodes[i]->value, c); // var name
                 compile_expr(nodes[i]->left, c); // index
-                compile_expr(nodes[i]->right, c); // new value
+                if (nodes[i]->right) {// new value
+                    compile_expr(nodes[i]->right, c); 
+                } else {
+                    compile_expr(nodes[i]->left->left, c);
+                }
                 append_new(c->code, OP_SET_ELEMENT);
                 break;
             default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
