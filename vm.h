@@ -449,7 +449,6 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c);
 
                 append_new(c->if_indices, c->code.index);
-                append_new(c->if_indices, c->code.index);
                 append_new(c->code, OP_START_IF);
                 append_new(c->code, 0);
                 append_new(c->code, 0);
@@ -488,14 +487,19 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_new(c->code, OP_JUMP);
                     append_new(c->code, FIRST_BYTE(index));
                     append_new(c->code, SECOND_BYTE(index));
+                } else if (nodes[nodes[i]->jump_index]->type == AST_If || nodes[nodes[i]->jump_index]->type == AST_Elif) {
+                    u_int16_t index = c->if_indices.data[--c->if_indices.index];
+
+                    c->code.data[index + 1] = FIRST_BYTE(c->code.index);
+                    c->code.data[index + 2] = SECOND_BYTE(c->code.index);
                 } else {
                     while (1) {
+                        if (c->if_indices.index < 1) break;
                         u_int16_t index = c->if_indices.data[--c->if_indices.index];
                         if (c->code.data[index] == OP_START_IF) break;
-                        u_int16_t offset = c->code.index - index;
-                        if (c->code.data[index] == OP_JUMP) offset += index;
-                        c->code.data[index + 1] = FIRST_BYTE(offset);
-                        c->code.data[index + 2] = SECOND_BYTE(offset);
+                        else if (c->code.data[index] == OP_JUMP_IF_FALSE) continue;
+                        c->code.data[index + 1] = FIRST_BYTE(FIRST_BYTE(c->code.index));
+                        c->code.data[index + 2] = SECOND_BYTE(SECOND_BYTE(c->code.index));
                     }
                 }
                 break;
