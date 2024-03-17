@@ -1,5 +1,3 @@
-let x = [1, 2, 4]
-let i = 3
-x@i = 0
+println "working"
 
-println x
+println (5 - "str")

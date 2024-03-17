@@ -461,6 +461,11 @@ int main(int argc, char *argv[]) {
             0,
             10,
         };
+        c.locs = (Locations){
+            calloc(10, sizeof(Location)),
+            0,
+            10,
+        };
 
         vm.stack_top = vm.stack;
 
@@ -472,6 +477,7 @@ int main(int argc, char *argv[]) {
         vm.code = c.code;
         vm.constants = c.constants;
         vm.arrays = c.arrays;
+        vm.locs = c.locs;
 
         if (disassembly) disassemble(&vm);
         else run(&vm);

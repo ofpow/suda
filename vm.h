@@ -7,25 +7,29 @@
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
 #define read_index (COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]))
+#define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
+#define make_loc(_file, _line) ((Location){ _file, _line })
+#define append_code(_code, _loc) append_new(c->code, _code); append_new(c->locs, _loc)
+#define get_loc vm->locs.data[i].file, vm->locs.data[i].line
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
     *vm->stack_top = (_val);  \
     vm->stack_top++;          \
 } while (0)                   \
 
-#define binary_op(op, msg) do {                                                                                                    \
-    Value op2 = stack_pop;                                                                                                         \
-    Value op1 = stack_pop;                                                                                                         \
-    if (op1.type == Value_Number && op2.type == Value_Number) {                                                                    \
-        stack_push(((Value) {                                                                                                      \
-            Value_Number,                                                                                                          \
-            .val.num=(op1.val.num op op2.val.num),                                                                                 \
-            false,                                                                                                                 \
-            0                                                                                                                      \
-        }));                                                                                                                       \
-    } else ERR(msg, find_value_type(op1.type), find_value_type(op2.type))                                                          \
-} while (0);                                                                                                                       \
-break                                                                                                                              \
+#define binary_op(op, msg) do {                                                     \
+    Value op2 = stack_pop;                                                          \
+    Value op1 = stack_pop;                                                          \
+    if (op1.type == Value_Number && op2.type == Value_Number) {                     \
+        stack_push(((Value) {                                                       \
+            Value_Number,                                                           \
+            .val.num=(op1.val.num op op2.val.num),                                  \
+            false,                                                                  \
+            0                                                                       \
+        }));                                                                        \
+    } else ERR(msg, get_loc, find_value_type(op1.type), find_value_type(op2.type))  \
+} while (0);                                                                        \
+break                                                                               \
 
 #define ops \
     X(OP_CONSTANT)\
@@ -101,6 +105,13 @@ define_array(Code, u_int8_t);
 define_array(Constants, Value);
 define_array(Arrays, Value*);
 
+typedef struct Location {
+    const char *file;
+    int64_t line;
+} Location;
+
+define_array(Locations, Location);
+
 typedef struct Local {
     AST_Value *name;
     int depth;
@@ -111,6 +122,7 @@ typedef struct Compiler {
     Jump_Indices while_indices;
 
     Code code;
+    Locations locs;
 
     Constants constants;
 
@@ -123,6 +135,7 @@ typedef struct Compiler {
 
 typedef struct VM {
     Code code;
+    Locations locs;
 
     Constants constants;
 
@@ -287,42 +300,42 @@ void disassemble(VM *vm) {
                 printf("%-6d OP_CAST_NUM\n", i);
                 break;
             default:
-                ERR("cant disassemble op type %d\n", vm->code.data[i]);
+                ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->code.data[i]);
         }
     }
 }
 
-void compile_constant(AST_Value *value, Compiler *c) {
-    if (value->type == Value_Number)
-        append_new(c->constants, ((Value){value->type, .val.num=NUM(value->value), false, 0}));
-    else if (value->type == Value_String)
-        append_new(c->constants, ((Value){value->type, .val.str=value->value, false, 0}));
-    else if (value->type == Value_Identifier)
-        append_new(c->constants, ((Value){value->type, .val.str=value->value, false, value->hash}));
+void compile_constant(Node *n, Compiler *c) {
+    if (n->value->type == Value_Number)
+        append_new(c->constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}));
+    else if (n->value->type == Value_String)
+        append_new(c->constants, ((Value){n->value->type, .val.str=n->value->value, false, 0}));
+    else if (n->value->type == Value_Identifier)
+        append_new(c->constants, ((Value){n->value->type, .val.str=n->value->value, false, n->value->hash}));
     else
-        ERR("cant compile constant of type %d\n", value->type)
+        ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->value->type)
 
     u_int16_t index = c->constants.index - 1;
-    append_new(c->code, OP_CONSTANT);
-    append_new(c->code, FIRST_BYTE(index));
-    append_new(c->code, SECOND_BYTE(index));
+    append_code(OP_CONSTANT, make_loc(n->file, n->line));
+    append_code(FIRST_BYTE(index), INVALID_LOC);
+    append_code(SECOND_BYTE(index), INVALID_LOC);
 }
 
 void compile_expr(Node *n, Compiler *c) {
     switch (n->type) {
         case AST_Literal:
-            compile_constant(n->value, c);
+            compile_constant(n, c);
             break;
         case AST_Identifier:
             if (is_local(n->value, c)) {
                 u_int16_t index = resolve_local(n->value, c);
 
-                append_new(c->code, OP_GET_LOCAL);
-                append_new(c->code, FIRST_BYTE(index));
-                append_new(c->code, SECOND_BYTE(index));
+                append_code(OP_GET_LOCAL, make_loc(n->file, n->line));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
             } else {
-                compile_constant(n->value, c); // name
-                append_new(c->code, OP_GET_GLOBAL);
+                compile_constant(n, c); // name
+                append_code(OP_GET_GLOBAL, make_loc(n->file, n->line));
             }
             break;
         case AST_Add:
@@ -339,11 +352,11 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Not_Equal:
             compile_expr(n->left, c);
             compile_expr(n->right, c);
-            append_new(c->code, ast_to_op_code(n->type));
+            append_code(ast_to_op_code(n->type), make_loc(n->file, n->line));
             break;
         case AST_Not:
             compile_expr(n->left, c);
-            append_new(c->code, OP_NOT);
+            append_code(OP_NOT, make_loc(n->file, n->line));
             break;
         case AST_Array:{
             int64_t array_len = NUM(n->value[0].value);
@@ -373,34 +386,34 @@ void compile_expr(Node *n, Compiler *c) {
                         array[i].hash = n->value[i].hash;
                         n->value[i].value = NULL;
                         break;
-                    default: ERR("cant do array type %s\n", find_value_type(n->value[i].type))
+                    default: ERR("ERROR in %s on line %ld: cant do array type %s\n", n->file, n->line, find_value_type(n->value[i].type))
                 }
             }
 
             append_new(c->arrays, array);
-            append_new(c->code, OP_ARRAY);
+            append_code(OP_ARRAY, make_loc(n->file, n->line));
             u_int16_t index = c->arrays.index - 1;
-            append_new(c->code, FIRST_BYTE(index));
-            append_new(c->code, SECOND_BYTE(index));
+            append_code(FIRST_BYTE(index), INVALID_LOC);
+            append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
         case AST_At:{
             compile_expr(n->left, c); // the index
-            compile_constant(n->value, c); //var name
-            append_new(c->code, OP_GET_ELEMENT);
+            compile_constant(n, c); //var name
+            append_code(OP_GET_ELEMENT, make_loc(n->file, n->line));
             break;}
         case AST_Len:
             compile_expr(n->left, c);
-            append_new(c->code, OP_LEN);
+            append_code(OP_LEN, make_loc(n->file, n->line));
             break;
         case AST_Cast_Str:
             compile_expr(n->left, c);
-            append_new(c->code, OP_CAST_STR);
+            append_code(OP_CAST_STR, make_loc(n->file, n->line));
             break;
         case AST_Cast_Num:
             compile_expr(n->left, c);
-            append_new(c->code, OP_CAST_NUM);
+            append_code(OP_CAST_NUM, make_loc(n->file, n->line));
             break;
-        default: ERR("cant handle node type %s\n", find_ast_type(n->type));
+        default: ERR("ERROR in %s on line %ld: cant compile node type %s as expr\n", n->file, n->line, find_ast_type(n->type));
     }
 }
 
@@ -409,26 +422,27 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
         switch (nodes[i]->type) {
             case AST_Println:
                 compile_expr(nodes[i]->left, c);
-                append_new(c->code, OP_PRINTLN);
+                append_code(OP_PRINTLN, make_loc(nodes[i]->file, nodes[i]->line));
                 break;
             case AST_Var_Assign:
                 compile_expr(nodes[i]->left, c); // value
                 
                 if (c->depth > 0) {
-                    if (c->locals_count > LOCALS_MAX) ERR("too many local vars\n")
+                    if (c->locals_count > LOCALS_MAX) ERR("ERROR in %s on line %ld: too many local vars\n", nodes[i]->file, nodes[i]->line)
                     
                     for (int i = c->locals_count - 1; i >= 0; i--) {
                         if (c->locals[i].depth != -1 && c->locals[i].depth < c->depth) break;
 
-                        if (ast_value_equal(c->locals[i].name, nodes[i]->value)) ERR("cant redefine local variable %s\n", STR(nodes[i]->value->value))
+                        if (ast_value_equal(c->locals[i].name, nodes[i]->value)) 
+                            ERR("ERROR in %s on line %ld: cant redefine local variable %s\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value))
                     }
 
                     c->locals[c->locals_count].name = nodes[i]->value;
                     c->locals[c->locals_count].depth = c->depth;
                     c->locals_count++;
                 } else {
-                    compile_constant(nodes[i]->value, c); // name
-                    append_new(c->code, OP_DEFINE_GLOBAL);
+                    compile_constant(nodes[i], c); // name
+                    append_code(OP_DEFINE_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
                 }
                 break;
             case AST_Identifier:
@@ -437,21 +451,21 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 if (is_local(nodes[i]->value, c)) {
                     u_int16_t index = resolve_local(nodes[i]->value, c);
 
-                    append_new(c->code, OP_SET_LOCAL);
-                    append_new(c->code, FIRST_BYTE(index));
-                    append_new(c->code, SECOND_BYTE(index));
+                    append_code(OP_SET_LOCAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 } else {
-                    compile_constant(nodes[i]->value, c); // name
-                    append_new(c->code, OP_SET_GLOBAL);
+                    compile_constant(nodes[i], c); // name
+                    append_code(OP_SET_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
                 }
                 break;
             case AST_If:
                 compile_expr(nodes[i]->left, c);
 
                 append_new(c->if_indices, c->code.index);
-                append_new(c->code, OP_START_IF);
-                append_new(c->code, 0);
-                append_new(c->code, 0);
+                append_code(OP_START_IF, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
 
                 c->depth++;
                 break;
@@ -460,9 +474,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c);
 
                 append_new(c->while_indices, c->code.index);
-                append_new(c->code, OP_JUMP_IF_FALSE);
-                append_new(c->code, 0);
-                append_new(c->code, 0);
+                append_code(OP_JUMP_IF_FALSE, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
                 c->depth++;
                 break;
             case AST_Semicolon:;
@@ -472,9 +486,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 while(c->locals_count > 0 && c->locals[c->locals_count - 1].depth > c->depth) { amount++; c->locals_count--; }
 
                 if (amount > 0) {
-                    append_new(c->code, OP_POP);
-                    append_new(c->code, FIRST_BYTE(amount));
-                    append_new(c->code, SECOND_BYTE(amount));
+                    append_code(OP_POP, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(FIRST_BYTE(amount), INVALID_LOC);
+                    append_code(SECOND_BYTE(amount), INVALID_LOC);
                 }
 
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
@@ -484,9 +498,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     c->code.data[index + 2] = SECOND_BYTE(x);
 
                     index = c->while_indices.data[--c->while_indices.index];
-                    append_new(c->code, OP_JUMP);
-                    append_new(c->code, FIRST_BYTE(index));
-                    append_new(c->code, SECOND_BYTE(index));
+                    append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If || nodes[nodes[i]->jump_index]->type == AST_Elif) {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
 
@@ -498,8 +512,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                         u_int16_t index = c->if_indices.data[--c->if_indices.index];
                         if (c->code.data[index] == OP_START_IF) break;
                         else if (c->code.data[index] == OP_JUMP_IF_FALSE) continue;
-                        c->code.data[index + 1] = FIRST_BYTE(FIRST_BYTE(c->code.index));
-                        c->code.data[index + 2] = SECOND_BYTE(SECOND_BYTE(c->code.index));
+                        c->code.data[index + 1] = FIRST_BYTE(c->code.index);
+                        c->code.data[index + 2] = SECOND_BYTE(c->code.index);
                     }
                 }
                 break;
@@ -509,9 +523,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 c->code.data[index + 1] = FIRST_BYTE(offset);
                 c->code.data[index + 2] = SECOND_BYTE(offset);
                 append_new(c->if_indices, c->code.index);
-                append_new(c->code, OP_JUMP);
-                append_new(c->code, 0);
-                append_new(c->code, 0);
+                append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
                 break;
             case AST_Elif:{
                 u_int16_t index = c->if_indices.data[--c->if_indices.index];
@@ -520,28 +534,28 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 c->code.data[index + 2] = SECOND_BYTE(offset);
 
                 append_new(c->if_indices, c->code.index);
-                append_new(c->code, OP_JUMP);
-                append_new(c->code, 0);
-                append_new(c->code, 0);
+                append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
                 
                 compile_expr(nodes[i]->left, c);
 
                 append_new(c->if_indices, c->code.index);
-                append_new(c->code, OP_JUMP_IF_FALSE);
-                append_new(c->code, 0);
-                append_new(c->code, 0);
+                append_code(OP_JUMP_IF_FALSE, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
                 break;}
             case AST_At:
-                compile_constant(nodes[i]->value, c); // var name
+                compile_constant(nodes[i], c); // var name
                 compile_expr(nodes[i]->left, c); // index
                 if (nodes[i]->right) {// new value
                     compile_expr(nodes[i]->right, c); 
                 } else {
                     compile_expr(nodes[i]->left->left, c);
                 }
-                append_new(c->code, OP_SET_ELEMENT);
+                append_code(OP_SET_ELEMENT, make_loc(nodes[i]->file, nodes[i]->line));
                 break;
-            default: ERR("cant compile node type %s\n", find_ast_type(nodes[i]->type))
+            default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }
     }
 }
@@ -565,7 +579,7 @@ void run(VM *vm) {
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
                 } else
-                    ERR("cant print type %s\n", find_value_type(print.type))
+                    ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
             case OP_DEFINE_GLOBAL:;
                 Value name = stack_pop;
@@ -620,23 +634,23 @@ void run(VM *vm) {
                 }
                 break;
             case OP_SUBTRACT:
-                binary_op(-, "cant subtract type %s and %s\n");
+                binary_op(-, "ERROR in %s on line %ld: cant subtract type %s and %s\n");
             case OP_MULTIPLY:
-                binary_op(*, "cant multiply type %s and %s\n");
+                binary_op(*, "ERROR in %s on line %ld: cant multiply type %s and %s\n");
             case OP_DIVIDE:
-                binary_op(/, "cant divide type %s and %s\n");
+                binary_op(/, "ERROR in %s on line %ld: cant divide type %s and %s\n");
             case OP_LESS:
-                binary_op(<, "cant less than type %s and %s\n");
+                binary_op(<, "ERROR in %s on line %ld: cant less than type %s and %s\n");
             case OP_LESS_EQUAL:
-                binary_op(<=, "cant less equal than type %s and %s\n");
+                binary_op(<=, "ERROR in %s on line %ld: cant less equal than type %s and %s\n");
             case OP_GREATER:
-                binary_op(>, "cant greater than type %s and %s\n");
+                binary_op(>, "ERROR in %s on line %ld: cant greater than type %s and %s\n");
             case OP_GREATER_EQUAL:
-                binary_op(>=, "cant greater equal than type %s and %s\n");
+                binary_op(>=, "ERROR in %s on line %ld: cant greater equal than type %s and %s\n");
             case OP_AND:
-                binary_op(==, "cant logical and type %s and %s\n");
+                binary_op(==, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
             case OP_OR:
-                binary_op(||, "cant logical or type %s and %s\n");
+                binary_op(||, "ERROR in %s on line %ld: cant logical or type %s and %s\n");
             case OP_NOT:;
                 Value op = stack_pop;
                 ASSERT(op.type == Value_Number, "cant logical not type %s", find_value_type(op.type))
@@ -665,7 +679,7 @@ void run(VM *vm) {
                         true,
                         0
                     }));
-                } else ERR("cant not equal type %s and %s\n", find_value_type(op1.type), find_value_type(op2.type))
+                } else ERR("ERROR in %s on line %ld: cant not equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
                 break;}
             case OP_IS_EQUAL: {
                 Value op2 = stack_pop;
@@ -685,14 +699,14 @@ void run(VM *vm) {
                         true,
                         0
                     }));
-                } else ERR("cant is equal type %s and %s\n", find_value_type(op1.type), find_value_type(op2.type))
+                } else ERR("ERROR in %s on line %ld: cant is equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
                 break;}
             case OP_SET_GLOBAL:{
                 Value name = stack_pop;
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
-                if (var == NULL) ERR("tried to set nonexistent global %s\n", name.val.str)
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
                 var->value = value;
                 break;}
             case OP_START_IF:
@@ -783,7 +797,7 @@ void run(VM *vm) {
                     true,
                     0
                 }));
-                else ERR("cant cast type %s as string\n", find_value_type(val.type))
+                else ERR("ERROR in %s on line %ld: cant cast type %s as string\n", get_loc, find_value_type(val.type))
                 break;}
             case OP_CAST_NUM:{
                 Value val = stack_pop;
@@ -794,9 +808,9 @@ void run(VM *vm) {
                     false,
                     0
                 }));
-                else ERR("cant cast type %s as number\n", find_value_type(val.type))
+                else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
                 break;}
-            default: ERR("cant do %s\n", find_op_code(vm->code.data[i]))
+            default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->code.data[i]))
         }
     }
 }
