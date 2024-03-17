@@ -707,6 +707,7 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
+                if (var->value.type == Value_String && var->value.mutable) free(var->value.val.str);
                 var->value = value;
                 break;}
             case OP_START_IF:

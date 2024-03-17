@@ -168,6 +168,7 @@ void free_mem(int exit_val) {
         free(c.while_indices.data);
         free(vm.code.data);    
         free(vm.constants.data);    
+        free(vm.locs.data);    
         free_array(p->funcs);
         for (int i = 0; i < vm.arrays.index; i++) {
             for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
