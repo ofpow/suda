@@ -501,7 +501,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
-                } else if (nodes[nodes[i]->jump_index]->type == AST_If || nodes[nodes[i]->jump_index]->type == AST_Elif) {
+                } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
 
                     c->code.data[index + 1] = FIRST_BYTE(c->code.index);
@@ -738,7 +738,13 @@ void run(VM *vm) {
 
                 int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
 
-                stack_push(vm->arrays.data[var_index][index.val.num]);
+                if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=vm->arrays.data[var_index][index.val.num].val.str,
+                    false,
+                    0
+                }));
+                else stack_push(vm->arrays.data[var_index][index.val.num]);
 
                 break;}
             case OP_SET_ELEMENT:{
@@ -782,6 +788,7 @@ void run(VM *vm) {
                 break;
             case OP_LEN:;
                 Value array = stack_pop;
+                ASSERT(array.type == Value_Array, "ERROR in %s on line %ld: cant do len of %s\n", get_loc, find_value_type(array.type))
                 stack_push(((Value) {
                     Value_Number,      
                     .val.num=vm->arrays.data[array.val.num][0].val.num - 1,   
