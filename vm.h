@@ -607,20 +607,26 @@ void run(VM *vm) {
                     char *str2;
                     int64_t op1_len = 0;
                     int64_t op2_len = 0;
+                    bool free1 = false;
+                    bool free2 = false;
 
                     if (op1.type == Value_String) {
                         op1_len = strlen(op1.val.str);
                         str1 = op1.val.str;
+                        if (op1.mutable) free1 = true;
                     } else if (op1.type == Value_Number) {
                         op1_len = num_len(op1.val.num);
                         str1 = format_str(op1_len + 1, "%ld", op1.val.num);
+                        free1 = true;
                     }
                     if (op2.type == Value_String) {
                         op2_len = strlen(op2.val.str);
                         str2 = op2.val.str;
+                        if (op2.mutable) free2 = true;
                     } else if (op2.type == Value_Number) {
                         op2_len = num_len(op2.val.num);
                         str2 = format_str(op2_len + 1, "%ld", op2.val.num);
+                        free2 = true;
                     }
 
                     stack_push(((Value){
@@ -630,8 +636,8 @@ void run(VM *vm) {
                         0
                     }));
 
-                    if (op1.type == Value_Number) free(str1);
-                    if (op2.type == Value_Number) free(str2);
+                    if (free1) free(str1);
+                    if (free2) free(str2);
                 }
                 break;
             case OP_SUBTRACT:
@@ -677,7 +683,7 @@ void run(VM *vm) {
                     stack_push(((Value){
                         Value_Number,
                         .val.num=!!strcmp(op1.val.str, op2.val.str),
-                        true,
+                        false,
                         0
                     }));
                 } else ERR("ERROR in %s on line %ld: cant not equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
@@ -697,7 +703,7 @@ void run(VM *vm) {
                     stack_push(((Value){
                         Value_Number,
                         .val.num=!strcmp(op1.val.str, op2.val.str),
-                        true,
+                        false,
                         0
                     }));
                 } else ERR("ERROR in %s on line %ld: cant is equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
@@ -771,6 +777,7 @@ void run(VM *vm) {
                 Value array = stack_pop;
 
                 int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
+                if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str);
                 vm->arrays.data[var_index][index.val.num] = new_val;
 
                 break;}
@@ -799,6 +806,7 @@ void run(VM *vm) {
                 i += 2;
                 break;}
             case OP_SET_LOCAL: {
+                if (vm->stack[read_index].type == Value_String && vm->stack[read_index].mutable) free(vm->stack[read_index].val.str);
                 vm->stack[read_index] = stack_pop;
                 i += 2;
                 break;}

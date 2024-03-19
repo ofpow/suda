@@ -1,8 +1,10 @@
-let x = [1, 2, 3]
-let y = ["hello", "world"]
+let foo = ""
 
-y = x
+let i = 1
 
-y@2 = "hi"
-
-println x
+while (i < 10)
+    
+        foo = (foo + "X")
+    
+    i = (i + 1)
+;
