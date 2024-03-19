@@ -504,8 +504,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
 
-                    c->code.data[index + 1] = FIRST_BYTE(c->code.index);
-                    c->code.data[index + 2] = SECOND_BYTE(c->code.index);
+                    u_int16_t offset = c->code.index - index;
+                    c->code.data[index + 1] = FIRST_BYTE(offset);
+                    c->code.data[index + 2] = SECOND_BYTE(offset);
                 } else {
                     while (1) {
                         if (c->if_indices.index < 1) break;
@@ -708,7 +709,24 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
                 if (var->value.type == Value_String && var->value.mutable) free(var->value.val.str);
-                var->value = value;
+                else if (var->value.type == Value_Array) {
+                    Value *array = vm->arrays.data[var->value.val.num];
+                    for (int i = 1; i < array[0].val.num; i++) {
+                        if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str);
+                    }
+                    free(vm->arrays.data[var->value.val.num]);
+                    Value *new_array = vm->arrays.data[value.val.num];
+                    array = calloc(new_array[0].val.num, sizeof(Value));
+
+                    for (int i = 0; i < new_array[0].val.num; i++) {
+                        if (new_array[i].type == Value_String && new_array[i].mutable)
+                            array[i] = (Value){Value_String, .val.str=strdup(new_array[i].val.str), true, 0};
+                        else 
+                            array[i] = new_array[i];
+                    }
+                    vm->arrays.data[var->value.val.num] = array;
+                } else {
+                var->value = value;}
                 break;}
             case OP_START_IF:
             case OP_JUMP_IF_FALSE:{
@@ -758,7 +776,9 @@ void run(VM *vm) {
                 break;}
             case OP_GET_GLOBAL:{
                 Value var_name = stack_pop;
-                Value val = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value)->value;
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
+                Value val = var->value;
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,

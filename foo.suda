@@ -1,3 +1,8 @@
-println "working"
+let x = [1, 2, 3]
+let y = ["hello", "world"]
 
-println (5 - "str")
+y = x
+
+y@2 = "hi"
+
+println x
