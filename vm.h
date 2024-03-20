@@ -714,7 +714,6 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
-                if (var->value.type == Value_String && var->value.mutable) free(var->value.val.str);
                 else if (var->value.type == Value_Array) {
                     Value *array = vm->arrays.data[var->value.val.num];
                     for (int i = 1; i < array[0].val.num; i++) {
@@ -785,14 +784,7 @@ void run(VM *vm) {
                 Value var_name = stack_pop;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
-                Value val = var->value;
-                if (val.type == Value_String && val.mutable) stack_push(((Value) {
-                    Value_String, 
-                    .val.str=val.val.str,
-                    false,
-                    0
-                }));
-                else stack_push(val);
+                stack_push(var->value);
                 break;}
             case OP_GET_LOCAL: {
                 Value val = vm->stack[read_index];
