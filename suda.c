@@ -152,10 +152,9 @@ int call_stack_capacity;
 //global variables for access to freeing from anywhere
 Token *tokens;
 String_Array programs = {0};
-Parser *p;
-Interpreter interpreter;
-VM vm;
-Compiler c;
+Interpreter interpreter = {0};
+VM vm = {0};
+Compiler c = {0};
 bool bytecode = false;
 bool disassembly = false;
 
@@ -439,10 +438,15 @@ int main(int argc, char *argv[]) {
     if (bytecode) {
         c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
         c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
-        c.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
-        c.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
-        c.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
-        c.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
+        c.funcs = (Functions){calloc(10, sizeof(Function)), 0, 10};
+        for (int i = 0; i < p->funcs.index; i++) {
+            append_new(c.funcs, compile_func(p->funcs.data[i]));
+        }
+
+        c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
+        c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
+        c.func.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
+        c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
         vm.stack_top = vm.stack;
 
@@ -451,10 +455,10 @@ int main(int argc, char *argv[]) {
         compile(p->nodes.data, p->nodes.index, &c);
         report_time("COMPILING    time: %f seconds\n");
 
-        vm.code = c.code;
-        vm.constants = c.constants;
-        vm.arrays = c.arrays;
-        vm.locs = c.locs;
+        vm.code = c.func.code;
+        vm.constants = c.func.constants;
+        vm.arrays = c.func.arrays;
+        vm.locs = c.func.locs;
 
         if (disassembly) disassemble(&vm);
         else run(&vm);
