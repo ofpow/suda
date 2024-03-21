@@ -2,6 +2,7 @@
 
 #define STACK_SIZE 16384
 #define LOCALS_MAX 256
+#define CALL_STACK_SIZE 64
 
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
@@ -9,7 +10,7 @@
 #define read_index (COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]))
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
 #define make_loc(_file, _line) ((Location){ _file, _line })
-#define append_code(_code, _loc) append_new(c->code, _code); append_new(c->locs, _loc)
+#define append_code(_code, _loc) append_new(c->func.code, _code); append_new(c->locs, _loc)
 #define get_loc vm->locs.data[i].file, vm->locs.data[i].line
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
@@ -112,6 +113,20 @@ typedef struct Location {
 
 define_array(Locations, Location);
 
+typedef struct Function {
+    Code code;
+    Locations locs;
+
+    Constants constants;
+
+    Arrays arrays;
+
+    int arity;
+    char *name;
+} Function;
+
+define_array(Functions, Function);
+
 typedef struct Local {
     AST_Value *name;
     int depth;
@@ -121,12 +136,7 @@ typedef struct Compiler {
     Jump_Indices if_indices;
     Jump_Indices while_indices;
 
-    Code code;
-    Locations locs;
-
-    Constants constants;
-
-    Arrays arrays;
+    Function func;
 
     Local locals[LOCALS_MAX];
     u_int8_t locals_count;
@@ -145,6 +155,8 @@ typedef struct VM {
 
     Value stack[STACK_SIZE];
     Value *stack_top;
+
+    Functions funcs;
 } VM;
 
 u_int8_t resolve_local(AST_Value *name, Compiler *c) {

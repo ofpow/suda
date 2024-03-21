@@ -437,36 +437,12 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
-        c.if_indices = (Jump_Indices){
-            calloc(10, sizeof(int64_t)),
-            0,
-            10
-        };
-        c.while_indices = (Jump_Indices){
-            calloc(10, sizeof(int64_t)),
-            0,
-            10
-        };
-        c.code = (Code){
-            calloc(10, sizeof(u_int8_t)),
-            0,
-            10,
-        };
-        c.constants = (Constants){
-            calloc(10, sizeof(Value)),
-            0,
-            10,
-        };
-        c.arrays = (Arrays){
-            calloc(10, sizeof(Value*)),
-            0,
-            10,
-        };
-        c.locs = (Locations){
-            calloc(10, sizeof(Location)),
-            0,
-            10,
-        };
+        c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
+        c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
+        c.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
+        c.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
+        c.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
+        c.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
         vm.stack_top = vm.stack;
 
