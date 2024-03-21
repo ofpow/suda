@@ -1,7 +1,7 @@
 #pragma once
 
 #define STACK_SIZE 16384
-#define LOCALS_MAX (STACK_SIZE / 4)
+#define LOCALS_MAX 256
 
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
@@ -129,7 +129,7 @@ typedef struct Compiler {
     Arrays arrays;
 
     Local locals[LOCALS_MAX];
-    int locals_count;
+    u_int8_t locals_count;
     int64_t depth;
 } Compiler;
 
@@ -147,7 +147,7 @@ typedef struct VM {
     Value *stack_top;
 } VM;
 
-u_int16_t resolve_local(AST_Value *name, Compiler *c) {
+u_int8_t resolve_local(AST_Value *name, Compiler *c) {
     for (int i = c->locals_count - 1; i >= 0; i--) {
         if (ast_value_equal(name, c->locals[i].name)) return i;
     }
@@ -331,11 +331,8 @@ void compile_expr(Node *n, Compiler *c) {
             break;
         case AST_Identifier:
             if (is_local(n->value, c)) {
-                u_int16_t index = resolve_local(n->value, c);
-
                 append_code(OP_GET_LOCAL, make_loc(n->file, n->line));
-                append_code(FIRST_BYTE(index), INVALID_LOC);
-                append_code(SECOND_BYTE(index), INVALID_LOC);
+                append_code(resolve_local(n->value, c), INVALID_LOC);
             } else {
                 append_new(c->constants, ((Value){Value_Identifier, .val.str=n->value->value, false, n->value->hash})); // name
                 u_int16_t index = c->constants.index - 1;
@@ -434,7 +431,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c); // value
                 
                 if (c->depth > 0) {
-                    if (c->locals_count > LOCALS_MAX) ERR("ERROR in %s on line %ld: too many local vars\n", nodes[i]->file, nodes[i]->line)
+                    if (c->locals_count >= LOCALS_MAX - 1) ERR("ERROR in %s on line %ld: too many local vars\n", nodes[i]->file, nodes[i]->line)
                     
                     for (int i = c->locals_count - 1; i >= 0; i--) {
                         if (c->locals[i].depth != -1 && c->locals[i].depth < c->depth) break;
@@ -458,11 +455,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c); // value
                 
                 if (is_local(nodes[i]->value, c)) {
-                    u_int16_t index = resolve_local(nodes[i]->value, c);
-
                     append_code(OP_SET_LOCAL, make_loc(nodes[i]->file, nodes[i]->line));
-                    append_code(FIRST_BYTE(index), INVALID_LOC);
-                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                    append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
                 } else {
                     append_new(c->constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->constants.index - 1;
@@ -805,7 +799,7 @@ void run(VM *vm) {
                 stack_push(var->value);
                 break;}
             case OP_GET_LOCAL: {
-                Value val = vm->stack[read_index];
+                Value val = vm->stack[vm->code.data[++i]];
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,
@@ -816,9 +810,9 @@ void run(VM *vm) {
                 i += 2;
                 break;}
             case OP_SET_LOCAL: {
-                if (vm->stack[read_index].type == Value_String && vm->stack[read_index].mutable) free(vm->stack[read_index].val.str);
-                vm->stack[read_index] = stack_pop;
-                i += 2;
+                i++;
+                if (vm->stack[vm->code.data[i]].type == Value_String && vm->stack[vm->code.data[i]].mutable) free(vm->stack[vm->code.data[i]].val.str);
+                vm->stack[vm->code.data[i]] = stack_pop;
                 break;}
             case OP_POP:
                 vm->stack_top -= read_index;
