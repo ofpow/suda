@@ -436,19 +436,23 @@ int main(int argc, char *argv[]) {
 
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
+        Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
+
         c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
         c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
-        c.funcs = (Functions){calloc(10, sizeof(Function)), 0, 10};
-        for (int i = 0; i < p->funcs.index; i++) {
-            append_new(c.funcs, compile_func(p->funcs.data[i]));
-        }
-
         c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
         c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
         c.func.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
         c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
+        append_new(funcs, compile_func(&((AST_Function){file_path, p->nodes, 0, NULL, 0})));
+
+        for (int i = 0; i < p->funcs.index; i++) {
+            append_new(funcs, compile_func(p->funcs.data[i]));
+        }
+
         vm.stack_top = vm.stack;
+        vm.funcs = funcs;
 
         vm.vars = new_map(8);
 

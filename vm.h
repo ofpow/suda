@@ -147,8 +147,6 @@ typedef struct Compiler {
     Local locals[LOCALS_MAX];
     u_int8_t locals_count;
     int64_t depth;
-
-    Functions funcs;
 } Compiler;
 
 typedef struct VM {
@@ -185,7 +183,7 @@ bool is_local(AST_Value *name, Compiler *c) {
 
 u_int16_t resolve_func(AST_Value *func) {
     for (u_int16_t i = 0; i < p->funcs.index; i++) {
-        if (!strcmp(STR(func->value), p->funcs.data[i]->name)) return i;
+        if (!strcmp(STR(func->value), p->funcs.data[i]->name)) return i + 1;
     }
     ERR("cant resolve func %s\n", STR(func->value))
     return 0;
