@@ -773,15 +773,18 @@ void run(VM *vm) {
                 Value array = stack_pop;
                 Value index = stack_pop;
 
-                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
+                int64_t arr_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
 
-                if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) stack_push(((Value) {
+                if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
+                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
+                    stack_push(var->value);
+                } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
                     Value_String, 
-                    .val.str=vm->arrays.data[var_index][index.val.num].val.str,
+                    .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
                     false,
                     0
                 }));
-                else stack_push(vm->arrays.data[var_index][index.val.num]);
+                else stack_push(vm->arrays.data[arr_index][index.val.num]);
 
                 break;}
             case OP_SET_ELEMENT:{
