@@ -165,17 +165,17 @@ void free_mem(int exit_val) {
     if (bytecode) {
         free(c.if_indices.data);
         free(c.while_indices.data);
-        free(vm.code.data);    
-        free(vm.constants.data);    
-        free(vm.locs.data);    
+        //free(vm.code.data);    
+        //free(vm.constants.data);    
+        //free(vm.locs.data);    
         free_array(p->funcs);
-        for (int i = 0; i < vm.arrays.index; i++) {
-            for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
-                if (vm.arrays.data[i][j].mutable == true)
-                    free(vm.arrays.data[i][j].val.str);
-            }
-        }
-        free_array(vm.arrays);
+        //for (int i = 0; i < vm.arrays.index; i++) {
+        //    for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
+        //        if (vm.arrays.data[i][j].mutable == true)
+        //            free(vm.arrays.data[i][j].val.str);
+        //    }
+        //}
+        //free_array(vm.arrays);
         free_map(vm.vars);
     }
     if (!bytecode) {
@@ -451,18 +451,15 @@ int main(int argc, char *argv[]) {
             append_new(funcs, compile_func(p->funcs.data[i]));
         }
 
+        report_time("COMPILING    time: %f seconds\n");
+
         vm.stack_top = vm.stack;
         vm.funcs = funcs;
 
         vm.vars = new_map(8);
 
-        compile(p->nodes.data, p->nodes.index, &c);
-        report_time("COMPILING    time: %f seconds\n");
-
-        vm.code = c.func.code;
-        vm.constants = c.func.constants;
-        vm.arrays = c.func.arrays;
-        vm.locs = c.func.locs;
+        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack};
+        vm.func = &vm.funcs.data[0];
 
         if (disassembly) disassemble(&vm);
         else run(&vm);

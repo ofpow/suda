@@ -7,11 +7,11 @@
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
-#define read_index (COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]))
+#define read_index (COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]))
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
 #define make_loc(_file, _line) ((Location){ _file, _line })
 #define append_code(_code, _loc) append_new(c->func.code, _code); append_new(c->func.locs, _loc)
-#define get_loc vm->locs.data[i].file, vm->locs.data[i].line
+#define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
     *vm->stack_top = (_val);  \
@@ -150,12 +150,7 @@ typedef struct Compiler {
 } Compiler;
 
 typedef struct VM {
-    Code code;
-    Locations locs;
-
-    Constants constants;
-
-    Arrays arrays;
+    Function *func;
 
     Map *vars;
 
@@ -190,7 +185,7 @@ u_int16_t resolve_func(AST_Value *func) {
 }
 
 void print_array(VM *vm, Value *val) {
-    Value *array = vm->arrays.data[val->val.num];
+    Value *array = vm->func->arrays.data[val->val.num];
     if (array[0].val.num < 2) printf("[]\n");
 
     int64_t str_len = 2;
@@ -227,14 +222,14 @@ void print_array(VM *vm, Value *val) {
 }
 
 void disassemble(VM *vm) {
-    for (int i = 0; i < vm->code.index; i++) {
-        switch(vm->code.data[i]) {
+    for (int i = 0; i < vm->func->code.index; i++) {
+        switch(vm->func->code.data[i]) {
             case OP_CONSTANT:
-                printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_ARRAY:
-                printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_GET_ELEMENT:
@@ -298,27 +293,27 @@ void disassemble(VM *vm) {
                 i += 2;
                 break;
             case OP_JUMP_IF_FALSE:
-                printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_START_IF:
-                printf("%-6d OP_START_IF:      offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_START_IF:      offset %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_JUMP:
-                printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_SET_LOCAL:
-                printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_GET_LOCAL:
-                printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
+                printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
                 i += 2;
                 break;
             case OP_POP:
-                printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2])); 
+                printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2])); 
                 i += 2;
                 break;
             case OP_LEN:
@@ -335,7 +330,7 @@ void disassemble(VM *vm) {
                 i += 2;
                 break;
             default:
-                ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->code.data[i]);
+                ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->func->code.data[i]);
         }
     }
 }
@@ -622,12 +617,12 @@ Function compile_func(AST_Function *func){
 }
 
 void run(VM *vm) {
-    for (int i = 0; i < vm->code.index; i++) {
-        debug("%-6d %s\n", i, find_op_code(vm->code.data[i]));
-        switch (vm->code.data[i]) {
+    for (int i = 0; i < vm->func->code.index; i++) {
+        debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
+        switch (vm->func->code.data[i]) {
             case OP_CONSTANT:;
                 u_int16_t index = read_index;
-                stack_push(vm->constants.data[index]);
+                stack_push(vm->func->constants.data[index]);
                 i += 2;
                 break;
             case OP_PRINTLN:;
@@ -643,7 +638,7 @@ void run(VM *vm) {
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
             case OP_DEFINE_GLOBAL:;
-                Value name = vm->constants.data[read_index];
+                Value name = vm->func->constants.data[read_index];
                 i += 2;
                 Value value = stack_pop;
                 Variable *var = calloc(1, sizeof(Variable));
@@ -770,19 +765,19 @@ void run(VM *vm) {
                 } else ERR("ERROR in %s on line %ld: cant is equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
                 break;}
             case OP_SET_GLOBAL:{
-                Value name = vm->constants.data[read_index];
+                Value name = vm->func->constants.data[read_index];
                 i += 2;
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
                 else if (var->value.type == Value_Array) {
-                    Value *array = vm->arrays.data[var->value.val.num];
+                    Value *array = vm->func->arrays.data[var->value.val.num];
                     for (int i = 1; i < array[0].val.num; i++) {
                         if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str);
                     }
-                    free(vm->arrays.data[var->value.val.num]);
-                    Value *new_array = vm->arrays.data[value.val.num];
+                    free(vm->func->arrays.data[var->value.val.num]);
+                    Value *new_array = vm->func->arrays.data[value.val.num];
                     array = calloc(new_array[0].val.num, sizeof(Value));
 
                     for (int i = 0; i < new_array[0].val.num; i++) {
@@ -791,7 +786,7 @@ void run(VM *vm) {
                         else 
                             array[i] = new_array[i];
                     }
-                    vm->arrays.data[var->value.val.num] = array;
+                    vm->func->arrays.data[var->value.val.num] = array;
                 } else {
                 var->value = value;}
                 break;}
@@ -823,16 +818,16 @@ void run(VM *vm) {
 
                 int64_t arr_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
 
-                if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
-                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
+                if (vm->func->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
+                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->func->arrays.data[arr_index][index.val.num].hash)->value;
                     stack_push(var->value);
-                } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
+                } else if (vm->func->arrays.data[arr_index][index.val.num].type == Value_String && vm->func->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
                     Value_String, 
-                    .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
+                    .val.str=vm->func->arrays.data[arr_index][index.val.num].val.str,
                     false,
                     0
                 }));
-                else stack_push(vm->arrays.data[arr_index][index.val.num]);
+                else stack_push(vm->func->arrays.data[arr_index][index.val.num]);
 
                 break;}
             case OP_SET_ELEMENT:{
@@ -841,19 +836,19 @@ void run(VM *vm) {
                 Value array = stack_pop;
 
                 int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
-                if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str);
-                vm->arrays.data[var_index][index.val.num] = new_val;
+                if (vm->func->arrays.data[var_index][index.val.num].type == Value_String && vm->func->arrays.data[var_index][index.val.num].mutable) free(vm->func->arrays.data[var_index][index.val.num].val.str);
+                vm->func->arrays.data[var_index][index.val.num] = new_val;
 
                 break;}
             case OP_GET_GLOBAL:{
-                Value var_name = vm->constants.data[read_index];
+                Value var_name = vm->func->constants.data[read_index];
                 i += 2;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
                 stack_push(var->value);
                 break;}
             case OP_GET_LOCAL: {
-                Value val = vm->stack[vm->code.data[++i]];
+                Value val = vm->stack[vm->func->code.data[++i]];
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,
@@ -865,8 +860,8 @@ void run(VM *vm) {
                 break;}
             case OP_SET_LOCAL: {
                 i++;
-                if (vm->stack[vm->code.data[i]].type == Value_String && vm->stack[vm->code.data[i]].mutable) free(vm->stack[vm->code.data[i]].val.str);
-                vm->stack[vm->code.data[i]] = stack_pop;
+                if (vm->stack[vm->func->code.data[i]].type == Value_String && vm->stack[vm->func->code.data[i]].mutable) free(vm->stack[vm->func->code.data[i]].val.str);
+                vm->stack[vm->func->code.data[i]] = stack_pop;
                 break;}
             case OP_POP:
                 vm->stack_top -= read_index;
@@ -877,7 +872,7 @@ void run(VM *vm) {
                 ASSERT(array.type == Value_Array, "ERROR in %s on line %ld: cant do len of %s\n", get_loc, find_value_type(array.type))
                 stack_push(((Value) {
                     Value_Number,      
-                    .val.num=vm->arrays.data[array.val.num][0].val.num - 1,   
+                    .val.num=vm->func->arrays.data[array.val.num][0].val.num - 1,   
                     false,            
                     0                 
                 }));                 
@@ -905,8 +900,13 @@ void run(VM *vm) {
                 else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
                 break;}
             case OP_CALL:{
+                Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
+                frame->func = &vm->funcs.data[read_index];
+                frame->slots = vm->stack_top - 1;
+                vm->func = &vm->funcs.data[read_index];
+                i = -1;
                 break;}
-            default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->code.data[i]))
+            default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
     }
 }
