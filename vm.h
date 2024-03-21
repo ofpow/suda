@@ -220,6 +220,7 @@ void disassemble(VM *vm) {
                 break;
             case OP_DEFINE_GLOBAL:
                 printf("%-6d OP_DEFINE_GLOBAL\n", i);
+                i += 2;
                 break;
             case OP_ADD:
                 printf("%-6d OP_ADD\n", i);
@@ -262,9 +263,11 @@ void disassemble(VM *vm) {
                 break;
             case OP_SET_GLOBAL:
                 printf("%-6d OP_SET_GLOBAL \n", i);
+                i += 2;
                 break;
             case OP_GET_GLOBAL:
                 printf("%-6d OP_GET_GLOBAL \n", i);
+                i += 2;
                 break;
             case OP_JUMP_IF_FALSE:
                 printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->code.data[i + 1], vm->code.data[i + 2]));
@@ -334,8 +337,11 @@ void compile_expr(Node *n, Compiler *c) {
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
             } else {
-                compile_constant(n, c); // name
+                append_new(c->constants, ((Value){Value_Identifier, .val.str=n->value->value, false, n->value->hash})); // name
+                u_int16_t index = c->constants.index - 1;
                 append_code(OP_GET_GLOBAL, make_loc(n->file, n->line));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
             }
             break;
         case AST_Add:
@@ -441,8 +447,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     c->locals[c->locals_count].depth = c->depth;
                     c->locals_count++;
                 } else {
-                    compile_constant(nodes[i], c); // name
+                    append_new(c->constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                    u_int16_t index = c->constants.index - 1;
                     append_code(OP_DEFINE_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
                 break;
             case AST_Identifier:
@@ -455,8 +464,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 } else {
-                    compile_constant(nodes[i], c); // name
+                    append_new(c->constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                    u_int16_t index = c->constants.index - 1;
                     append_code(OP_SET_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
                 break;
             case AST_If:
@@ -583,7 +595,8 @@ void run(VM *vm) {
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
             case OP_DEFINE_GLOBAL:;
-                Value name = stack_pop;
+                Value name = vm->constants.data[read_index];
+                i += 2;
                 Value value = stack_pop;
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str;
@@ -709,7 +722,8 @@ void run(VM *vm) {
                 } else ERR("ERROR in %s on line %ld: cant is equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
                 break;}
             case OP_SET_GLOBAL:{
-                Value name = stack_pop;
+                Value name = vm->constants.data[read_index];
+                i += 2;
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
@@ -781,7 +795,8 @@ void run(VM *vm) {
 
                 break;}
             case OP_GET_GLOBAL:{
-                Value var_name = stack_pop;
+                Value var_name = vm->constants.data[read_index];
+                i += 2;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
                 stack_push(var->value);
