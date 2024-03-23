@@ -8,6 +8,7 @@
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
 #define make_loc(_file, _line) ((Location){ _file, _line })
+#define current_loc(_node) make_loc(_node->file, _node->line)
 #define append_code(_code, _loc) append(c->func.code, _code); append(c->func.locs, _loc)
 #define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
 
@@ -170,7 +171,7 @@ void compile_constant(Node *n, Compiler *c) {
         ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->value->type)
 
     u_int16_t index = c->func.constants.index - 1;
-    append_code(OP_CONSTANT, make_loc(n->file, n->line));
+    append_code(OP_CONSTANT, current_loc(n));
     append_code(FIRST_BYTE(index), INVALID_LOC);
     append_code(SECOND_BYTE(index), INVALID_LOC);
 }
@@ -182,12 +183,12 @@ void compile_expr(Node *n, Compiler *c) {
             break;
         case AST_Identifier:
             if (is_local(n->value, c)) {
-                append_code(OP_GET_LOCAL, make_loc(n->file, n->line));
+                append_code(OP_GET_LOCAL, current_loc(n));
                 append_code(resolve_local(n->value, c), INVALID_LOC);
             } else {
                 append(c->func.constants, ((Value){Value_Identifier, .val.str=n->value->value, false, n->value->hash})); // name
                 u_int16_t index = c->func.constants.index - 1;
-                append_code(OP_GET_GLOBAL, make_loc(n->file, n->line));
+                append_code(OP_GET_GLOBAL, current_loc(n));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
             }
@@ -206,11 +207,11 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Not_Equal:
             compile_expr(n->left, c);
             compile_expr(n->right, c);
-            append_code(ast_to_op_code(n->type), make_loc(n->file, n->line));
+            append_code(ast_to_op_code(n->type), current_loc(n));
             break;
         case AST_Not:
             compile_expr(n->left, c);
-            append_code(OP_NOT, make_loc(n->file, n->line));
+            append_code(OP_NOT, current_loc(n));
             break;
         case AST_Array:{
             int64_t array_len = NUM(n->value[0].value);
@@ -245,7 +246,7 @@ void compile_expr(Node *n, Compiler *c) {
             }
 
             append(c->func.arrays, array);
-            append_code(OP_ARRAY, make_loc(n->file, n->line));
+            append_code(OP_ARRAY, current_loc(n));
             u_int16_t index = c->func.arrays.index - 1;
             append_code(FIRST_BYTE(index), INVALID_LOC);
             append_code(SECOND_BYTE(index), INVALID_LOC);
@@ -253,19 +254,19 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_At:{
             compile_expr(n->left, c); // the index
             compile_constant(n, c); //var name
-            append_code(OP_GET_ELEMENT, make_loc(n->file, n->line));
+            append_code(OP_GET_ELEMENT, current_loc(n));
             break;}
         case AST_Len:
             compile_expr(n->left, c);
-            append_code(OP_LEN, make_loc(n->file, n->line));
+            append_code(OP_LEN, current_loc(n));
             break;
         case AST_Cast_Str:
             compile_expr(n->left, c);
-            append_code(OP_CAST_STR, make_loc(n->file, n->line));
+            append_code(OP_CAST_STR, current_loc(n));
             break;
         case AST_Cast_Num:
             compile_expr(n->left, c);
-            append_code(OP_CAST_NUM, make_loc(n->file, n->line));
+            append_code(OP_CAST_NUM, current_loc(n));
             break;
         default: ERR("ERROR in %s on line %ld: cant compile node type %s as expr\n", n->file, n->line, find_ast_type(n->type));
     }
@@ -276,7 +277,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
         switch (nodes[i]->type) {
             case AST_Println:
                 compile_expr(nodes[i]->left, c);
-                append_code(OP_PRINTLN, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_PRINTLN, current_loc(nodes[i]));
                 break;
             case AST_Var_Assign:
                 compile_expr(nodes[i]->left, c); // value
@@ -297,7 +298,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 } else {
                     append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;
-                    append_code(OP_DEFINE_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(OP_DEFINE_GLOBAL, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
@@ -306,12 +307,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c); // value
                 
                 if (is_local(nodes[i]->value, c)) {
-                    append_code(OP_SET_LOCAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(OP_SET_LOCAL, current_loc(nodes[i]));
                     append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
                 } else {
                     append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;
-                    append_code(OP_SET_GLOBAL, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(OP_SET_GLOBAL, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
@@ -320,7 +321,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c);
 
                 append(c->if_indices, c->func.code.index);
-                append_code(OP_START_IF, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_START_IF, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
 
@@ -331,7 +332,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c);
 
                 append(c->while_indices, c->func.code.index);
-                append_code(OP_JUMP_IF_FALSE, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_JUMP_IF_FALSE, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 c->depth++;
@@ -343,7 +344,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 while(c->locals_count > 0 && c->locals[c->locals_count - 1].depth > c->depth) { amount++; c->locals_count--; }
 
                 if (amount > 0) {
-                    append_code(OP_POP, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(amount), INVALID_LOC);
                     append_code(SECOND_BYTE(amount), INVALID_LOC);
                 }
@@ -355,7 +356,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     c->func.code.data[index + 2] = SECOND_BYTE(x);
 
                     index = c->while_indices.data[--c->while_indices.index];
-                    append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                    append_code(OP_JUMP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
@@ -381,7 +382,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 c->func.code.data[index + 1] = FIRST_BYTE(offset);
                 c->func.code.data[index + 2] = SECOND_BYTE(offset);
                 append(c->if_indices, c->func.code.index);
-                append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_JUMP, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 break;
@@ -392,14 +393,14 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 c->func.code.data[index + 2] = SECOND_BYTE(offset);
 
                 append(c->if_indices, c->func.code.index);
-                append_code(OP_JUMP, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_JUMP, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 
                 compile_expr(nodes[i]->left, c);
 
                 append(c->if_indices, c->func.code.index);
-                append_code(OP_JUMP_IF_FALSE, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_JUMP_IF_FALSE, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 break;}
@@ -411,14 +412,14 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 } else {
                     compile_expr(nodes[i]->left->left, c);
                 }
-                append_code(OP_SET_ELEMENT, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_SET_ELEMENT, current_loc(nodes[i]));
                 break;
             case AST_Fn_Call:{
                 for (int j = 0; j < nodes[i]->func_args_index; j++) {
                     compile_expr(nodes[i]->func_args[j], c);
                 }
                 u_int16_t index = resolve_func(nodes[i]->value);
-                append_code(OP_CALL, make_loc(nodes[i]->file, nodes[i]->line));
+                append_code(OP_CALL, current_loc(nodes[i]));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
                 break;}
