@@ -147,6 +147,7 @@ int call_stack_capacity;
 #include "parser.h"
 #include "function.h"
 #include "interpreter.h"
+#include "compiler.h"
 #include "vm.h"
 
 //global variables for access to freeing from anywhere
