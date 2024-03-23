@@ -43,6 +43,7 @@
     X(OP_CAST_STR)\
     X(OP_CAST_NUM)\
     X(OP_CALL)\
+    X(OP_RETURN)\
 
 typedef enum {
 #define X(x) x,
@@ -421,6 +422,10 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(OP_CALL, current_loc(nodes[i]));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
+                break;}
+            case AST_Return:{
+                compile_expr(nodes[i]->left, c);
+                append_code(OP_RETURN, current_loc(nodes[i]));
                 break;}
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }

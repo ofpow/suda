@@ -25,6 +25,7 @@ break                                                                           
 typedef struct Call_Frame {
     Function *func;
     Value *slots;
+    int64_t return_index;
 } Call_Frame;
 
 typedef struct VM {
@@ -187,6 +188,9 @@ void disassemble(VM *vm) {
                 case OP_CALL:
                     printf("%-6d OP_CALL\n", i);
                     i += 2;
+                    break;
+                case OP_RETURN:
+                    printf("%-6d OP_RETURN\n", i);
                     break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->funcs.data[j].code.data[i]);
@@ -480,11 +484,20 @@ void run(VM *vm) {
                 else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
                 break;}
             case OP_CALL:{
+                vm->call_stack[vm->call_stack_count - 1].return_index = i + 2;
                 Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
                 frame->func = &vm->funcs.data[read_index];
                 frame->slots = vm->stack_top - frame->func->arity;
                 vm->func = &vm->funcs.data[read_index];
                 i = -1;
+                break;}
+            case OP_RETURN:{
+                Value result = stack_pop;
+                vm->call_stack_count--;
+                Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
+                vm->func = frame->func;
+                i = frame->return_index;
+                stack_push(result);
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }

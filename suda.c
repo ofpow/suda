@@ -443,7 +443,8 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack};
+        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0};
+        vm.call_stack_count++;
         vm.func = &vm.funcs.data[0];
 
         if (disassembly) disassemble(&vm);
