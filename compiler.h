@@ -426,6 +426,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
 
 Function compile_func(AST_Function *func){
     Compiler c = {0};
+    c.depth++;
+    for (int i = 0; i < func->arity; i++) {
+        c.locals[i].name = func->args[i];
+        c.locals[i].depth = 1;
+        c.locals_count++;
+    }
     c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
     c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
     c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
@@ -434,6 +440,9 @@ Function compile_func(AST_Function *func){
     c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
     compile(func->nodes.data, func->nodes.index, &c);
+
+    c.func.name = func->name;
+    c.func.arity = func->arity;
 
     free(c.if_indices.data);
     free(c.while_indices.data);

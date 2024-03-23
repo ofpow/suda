@@ -78,115 +78,119 @@ void print_array(VM *vm, Value *val) {
 }
 
 void disassemble(VM *vm) {
-    for (int i = 0; i < vm->func->code.index; i++) {
-        switch(vm->func->code.data[i]) {
-            case OP_CONSTANT:
-                printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_ARRAY:
-                printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_GET_ELEMENT:
-                printf("%-6d OP_GET_ELEMENT\n", i);
-                break;
-            case OP_SET_ELEMENT:
-                printf("%-6d OP_SET_ELEMENT\n", i);
-                break;
-            case OP_PRINTLN:
-                printf("%-6d OP_PRINTLN\n", i);
-                break;
-            case OP_DEFINE_GLOBAL:
-                printf("%-6d OP_DEFINE_GLOBAL\n", i);
-                i += 2;
-                break;
-            case OP_ADD:
-                printf("%-6d OP_ADD\n", i);
-                break;
-            case OP_SUBTRACT:
-                printf("%-6d OP_SUBTRACT\n", i);
-                break;
-            case OP_MULTIPLY:
-                printf("%-6d OP_MULTIPLY\n", i);
-                break;
-            case OP_DIVIDE:
-                printf("%-6d OP_DIVIDE\n", i);
-                break;
-            case OP_LESS:
-                printf("%-6d OP_LESS\n", i);
-                break;
-            case OP_LESS_EQUAL:
-                printf("%-6d OP_LESS_EQUAL\n", i);
-                break;
-            case OP_GREATER:
-                printf("%-6d OP_GREATER\n", i);
-                break;
-            case OP_GREATER_EQUAL:
-                printf("%-6d OP_GREATER_EQUAL\n", i);
-                break;
-            case OP_IS_EQUAL:
-                printf("%-6d OP_IS_EQUAL\n", i);
-                break;
-            case OP_AND:
-                printf("%-6d OP_AND\n", i);
-                break;
-            case OP_OR:
-                printf("%-6d OP_OR\n", i);
-                break;
-            case OP_NOT:
-                printf("%-6d OP_NOT\n", i);
-                break;
-            case OP_NOT_EQUAL:
-                printf("%-6d OP_NOT_EQUAL\n", i);
-                break;
-            case OP_SET_GLOBAL:
-                printf("%-6d OP_SET_GLOBAL \n", i);
-                i += 2;
-                break;
-            case OP_GET_GLOBAL:
-                printf("%-6d OP_GET_GLOBAL \n", i);
-                i += 2;
-                break;
-            case OP_JUMP_IF_FALSE:
-                printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_START_IF:
-                printf("%-6d OP_START_IF:      offset %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_JUMP:
-                printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_SET_LOCAL:
-                printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_GET_LOCAL:
-                printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]));
-                i += 2;
-                break;
-            case OP_POP:
-                printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2])); 
-                i += 2;
-                break;
-            case OP_LEN:
-                printf("%-6d OP_LEN\n", i);
-                break;
-            case OP_CAST_STR:
-                printf("%-6d OP_CAST_STR\n", i);
-                break;
-            case OP_CAST_NUM:
-                printf("%-6d OP_CAST_NUM\n", i);
-                break;
-            case OP_CALL:
-                printf("%-6d OP_CALL\n", i);
-                i += 2;
-                break;
-            default:
-                ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->func->code.data[i]);
+    for (int j = 0; j < vm->funcs.index; j++) {
+        if (j > 0) printf("\n");
+        printf("Disassembly of function %s:\n", vm->funcs.data[j].name);
+        for (int i = 0; i < vm->funcs.data[j].code.index; i++) {
+            switch(vm->funcs.data[j].code.data[i]) {
+                case OP_CONSTANT:
+                    printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_ARRAY:
+                    printf("%-6d OP_ARRAY:         index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_GET_ELEMENT:
+                    printf("%-6d OP_GET_ELEMENT\n", i);
+                    break;
+                case OP_SET_ELEMENT:
+                    printf("%-6d OP_SET_ELEMENT\n", i);
+                    break;
+                case OP_PRINTLN:
+                    printf("%-6d OP_PRINTLN\n", i);
+                    break;
+                case OP_DEFINE_GLOBAL:
+                    printf("%-6d OP_DEFINE_GLOBAL\n", i);
+                    i += 2;
+                    break;
+                case OP_ADD:
+                    printf("%-6d OP_ADD\n", i);
+                    break;
+                case OP_SUBTRACT:
+                    printf("%-6d OP_SUBTRACT\n", i);
+                    break;
+                case OP_MULTIPLY:
+                    printf("%-6d OP_MULTIPLY\n", i);
+                    break;
+                case OP_DIVIDE:
+                    printf("%-6d OP_DIVIDE\n", i);
+                    break;
+                case OP_LESS:
+                    printf("%-6d OP_LESS\n", i);
+                    break;
+                case OP_LESS_EQUAL:
+                    printf("%-6d OP_LESS_EQUAL\n", i);
+                    break;
+                case OP_GREATER:
+                    printf("%-6d OP_GREATER\n", i);
+                    break;
+                case OP_GREATER_EQUAL:
+                    printf("%-6d OP_GREATER_EQUAL\n", i);
+                    break;
+                case OP_IS_EQUAL:
+                    printf("%-6d OP_IS_EQUAL\n", i);
+                    break;
+                case OP_AND:
+                    printf("%-6d OP_AND\n", i);
+                    break;
+                case OP_OR:
+                    printf("%-6d OP_OR\n", i);
+                    break;
+                case OP_NOT:
+                    printf("%-6d OP_NOT\n", i);
+                    break;
+                case OP_NOT_EQUAL:
+                    printf("%-6d OP_NOT_EQUAL\n", i);
+                    break;
+                case OP_SET_GLOBAL:
+                    printf("%-6d OP_SET_GLOBAL \n", i);
+                    i += 2;
+                    break;
+                case OP_GET_GLOBAL:
+                    printf("%-6d OP_GET_GLOBAL \n", i);
+                    i += 2;
+                    break;
+                case OP_JUMP_IF_FALSE:
+                    printf("%-6d OP_JUMP_IF_FALSE: offset %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_START_IF:
+                    printf("%-6d OP_START_IF:      offset %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_JUMP:
+                    printf("%-6d OP_JUMP:          index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_SET_LOCAL:
+                    printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_GET_LOCAL:
+                    printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
+                case OP_POP:
+                    printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])); 
+                    i += 2;
+                    break;
+                case OP_LEN:
+                    printf("%-6d OP_LEN\n", i);
+                    break;
+                case OP_CAST_STR:
+                    printf("%-6d OP_CAST_STR\n", i);
+                    break;
+                case OP_CAST_NUM:
+                    printf("%-6d OP_CAST_NUM\n", i);
+                    break;
+                case OP_CALL:
+                    printf("%-6d OP_CALL\n", i);
+                    i += 2;
+                    break;
+                default:
+                    ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->funcs.data[j].code.data[i]);
+            }
         }
     }
 }
