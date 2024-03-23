@@ -7,8 +7,7 @@
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
-#define make_loc(_file, _line) ((Location){ _file, _line })
-#define current_loc(_node) make_loc(_node->file, _node->line)
+#define current_loc(_node) ((Location){ _node->file, _node->line })
 #define append_code(_code, _loc) append(c->func.code, _code); append(c->func.locs, _loc)
 #define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
 
