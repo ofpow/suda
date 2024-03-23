@@ -164,12 +164,12 @@ void disassemble(VM *vm) {
                     i += 2;
                     break;
                 case OP_SET_LOCAL:
-                    printf("%-6d OP_SET_LOCAL:     index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
-                    i += 2;
+                    printf("%-6d OP_SET_LOCAL:     index %d\n", i, vm->funcs.data[j].code.data[i + 1]);
+                    i++;
                     break;
                 case OP_GET_LOCAL:
-                    printf("%-6d OP_GET_LOCAL:     index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
-                    i += 2;
+                    printf("%-6d OP_GET_LOCAL:     index %d\n", i, vm->funcs.data[j].code.data[i + 1]);
+                    i++;
                     break;
                 case OP_POP:
                     printf("%-6d OP_POP:           amount: %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])); 
@@ -197,6 +197,7 @@ void disassemble(VM *vm) {
 
 void run(VM *vm) {
     for (int i = 0; i < vm->func->code.index; i++) {
+        Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {
             case OP_CONSTANT:;
@@ -427,7 +428,8 @@ void run(VM *vm) {
                 stack_push(var->value);
                 break;}
             case OP_GET_LOCAL: {
-                Value val = vm->stack[vm->func->code.data[++i]];
+                i++;
+                Value val = frame->slots[vm->func->code.data[i]];
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,
@@ -435,12 +437,11 @@ void run(VM *vm) {
                     0
                 }));
                 else stack_push(val);
-                i += 2;
                 break;}
             case OP_SET_LOCAL: {
                 i++;
-                if (vm->stack[vm->func->code.data[i]].type == Value_String && vm->stack[vm->func->code.data[i]].mutable) free(vm->stack[vm->func->code.data[i]].val.str);
-                vm->stack[vm->func->code.data[i]] = stack_pop;
+                if (frame->slots[vm->func->code.data[i]].type == Value_String && frame->slots[vm->func->code.data[i]].mutable) free(frame->slots[vm->func->code.data[i]].val.str);
+                frame->slots[vm->func->code.data[i]] = stack_pop;
                 break;}
             case OP_POP:
                 vm->stack_top -= read_index;
@@ -481,7 +482,7 @@ void run(VM *vm) {
             case OP_CALL:{
                 Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
                 frame->func = &vm->funcs.data[read_index];
-                frame->slots = vm->stack_top - 1;
+                frame->slots = vm->stack_top - frame->func->arity;
                 vm->func = &vm->funcs.data[read_index];
                 i = -1;
                 break;}

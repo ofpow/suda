@@ -1,5 +1,5 @@
-fn foo()
-    println "hello"
+fn foo(a, b)
+    println a + b
 ;
 
-foo()
+foo(5, 6)

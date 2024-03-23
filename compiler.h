@@ -414,6 +414,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(OP_SET_ELEMENT, make_loc(nodes[i]->file, nodes[i]->line));
                 break;
             case AST_Fn_Call:{
+                for (int j = 0; j < nodes[i]->func_args_index; j++) {
+                    compile_expr(nodes[i]->func_args[j], c);
+                }
                 u_int16_t index = resolve_func(nodes[i]->value);
                 append_code(OP_CALL, make_loc(nodes[i]->file, nodes[i]->line));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
