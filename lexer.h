@@ -451,7 +451,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
         }
         debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), (int)tok.length, tok.start)
     } 
-    free_array(include_paths);
+    free_array(include_paths, free);
 
     append((*programs), program);
 

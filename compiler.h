@@ -145,6 +145,20 @@ u_int16_t resolve_func(AST_Value *func) {
     return 0;
 }
 
+void free_func(Function func) {
+    free(func.code.data);
+    free(func.locs.data);
+    free(func.constants.data);
+    for (int i = 0; i < func.arrays.index; i++) {
+        for (int j = 0; j < func.arrays.data[i][0].val.num; j++) {
+            if (func.arrays.data[i][j].mutable == true)
+                free(func.arrays.data[i][j].val.str);
+        }
+        free(func.arrays.data[i]);
+    }
+    free(func.arrays.data);
+}
+
 void compile_constant(Node *n, Compiler *c) {
     if (n->value->type == Value_Number)
         append(c->func.constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}));

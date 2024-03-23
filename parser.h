@@ -242,6 +242,7 @@ void free_node(Node *n) {
 
 void free_ast_function(AST_Function *func) {
     for (int i = 0; i < func->nodes.index; i++) free_node(func->nodes.data[i]);
+    free(func->nodes.data);
     for (int i = 0; i < func->arity; i++) if (func->args[i]) free_ast_value(func->args[i]);
     free(func->args);
     free(func->name);

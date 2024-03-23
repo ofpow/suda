@@ -37,9 +37,9 @@ void free_mem(int exit_val);
     _array.data[_array.index++] = _element;                                             \
 } while (0)                                                                             \
 
-#define free_array(_array) do {               \
+#define free_array(_array, _free) do {        \
     for (int i = 0; i < _array.index; i++) {  \
-        free(_array.data[i]);                 \
+        _free(_array.data[i]);                \
     }                                         \
     free(_array.data);                        \
 } while (0)                                   \
@@ -166,22 +166,13 @@ void free_mem(int exit_val) {
     if (bytecode) {
         free(c.if_indices.data);
         free(c.while_indices.data);
-        //free(vm.code.data);    
-        //free(vm.constants.data);    
-        //free(vm.locs.data);    
-        free_array(p->funcs);
-        //for (int i = 0; i < vm.arrays.index; i++) {
-        //    for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
-        //        if (vm.arrays.data[i][j].mutable == true)
-        //            free(vm.arrays.data[i][j].val.str);
-        //    }
-        //}
-        //free_array(vm.arrays);
+        free_array(vm.funcs, free_func);
+        free_array(p->funcs, free_ast_function);
         free_map(vm.vars);
     }
     if (!bytecode) {
         free_map(interpreter.vars);
-        free_array(interpreter.funcs);
+        free_array(interpreter.funcs, free_ast_function);
     }
     free(tokens);
     free(p->jumps.data);
@@ -202,7 +193,7 @@ void free_mem(int exit_val) {
         }
         free(call_stack);
     }
-    free_array(programs);
+    free_array(programs, free);
     exit(exit_val);
 }
 
@@ -438,13 +429,6 @@ int main(int argc, char *argv[]) {
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
         Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
-
-        c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
-        c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
-        c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
-        c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
-        c.func.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
-        c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
         append(funcs, compile_func(&((AST_Function){file_path, p->nodes, 0, NULL, 0})));
 
