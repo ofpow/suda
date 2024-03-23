@@ -82,7 +82,7 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
     char *call_info;
     if (call_stack != NULL) {
         call_info = format_str(strlen(func->name) + 3 + num_len(n->line), "%s:%ld", func->name, n->line);
-        append(call_stack, call_info, call_stack_index, call_stack_capacity)
+        append_verbose(call_stack, call_info, call_stack_index, call_stack_capacity)
     }
 
     ASSERT((func->arity == n->func_args_index), "ERROR in %s on line %ld: cant call function %s with %ld arguments, it needs %ld arguments\n", n->file, n->line, func->name, n->func_args_index, func->arity)
@@ -491,7 +491,7 @@ AST_Value *eval_node(Node *n, Interpreter *interpreter, bool mutable) {
             char c;
             while ((c = fgetc(stdin))) {
                 if (c == '\n') break;
-                append(input, c, input_index, input_capacity)
+                append_verbose(input, c, input_index, input_capacity)
             }
             return new_ast_value(Value_String, input, 1, 0);
         default: ERR("ERROR in %s on line %ld: cant evaluate node type `%s`\n", n->file, n->line, find_ast_type(n->type))

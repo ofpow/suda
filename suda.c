@@ -19,7 +19,7 @@ void free_mem(int exit_val);
 #define ASSERT(expr, ...) do {if (!(expr)) {fprintf (stderr, __VA_ARGS__); free_mem(1);}} while (0);
 #define NUM(_val) (*((int64_t*)(_val)))
 #define STR(_val) ((char*)(_val))
-#define append(_array, _element, _index, _capacity) do {         \
+#define append_verbose(_array, _element, _index, _capacity) do {         \
     if (_index >= _capacity) {                                   \
         _capacity *= 2;                                          \
         _array = realloc(_array, _capacity * sizeof(_array[0])); \
@@ -28,7 +28,7 @@ void free_mem(int exit_val);
     _array[_index++] = _element;                                 \
 } while (0);                                                     \
 
-#define append_new(_array, _element) do {                                               \
+#define append(_array, _element) do {                                               \
     if (_array.index >= _array.capacity) {                                              \
         _array.capacity *= 2;                                                           \
         _array.data = realloc(_array.data, _array.capacity * sizeof(_array.data[0]));   \
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
                 suda_argv = calloc(2, sizeof(struct AST_Value));
                 while (i < argc) {
                     int len = strlen(argv[i]);
-                    append(suda_argv, ((AST_Value){ Value_String, format_str(len + 3, "\"%s\"", strdup(argv[i])), 1, 0 }), index, capacity)
+                    append_verbose(suda_argv, ((AST_Value){ Value_String, format_str(len + 3, "\"%s\"", strdup(argv[i])), 1, 0 }), index, capacity)
                     i++;
                 }
                 suda_argv->hash = hash("argv", 4);
@@ -325,33 +325,33 @@ int main(int argc, char *argv[]) {
             break;
         } else if (n->type == AST_If) {
             debug("IF: push index %ld\n", p->nodes.index)
-            append_new(p->jumps, p->nodes.index);
-            append_new(p->nodes, n);
+            append(p->jumps, p->nodes.index);
+            append(p->nodes, n);
         } else if (n->type == AST_While) {
             debug("WHILE: push index %ld\n", p->nodes.index)
-            append_new(p->jumps, p->nodes.index);
-            append_new(p->nodes, n);
+            append(p->jumps, p->nodes.index);
+            append(p->nodes, n);
         } else if (n->type == AST_For) {
             debug("For: push index %ld\n", p->nodes.index)
-            append_new(p->jumps, p->nodes.index);
-            append_new(p->nodes, n);
+            append(p->jumps, p->nodes.index);
+            append(p->nodes, n);
         } else if (n->type == AST_Else) {
             debug("ELSE: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes.index)
             p->nodes.data[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes.index;
             n->jump_index = p->jumps.data[p->jumps.index - 1];
             p->jumps.index--;
-            append_new(p->jumps, p->nodes.index);
-            append_new(p->nodes, n);
+            append(p->jumps, p->nodes.index);
+            append(p->nodes, n);
         } else if (n->type == AST_Elif) {
             debug("ELIF: change %ld to %ld\n", p->jumps.data[p->jumps.index - 1], p->nodes.index)
             p->nodes.data[p->jumps.data[p->jumps.index - 1]]->jump_index = p->nodes.index - 1;
             p->jumps.data[p->jumps.index - 1] = p->nodes.index;
-            append_new(p->nodes, n);
+            append(p->nodes, n);
         } else if (n->type == AST_Semicolon) {
             if (p->parsing_function && p->jumps.index <= 0) {
                 free_node(n);
                 func->nodes = p->nodes;
-                append_new(p->funcs, func);
+                append(p->funcs, func);
 
                 p->nodes.data = temp_nodes;
                 p->nodes.index = temp_nodes_index;
@@ -369,13 +369,13 @@ int main(int argc, char *argv[]) {
                 p->nodes.data[p->jumps.data[p->jumps.index]]->jump_index = p->nodes.index;
                 n->jump_index = p->jumps.data[p->jumps.index];
             }
-            append_new(p->nodes, n);
+            append(p->nodes, n);
         } else if (n->type == AST_Break) {
             for (int i = p->jumps.index - 1; i > -1; i--) {
                 if (p->nodes.data[p->jumps.data[i]]->type == AST_While || p->nodes.data[p->jumps.data[i]]->type == AST_Break) {
                     n->jump_index = p->jumps.data[i];
                     p->jumps.data[i] = p->nodes.index;
-                    append_new(p->nodes, n);
+                    append(p->nodes, n);
                 }
             }
             if (p->nodes.data[p->nodes.index - 1]->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use break outside a while loop\n", n->file, n->line)
@@ -383,7 +383,7 @@ int main(int argc, char *argv[]) {
             for (int i = p->jumps.index - 1; i > -1; i--) {
                 if (p->nodes.data[p->jumps.data[i]]->type == AST_While) {
                     n->jump_index = p->jumps.data[i];
-                    append_new(p->nodes, n);
+                    append(p->nodes, n);
                 }
             }
             if (n->jump_index < 0) ERR("ERROR in %s on line %ld: tried to use continue outside a while loop\n", n->file, n->line)
@@ -416,7 +416,7 @@ int main(int argc, char *argv[]) {
             while (1) {
                 Node *n = expr(p, NULL);
                 if (n->type == AST_Identifier) {
-                    append(func->args, n->value, func->arity, args_capacity)
+                    append_verbose(func->args, n->value, func->arity, args_capacity)
                     n->value = NULL;
                     free_node(n);
                 } else if (n->type == AST_Comma) {
@@ -428,7 +428,7 @@ int main(int argc, char *argv[]) {
                 } else ERR("ERROR in %s on line %ld: cant parse token type %s as part of function arguments\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
             }
         } else {
-            append_new(p->nodes, n);
+            append(p->nodes, n);
         }
     }
 
@@ -445,10 +445,10 @@ int main(int argc, char *argv[]) {
         c.func.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
         c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
 
-        append_new(funcs, compile_func(&((AST_Function){file_path, p->nodes, 0, NULL, 0})));
+        append(funcs, compile_func(&((AST_Function){file_path, p->nodes, 0, NULL, 0})));
 
         for (int i = 0; i < p->funcs.index; i++) {
-            append_new(funcs, compile_func(p->funcs.data[i]));
+            append(funcs, compile_func(p->funcs.data[i]));
         }
 
         report_time("COMPILING    time: %f seconds\n");

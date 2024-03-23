@@ -162,6 +162,8 @@ typedef struct Parser {
     bool parsing_function;
 } Parser;
 
+Parser *p;
+
 AST_Value *new_ast_value(int type, void *value, bool mutable, u_int32_t hash) {
     debug("AST_VALUE ( `%s` `%ld` )\n", find_value_type(type), NUM(value))
 
@@ -254,20 +256,20 @@ AST_Value *parse_list(Parser *p) {
         switch (CURRENT_TOK.type) {
             case Tok_Number:
                 p->tok_index++;
-                append(list, ((AST_Value){ Value_Number, dup_int(strtoint(LAST_TOK.start, LAST_TOK.length)), 1, 0 }), list_index, list_capacity)
+                append_verbose(list, ((AST_Value){ Value_Number, dup_int(strtoint(LAST_TOK.start, LAST_TOK.length)), 1, 0 }), list_index, list_capacity)
                 break;
             case Tok_String:
                 p->tok_index++;
-                append(list, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1, 0 }), list_index, list_capacity)
+                append_verbose(list, ((AST_Value){ Value_String, format_str(LAST_TOK.length + 1, "\"%.*s\"", LAST_TOK.length, LAST_TOK.start + 1), 1, 0 }), list_index, list_capacity)
                 break;
             case Tok_Identifier:
                 p->tok_index++;
-                append(list, ((AST_Value){ Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length) }), list_index, list_capacity)
+                append_verbose(list, ((AST_Value){ Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length) }), list_index, list_capacity)
                 break;
             case Tok_Sub:
                 ASSERT(NEXT_TOK.type == Tok_Number, "ERROR in %s on line %ld: can't negate type %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(NEXT_TOK.type))
                 p->tok_index++;
-                append(list, ((AST_Value){ Value_Number, dup_int(-strtoint(CURRENT_TOK.start, CURRENT_TOK.length)), 1, 0 }), list_index, list_capacity)
+                append_verbose(list, ((AST_Value){ Value_Number, dup_int(-strtoint(CURRENT_TOK.start, CURRENT_TOK.length)), 1, 0 }), list_index, list_capacity)
                 p->tok_index++;
                 break;
             case Tok_Comma:
@@ -335,7 +337,7 @@ Node *expr(Parser *p, Node *child) {
                 while ((arg = expr(p, NULL)) != NULL) {
                     if (arg->type == AST_Right_Paren) { free_node(arg); break; }
                     else if (arg->type == AST_Comma) free_node(arg);
-                    else append(n->func_args, arg, n->func_args_index, n->func_args_capacity)
+                    else append_verbose(n->func_args, arg, n->func_args_index, n->func_args_capacity)
                 }
                 return n;
             } else if (IS_TOK_MATH_OP(CURRENT_TOK.type)) {

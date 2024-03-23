@@ -406,7 +406,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
     while (1) {
         Token tok = scan_token(&lexer);
         if (tok.type == Tok_Eof) {
-            append_new(tokens, tok);
+            append(tokens, tok);
             break;
         } else if (tok.type == Tok_Comment) {
         } else if (tok.type == Tok_Include) {
@@ -424,7 +424,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
                 continue;
             }
 
-            append_new(include_paths, include_path);
+            append(include_paths, include_path);
 
             Token_Array new_tokens = {
                 calloc(10, sizeof(Token)),
@@ -435,10 +435,10 @@ Token *lex_file(const char *file_path, String_Array *programs) {
             Token *to_include = lex_file(include_path, programs);
 
             for (int i = 0; to_include[i].type != Tok_Eof; i++) {
-                append_new(new_tokens, to_include[i]);
+                append(new_tokens, to_include[i]);
             }
             for (int i = 0; i < tokens.index; i++) {
-                append_new(new_tokens, tokens.data[i]);
+                append(new_tokens, tokens.data[i]);
             }
 
             free(to_include);
@@ -447,13 +447,13 @@ Token *lex_file(const char *file_path, String_Array *programs) {
             tokens.index = new_tokens.index;
             tokens.capacity = new_tokens.capacity;
         } else {
-            append_new(tokens, tok);
+            append(tokens, tok);
         }
         debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), (int)tok.length, tok.start)
     } 
     free_array(include_paths);
 
-    append_new((*programs), program);
+    append((*programs), program);
 
     return tokens.data;
 }
