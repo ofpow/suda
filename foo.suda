@@ -1,5 +1,8 @@
-fn foo(a)
-    return a + 1
+fn fact(n)
+    if (n < 1)
+        return 1
+    ;
+    return (n * fact(n - 1))
 ;
 
-println foo(1)
+println fact(10)

@@ -500,6 +500,7 @@ void run(VM *vm) {
                 break;}
             case OP_CALL:{
                 vm->call_stack[vm->call_stack_count - 1].return_index = i + 2;
+                if (vm->call_stack_count >= CALL_STACK_SIZE) ERR("ERROR in %s on line %ld: call stack overflow\n", get_loc)
                 Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
                 frame->func = &vm->funcs.data[read_index];
                 frame->slots = vm->stack_top - frame->func->arity;
@@ -512,6 +513,7 @@ void run(VM *vm) {
                 Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
                 vm->func = frame->func;
                 i = frame->return_index;
+                vm->stack_top = frame->slots + 1;
                 stack_push(result);
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
