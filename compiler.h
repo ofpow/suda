@@ -44,6 +44,7 @@
     X(OP_CAST_NUM)\
     X(OP_CALL)\
     X(OP_RETURN)\
+    X(OP_PRINT)\
 
 typedef enum {
 #define X(x) x,
@@ -287,6 +288,10 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
             case AST_Println:
                 compile_expr(nodes[i]->left, c);
                 append_code(OP_PRINTLN, current_loc(nodes[i]));
+                break;
+            case AST_Print:
+                compile_expr(nodes[i]->left, c);
+                append_code(OP_PRINT, current_loc(nodes[i]));
                 break;
             case AST_Var_Assign:
                 compile_expr(nodes[i]->left, c); // value

@@ -101,6 +101,9 @@ void disassemble(VM *vm) {
                 case OP_PRINTLN:
                     printf("%-6d OP_PRINTLN\n", i);
                     break;
+                case OP_PRINT:
+                    printf("%-6d OP_PRINT\n", i);
+                    break;
                 case OP_DEFINE_GLOBAL:
                     printf("%-6d OP_DEFINE_GLOBAL\n", i);
                     i += 2;
@@ -221,6 +224,18 @@ void run(VM *vm) {
                 } else
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
+            case OP_PRINT:{
+                Value print = stack_pop;
+                if (print.type == Value_Number) {
+                    printf("%ld", print.val.num);
+                } else if (print.type == Value_String) {
+                    printf("%s", print.val.str);
+                    if (print.mutable == true) free(print.val.str);
+                } else if (print.type == Value_Array) {
+                    print_array(vm, &print);
+                } else
+                    ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
+                break;}
             case OP_DEFINE_GLOBAL:;
                 Value name = vm->func->constants.data[read_index];
                 i += 2;
