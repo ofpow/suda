@@ -268,6 +268,15 @@ void compile_expr(Node *n, Compiler *c) {
             compile_expr(n->left, c);
             append_code(OP_CAST_NUM, current_loc(n));
             break;
+        case AST_Fn_Call:{
+            for (int j = 0; j < n->func_args_index; j++) {
+                compile_expr(n->func_args[j], c);
+            }
+            u_int16_t index = resolve_func(n->value);
+            append_code(OP_CALL, current_loc(n));
+            append_code(FIRST_BYTE(index), INVALID_LOC);
+            append_code(SECOND_BYTE(index), INVALID_LOC);
+            break;}
         default: ERR("ERROR in %s on line %ld: cant compile node type %s as expr\n", n->file, n->line, find_ast_type(n->type));
     }
 }
