@@ -105,7 +105,7 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_PRINT\n", i);
                     break;
                 case OP_DEFINE_GLOBAL:
-                    printf("%-6d OP_DEFINE_GLOBAL\n", i);
+                    printf("%-6d OP_DEFINE_GLOBAL: var %s\n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
                     i += 2;
                     break;
                 case OP_ADD:
@@ -148,11 +148,11 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_NOT_EQUAL\n", i);
                     break;
                 case OP_SET_GLOBAL:
-                    printf("%-6d OP_SET_GLOBAL \n", i);
+                    printf("%-6d OP_SET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
                     i += 2;
                     break;
                 case OP_GET_GLOBAL:
-                    printf("%-6d OP_GET_GLOBAL \n", i);
+                    printf("%-6d OP_GET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
                     i += 2;
                     break;
                 case OP_JUMP_IF_FALSE:
@@ -189,7 +189,7 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_CAST_NUM\n", i);
                     break;
                 case OP_CALL:
-                    printf("%-6d OP_CALL\n", i);
+                    printf("%-6d OP_CALL:          func: %s\n", i, vm->funcs.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].name); 
                     i += 2;
                     break;
                 case OP_RETURN:
