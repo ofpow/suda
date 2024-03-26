@@ -510,10 +510,10 @@ void run(VM *vm) {
             case OP_RETURN:{
                 Value result = stack_pop;
                 vm->call_stack_count--;
-                Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
+                vm->stack_top = frame->slots;
+                frame = &vm->call_stack[vm->call_stack_count - 1];
                 vm->func = frame->func;
                 i = frame->return_index;
-                vm->stack_top = frame->slots + 1;
                 stack_push(result);
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
