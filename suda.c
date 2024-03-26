@@ -164,7 +164,7 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     if (bytecode) {
-        if (vm.call_stack_count > 1) {
+        if (vm.call_stack_count > 1 && exit_val) {
             printf("Stack trace:\n");
             for (int i = vm.call_stack_count - 1; i > 0; i--)
                 printf("%s:%ld\n", vm.call_stack[i].func->name, vm.call_stack[i].loc.line);
