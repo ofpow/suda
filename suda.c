@@ -430,7 +430,8 @@ int main(int argc, char *argv[]) {
     if (bytecode) {
         Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
 
-        append(funcs, compile_func(&((AST_Function){file_path, p->nodes, 0, NULL, 0})));
+        append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
+        funcs.data[0].name = file_path;
 
         for (int i = 0; i < p->funcs.index; i++) {
             append(funcs, compile_func(p->funcs.data[i]));

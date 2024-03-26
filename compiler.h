@@ -448,7 +448,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
 
 Function compile_func(AST_Function *func){
     Compiler c = {0};
-    c.depth++;
+    if (func->name != NULL) c.depth++;
     for (int i = 0; i < func->arity; i++) {
         c.locals[i].name = func->args[i];
         c.locals[i].depth = 1;
