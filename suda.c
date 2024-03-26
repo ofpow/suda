@@ -164,6 +164,11 @@ void free_mem(int exit_val) {
     debug("\n----------\nFREEING\n")
 
     if (bytecode) {
+        if (vm.call_stack_count > 1) {
+            printf("Stack trace:\n");
+            for (int i = vm.call_stack_count - 1; i > 0; i--)
+                printf("%s:%ld\n", vm.call_stack[i].func->name, vm.call_stack[i].loc.line);
+        }
         free(c.if_indices.data);
         free(c.while_indices.data);
         free_array(vm.funcs, free_func);
@@ -444,7 +449,7 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0};
+        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0, ((Location){file_path, 0})};
         vm.call_stack_count++;
         vm.func = &vm.funcs.data[0];
 

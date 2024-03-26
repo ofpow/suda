@@ -26,6 +26,7 @@ typedef struct Call_Frame {
     Function *func;
     Value *slots;
     int64_t return_index;
+    Location loc;
 } Call_Frame;
 
 typedef struct VM {
@@ -504,6 +505,7 @@ void run(VM *vm) {
                 Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
                 frame->func = &vm->funcs.data[read_index];
                 frame->slots = vm->stack_top - frame->func->arity;
+                frame->loc = vm->func->locs.data[i];
                 vm->func = &vm->funcs.data[read_index];
                 i = -1;
                 break;}

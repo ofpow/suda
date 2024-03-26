@@ -1,5 +1,13 @@
-let x = 5
+fn a()
+    b()
+;
 
-x = 3
+fn b()
+    c()
+;
 
-println x
+fn c()
+    println (1 - "1")
+;
+
+a()
