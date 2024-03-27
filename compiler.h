@@ -53,6 +53,7 @@
     X(OP_LSHIFT)\
     X(OP_RSHIFT)\
     X(OP_POWER)\
+    X(OP_RETURN_NOTHING)
 
 typedef enum {
 #define X(x) x,
@@ -491,14 +492,7 @@ Function compile_func(AST_Function *func){
     compile(func->nodes.data, func->nodes.index, &c);
 
     if (func->name != NULL && c.func.code.data[c.func.code.index - 1] != OP_RETURN) {
-        append(c.func.constants, ((Value){Value_Number, .val.num=0, false, 0}));
-        u_int16_t index = c.func.constants.index - 1;
-        append(c.func.code, OP_CONSTANT);
-        append(c.func.code, FIRST_BYTE(index));
-        append(c.func.code, SECOND_BYTE(index));
-        append(c.func.code, OP_RETURN);
-        for (int i = 0; i < 4; i++)
-            append(c.func.locs, INVALID_LOC);
+        append(c.func.code, OP_RETURN_NOTHING);
     }
 
     c.func.name = func->name;

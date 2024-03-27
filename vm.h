@@ -233,6 +233,9 @@ void disassemble(VM *vm) {
                 case OP_POWER:
                     printf("%-6d OP_POWER\n", i);
                     break;
+                case OP_RETURN_NOTHING:
+                    printf("%-6d OP_RETURN_NOTHING\n", i);
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->funcs.data[j].code.data[i]);
             }
@@ -581,6 +584,13 @@ void run(VM *vm) {
                 vm->func = frame->func;
                 i = frame->return_index;
                 stack_push(result);
+                break;}
+            case OP_RETURN_NOTHING:{
+                vm->call_stack_count--;
+                vm->stack_top = frame->slots;
+                frame = &vm->call_stack[vm->call_stack_count - 1];
+                vm->func = frame->func;
+                i = frame->return_index;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
