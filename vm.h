@@ -22,6 +22,19 @@
 } while (0);                                                                        \
 break                                                                               \
 
+#define unary_op(op, msg) do {                          \
+    Value op1 = stack_pop;                              \
+    if (op1.type == Value_Number) {                     \
+        stack_push(((Value) {                           \
+            Value_Number,                               \
+            .val.num=(op(op1.val.num)),                 \
+            false,                                      \
+            0                                           \
+        }));                                            \
+    } else ERR(msg, get_loc, find_value_type(op1.type)) \
+} while (0);                                            \
+break                                                   \
+
 typedef struct Call_Frame {
     Function *func;
     Value *slots;
@@ -196,6 +209,30 @@ void disassemble(VM *vm) {
                 case OP_RETURN:
                     printf("%-6d OP_RETURN\n", i);
                     break;
+                case OP_MODULO:
+                    printf("%-6d OP_MODULO\n", i);
+                    break;
+                case OP_BIT_AND:
+                    printf("%-6d OP_BIT_AND\n", i);
+                    break;
+                case OP_BIT_OR:
+                    printf("%-6d OP_BIT_OR\n", i);
+                    break;
+                case OP_BIT_XOR:
+                    printf("%-6d OP_BIT_XOR\n", i);
+                    break;
+                case OP_BIT_NOT:
+                    printf("%-6d OP_BIT_NOT\n", i);
+                    break;
+                case OP_LSHIFT:
+                    printf("%-6d OP_LSHIFT\n", i);
+                    break;
+                case OP_RSHIFT:
+                    printf("%-6d OP_RSHIFT\n", i);
+                    break;
+                case OP_POWER:
+                    printf("%-6d OP_POWER\n", i);
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->funcs.data[j].code.data[i]);
             }
@@ -314,16 +351,33 @@ void run(VM *vm) {
                 binary_op(==, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
             case OP_OR:
                 binary_op(||, "ERROR in %s on line %ld: cant logical or type %s and %s\n");
-            case OP_NOT:;
-                Value op = stack_pop;
-                ASSERT(op.type == Value_Number, "cant logical not type %s", find_value_type(op.type))
+            case OP_MODULO:
+                binary_op(%, "ERROR in %s on line %ld: cant modulo type %s and %s\n");
+            case OP_BIT_AND:
+                binary_op(&, "ERROR in %s on line %ld: cant bitwise and type %s and %s\n");
+            case OP_BIT_OR:
+                binary_op(|, "ERROR in %s on line %ld: cant bitwise or type %s and %s\n");
+            case OP_BIT_XOR:
+                binary_op(^, "ERROR in %s on line %ld: cant bitwise xor type %s and %s\n");
+            case OP_LSHIFT:
+                binary_op(<<, "ERROR in %s on line %ld: cant lshift type %s and %s\n");
+            case OP_RSHIFT:
+                binary_op(>>, "ERROR in %s on line %ld: cant rshift type %s and %s\n");
+            case OP_POWER:{
+                Value op2 = stack_pop;
+                Value op1 = stack_pop;
+                ASSERT((op1.type == Value_Number) && (op2.type == Value_Number), "cant exponentiate type %s and type %s\n", find_value_type(op1.type), find_value_type(op2.type))
                 stack_push(((Value) {
                     Value_Number,
-                    .val.num=(!(op.val.num)),
+                    .val.num=(exponentiate(op1.val.num, op2.val.num)),
                     false,
                     0 
                 }));
-                break;
+                break;}
+            case OP_BIT_NOT:
+                unary_op(~, "ERROR in %s on line %ld: cant bitwise not type %s\n");
+            case OP_NOT:;
+                unary_op(!, "ERROR in %s on line %ld: cant logical not type %s\n");
             case OP_NOT_EQUAL:{
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
@@ -342,7 +396,12 @@ void run(VM *vm) {
                         false,
                         0
                     }));
-                } else ERR("ERROR in %s on line %ld: cant not equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
+                } else stack_push(((Value){
+                        Value_Number,
+                        .val.num=0,
+                        false,
+                        0
+                    }));
                 break;}
             case OP_IS_EQUAL: {
                 Value op2 = stack_pop;
@@ -362,7 +421,12 @@ void run(VM *vm) {
                         false,
                         0
                     }));
-                } else ERR("ERROR in %s on line %ld: cant is equal type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
+                } else stack_push(((Value){
+                        Value_Number,
+                        .val.num=0,
+                        false,
+                        0
+                    }));
                 break;}
             case OP_SET_GLOBAL:{
                 Value name = vm->func->constants.data[read_index];

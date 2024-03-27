@@ -45,6 +45,14 @@
     X(OP_CALL)\
     X(OP_RETURN)\
     X(OP_PRINT)\
+    X(OP_MODULO)\
+    X(OP_BIT_AND)\
+    X(OP_BIT_OR)\
+    X(OP_BIT_XOR)\
+    X(OP_BIT_NOT)\
+    X(OP_LSHIFT)\
+    X(OP_RSHIFT)\
+    X(OP_POWER)\
 
 typedef enum {
 #define X(x) x,
@@ -79,6 +87,14 @@ Op_Code ast_to_op_code(AST_Type type) {
         case AST_Or: return OP_OR;
         case AST_Not: return OP_NOT;
         case AST_Not_Equal: return OP_NOT_EQUAL;
+        case AST_Modulo: return OP_MODULO;
+        case AST_Bit_And: return OP_BIT_AND;
+        case AST_Bit_Or: return OP_BIT_OR;
+        case AST_Bit_Xor: return OP_BIT_XOR;
+        case AST_Bit_Not: return OP_BIT_NOT;
+        case AST_Lshift: return OP_LSHIFT;
+        case AST_Rshift: return OP_RSHIFT;
+        case AST_Power: return OP_POWER;
         default: ERR("no op code for ast type %d\n", type);
     }
     return 0;
@@ -206,6 +222,13 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_And:
         case AST_Or:
         case AST_Not_Equal:
+        case AST_Modulo:
+        case AST_Bit_And:
+        case AST_Bit_Or:
+        case AST_Bit_Xor:
+        case AST_Lshift:
+        case AST_Rshift:
+        case AST_Power:
             compile_expr(n->left, c);
             compile_expr(n->right, c);
             append_code(ast_to_op_code(n->type), current_loc(n));
@@ -213,6 +236,10 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Not:
             compile_expr(n->left, c);
             append_code(OP_NOT, current_loc(n));
+            break;
+        case AST_Bit_Not:
+            compile_expr(n->left, c);
+            append_code(OP_BIT_NOT, current_loc(n));
             break;
         case AST_Array:{
             int64_t array_len = NUM(n->value[0].value);
