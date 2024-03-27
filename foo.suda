@@ -1,13 +1,7 @@
-fn a()
-    b()
+fn foo()
+    println "hi"
 ;
 
-fn b()
-    c()
-;
+foo()
 
-fn c()
-    println (1 - "1")
-;
-
-a()
+println 1
