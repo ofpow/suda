@@ -112,6 +112,11 @@ void disassemble(VM *vm) {
             switch(vm->funcs.data[j].code.data[i]) {
                 case OP_CONSTANT:
                     printf("%-6d OP_CONSTANT:      ", i);
+                    print_value(vm->funcs.data[j].constants.data[vm->funcs.data[j].code.data[i + 1]]);
+                    i++;
+                    break;
+                case OP_CONSTANT_LONG:
+                    printf("%-6d OP_CONSTANT_LONG: ", i);
                     print_value(vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])]);
                     i += 2;
                     break;
@@ -261,7 +266,11 @@ void run(VM *vm) {
         Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {
-            case OP_CONSTANT:;
+            case OP_CONSTANT:;{
+                u_int8_t index = vm->func->code.data[++i];
+                stack_push(vm->func->constants.data[index]);
+                break;}
+            case OP_CONSTANT_LONG:;
                 u_int16_t index = read_index;
                 stack_push(vm->func->constants.data[index]);
                 i += 2;
