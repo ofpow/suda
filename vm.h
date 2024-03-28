@@ -454,6 +454,9 @@ void run(VM *vm) {
                             array[i] = new_array[i];
                     }
                     vm->func->arrays.data[var->value.val.num] = array;
+                } else if (var->value.type == Value_String && var->value.mutable) {
+                    free(var->value.val.str);
+                    var->value = value;
                 } else {
                 var->value = value;}
                 break;}
@@ -512,7 +515,13 @@ void run(VM *vm) {
                 i += 2;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
-                stack_push(var->value);
+                if (var->value.type == Value_String && var->value.mutable) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=var->value.val.str,
+                    false,
+                    0
+                }));
+                else stack_push(var->value);
                 break;}
             case OP_GET_LOCAL: {
                 i++;

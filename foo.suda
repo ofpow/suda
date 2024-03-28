@@ -1,7 +1,8 @@
-fn foo()
-    println "hi"
+let foo = ""
+let i = 1
+
+while (i < 10)
+    foo = (foo + "#")
+    i = (i + 1)
 ;
-
-foo()
-
-println 1
+println foo
