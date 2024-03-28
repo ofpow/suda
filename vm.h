@@ -92,6 +92,18 @@ void print_array(VM *vm, Value *val) {
     free(str);
 }
 
+void print_value(Value val) {
+    switch (val.type) {
+        case Value_Number:
+            printf("%ld\n", val.val.num);
+            break;
+        case Value_String:
+            printf("\"%s\"\n", val.val.str);
+            break;
+        default: ERR("cant print type %s\n", find_value_type(val.type))
+    }
+}
+
 void disassemble(VM *vm) {
     for (int j = 0; j < vm->funcs.index; j++) {
         if (j > 0) printf("\n");
@@ -99,7 +111,8 @@ void disassemble(VM *vm) {
         for (int i = 0; i < vm->funcs.data[j].code.index; i++) {
             switch(vm->funcs.data[j].code.data[i]) {
                 case OP_CONSTANT:
-                    printf("%-6d OP_CONSTANT:      index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    printf("%-6d OP_CONSTANT:      ", i);
+                    print_value(vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])]);
                     i += 2;
                     break;
                 case OP_ARRAY:
