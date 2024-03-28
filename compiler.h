@@ -193,6 +193,8 @@ void compile_constant(Node *n, Compiler *c) {
     if (index < 255) {
         append_code(OP_CONSTANT, current_loc(n));
         append_code(index, INVALID_LOC);
+    } else if (index == 65535) {
+        ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
     } else {
         append_code(OP_CONSTANT_LONG, current_loc(n));
         append_code(FIRST_BYTE(index), INVALID_LOC);
