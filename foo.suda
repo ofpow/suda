@@ -1,5 +1,5 @@
-let x = "hello world"
-
-println x@3
-x@3 = "H"
-println x
+if 0
+    println "e"
+elif 0
+    println "E"
+;

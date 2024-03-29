@@ -4,6 +4,7 @@
 #define LOCALS_MAX 256
 #define CALL_STACK_SIZE 64
 
+#define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
 #define FIRST_BYTE(_val) (u_int8_t)((_val) >> 8)
 #define SECOND_BYTE(_val) (u_int8_t)((_val) & 0xFF)
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
@@ -420,7 +421,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                         if (c->if_indices.index < 1) break;
                         u_int16_t index = c->if_indices.data[--c->if_indices.index];
                         if (c->func.code.data[index] == OP_START_IF) break;
-                        else if (c->func.code.data[index] == OP_JUMP_IF_FALSE) continue;
+                        else if (c->func.code.data[index] == OP_JUMP_IF_FALSE &&
+                                COMBYTE(c->func.code.data[index + 1], c->func.code.data[index + 2]) != 0) continue;
                         c->func.code.data[index + 1] = FIRST_BYTE(c->func.code.index);
                         c->func.code.data[index + 2] = SECOND_BYTE(c->func.code.index);
                     }
