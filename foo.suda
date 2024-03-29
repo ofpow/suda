@@ -1,5 +1,3 @@
-let x = [1, 2, 3, 4]
+let x = "hi"
 
-append x 5
-
-println x
+println len(x)

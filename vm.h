@@ -588,13 +588,21 @@ void run(VM *vm) {
                 break;
             case OP_LEN:;
                 Value array = stack_pop;
-                ASSERT(array.type == Value_Array, "ERROR in %s on line %ld: cant do len of %s\n", get_loc, find_value_type(array.type))
-                stack_push(((Value) {
-                    Value_Number,      
-                    .val.num=vm->func->arrays.data[array.val.num][0].val.num - 1,   
-                    false,            
-                    0                 
-                }));                 
+                if (array.type == Value_Array) {
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=vm->func->arrays.data[array.val.num][0].val.num - 1,
+                        false,
+                        0
+                    }));
+                } else if (array.type == Value_String) {
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=strlen(array.val.str),
+                        false,
+                        0
+                    }));
+                } else ERR("ERROR in %s on line %ld: cant do len of %s\n", get_loc, find_value_type(array.type))
                 break;
             case OP_CAST_STR:{
                 Value val = stack_pop;
