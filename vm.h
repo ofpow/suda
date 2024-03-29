@@ -100,6 +100,9 @@ void print_value(Value val) {
         case Value_String:
             printf("\"%s\"\n", val.val.str);
             break;
+        case Value_Identifier:
+            printf("%s\n", val.val.str);
+            break;
         default: ERR("cant print type %s\n", find_value_type(val.type))
     }
 }
@@ -508,18 +511,27 @@ void run(VM *vm) {
                 Value array = stack_pop;
                 Value index = stack_pop;
 
-                int64_t arr_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
-
-                if (vm->func->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
-                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->func->arrays.data[arr_index][index.val.num].hash)->value;
-                    stack_push(var->value);
-                } else if (vm->func->arrays.data[arr_index][index.val.num].type == Value_String && vm->func->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
-                    Value_String, 
-                    .val.str=vm->func->arrays.data[arr_index][index.val.num].val.str,
-                    false,
-                    0
-                }));
-                else stack_push(vm->func->arrays.data[arr_index][index.val.num]);
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
+                if (var->value.type == Value_String) {
+                    stack_push(((Value) {
+                        Value_String,
+                        .val.str=format_str(2, "%c", var->value.val.str[index.val.num - 1]),
+                        true,
+                        0
+                    }));                  
+                } else {
+                    int64_t arr_index = var->value.val.num;
+                    if (vm->func->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
+                        Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->func->arrays.data[arr_index][index.val.num].hash)->value;
+                        stack_push(var->value);
+                    } else if (vm->func->arrays.data[arr_index][index.val.num].type == Value_String && vm->func->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
+                        Value_String, 
+                        .val.str=vm->func->arrays.data[arr_index][index.val.num].val.str,
+                        false,
+                        0
+                    }));
+                    else stack_push(vm->func->arrays.data[arr_index][index.val.num]);
+                }
 
                 break;}
             case OP_SET_ELEMENT:{
@@ -527,9 +539,14 @@ void run(VM *vm) {
                 Value index = stack_pop;
                 Value array = stack_pop;
 
-                int64_t var_index = ((Variable*)get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value)->value.val.num;
-                if (vm->func->arrays.data[var_index][index.val.num].type == Value_String && vm->func->arrays.data[var_index][index.val.num].mutable) free(vm->func->arrays.data[var_index][index.val.num].val.str);
-                vm->func->arrays.data[var_index][index.val.num] = new_val;
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
+                if (var->value.type == Value_String) {
+                    var->value.val.str[index.val.num - 1] = new_val.val.str[0];
+                } else {
+                    int64_t var_index = var->value.val.num;
+                    if (vm->func->arrays.data[var_index][index.val.num].type == Value_String && vm->func->arrays.data[var_index][index.val.num].mutable) free(vm->func->arrays.data[var_index][index.val.num].val.str);
+                    vm->func->arrays.data[var_index][index.val.num] = new_val;
+                }
 
                 break;}
             case OP_GET_GLOBAL:{

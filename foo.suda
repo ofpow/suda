@@ -1,8 +1,5 @@
-let foo = ""
-let i = 1
+let x = "hello world"
 
-while (i < 10)
-    foo = (foo + "#")
-    i = (i + 1)
-;
-println foo
+println x@3
+x@3 = "H"
+println x
