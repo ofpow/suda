@@ -55,7 +55,8 @@
     X(OP_LSHIFT)\
     X(OP_RSHIFT)\
     X(OP_POWER)\
-    X(OP_RETURN_NOTHING)
+    X(OP_RETURN_NOTHING)\
+    X(OP_APPEND)\
 
 typedef enum {
 #define X(x) x,
@@ -478,6 +479,16 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
             case AST_Return:{
                 compile_expr(nodes[i]->left, c);
                 append_code(OP_RETURN, current_loc(nodes[i]));
+                break;}
+            case AST_Append:{
+                compile_constant(nodes[i]->left, c);
+
+                append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                u_int16_t index = c->func.constants.index - 1;
+                append_code(OP_APPEND, current_loc(nodes[i]));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+
                 break;}
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }

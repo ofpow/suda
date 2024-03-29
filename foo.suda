@@ -1,5 +1,5 @@
-if 0
-    println "e"
-elif 0
-    println "E"
-;
+let x = [1, 2, 3, 4]
+
+append x 5
+
+println x

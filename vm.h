@@ -1,6 +1,5 @@
 #pragma once
 
-#define COMBYTE(_byte1, _byte2) (((_byte1) << 8) | (_byte2))
 #define read_index (COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]))
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
@@ -257,8 +256,13 @@ void disassemble(VM *vm) {
                 case OP_RETURN_NOTHING:
                     printf("%-6d OP_RETURN_NOTHING\n", i);
                     break;
+                case OP_APPEND:
+                    printf("%-6d OP_APPEND:        var ", i);
+                    print_value(vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])]);
+                    i += 2;
+                    break;
                 default:
-                    ERR("ERROR in %s on line %ld: cant disassemble op type %d\n", get_loc,  vm->funcs.data[j].code.data[i]);
+                    ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(vm->funcs.data[j].code.data[i]));
             }
         }
     }
@@ -639,6 +643,21 @@ void run(VM *vm) {
                 frame = &vm->call_stack[vm->call_stack_count - 1];
                 vm->func = frame->func;
                 i = frame->return_index;
+                break;}
+            case OP_APPEND:{
+                Value val = stack_pop;
+                Value var_name = vm->func->constants.data[read_index];
+                i += 2;
+
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str);
+
+                Value *array = vm->func->arrays.data[var->value.val.num];
+                int64_t arr_len = array[0].val.num + 1;
+                array = realloc(array, arr_len * sizeof(Value));
+                array[arr_len - 1] = val;
+                array[0].val.num = arr_len;
+                vm->func->arrays.data[var->value.val.num] = array;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
