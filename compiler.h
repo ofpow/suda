@@ -121,8 +121,6 @@ typedef struct Function {
 
     Constants constants;
 
-    Arrays arrays;
-
     int arity;
     char *name;
 } Function;
@@ -139,6 +137,8 @@ typedef struct Compiler {
     Jump_Indices while_indices;
 
     Function func;
+
+    Arrays *arrays;
 
     Local locals[LOCALS_MAX];
     u_int8_t locals_count;
@@ -171,14 +171,6 @@ void free_func(Function func) {
     free(func.code.data);
     free(func.locs.data);
     free(func.constants.data);
-    for (int i = 0; i < func.arrays.index; i++) {
-        for (int j = 0; j < func.arrays.data[i][0].val.num; j++) {
-            if (func.arrays.data[i][j].mutable == true)
-                free(func.arrays.data[i][j].val.str);
-        }
-        free(func.arrays.data[i]);
-    }
-    free(func.arrays.data);
 }
 
 void compile_constant(Node *n, Compiler *c) {
@@ -284,9 +276,9 @@ void compile_expr(Node *n, Compiler *c) {
                 }
             }
 
-            append(c->func.arrays, array);
+            append_verbose(c->arrays->data, array, c->arrays->index, c->arrays->capacity);
             append_code(OP_ARRAY, current_loc(n));
-            u_int16_t index = c->func.arrays.index - 1;
+            u_int16_t index = c->arrays->index - 1;
             append_code(FIRST_BYTE(index), INVALID_LOC);
             append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
@@ -495,7 +487,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
     }
 }
 
-Function compile_func(AST_Function *func){
+Function compile_func(AST_Function *func, Arrays *arrays){
     Compiler c = {0};
     if (func->name != NULL) c.depth++;
     for (int i = 0; i < func->arity; i++) {
@@ -507,8 +499,9 @@ Function compile_func(AST_Function *func){
     c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
     c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
     c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
-    c.func.arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
     c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
+
+    c.arrays = arrays;
 
     compile(func->nodes.data, func->nodes.index, &c);
 

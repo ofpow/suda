@@ -173,6 +173,14 @@ void free_mem(int exit_val) {
         free(c.while_indices.data);
         free_array(vm.funcs, free_func);
         free_array(p->funcs, free_ast_function);
+        for (int i = 0; i < vm.arrays.index; i++) {
+            for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
+                if (vm.arrays.data[i][j].mutable == true)
+                    free(vm.arrays.data[i][j].val.str);
+            }
+            free(vm.arrays.data[i]);
+        }
+        free(vm.arrays.data);
         free_map(vm.vars);
     }
     if (!bytecode) {
@@ -434,12 +442,13 @@ int main(int argc, char *argv[]) {
     debug("\n----------\nINTERPRETING\n")
     if (bytecode) {
         Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
+        Arrays arrays = (Arrays){calloc(10, sizeof(Value*)), 0, 10};
 
-        append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
+        append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0}), &arrays));
         funcs.data[0].name = file_path;
 
         for (int i = 0; i < p->funcs.index; i++) {
-            append(funcs, compile_func(p->funcs.data[i]));
+            append(funcs, compile_func(p->funcs.data[i], &arrays));
         }
 
         report_time("COMPILING    time: %f seconds\n");
@@ -451,6 +460,7 @@ int main(int argc, char *argv[]) {
 
         vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0, ((Location){file_path, 0})};
         vm.call_stack_count++;
+        vm.arrays = arrays;
         vm.func = &vm.funcs.data[0];
 
         if (disassembly) disassemble(&vm);

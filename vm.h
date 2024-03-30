@@ -44,6 +44,8 @@ typedef struct Call_Frame {
 typedef struct VM {
     Function *func;
 
+    Arrays arrays;
+
     Map *vars;
 
     Value stack[STACK_SIZE];
@@ -55,7 +57,7 @@ typedef struct VM {
 } VM;
 
 void print_array(VM *vm, Value *val) {
-    Value *array = vm->func->arrays.data[val->val.num];
+    Value *array = vm->arrays.data[val->val.num];
     if (array[0].val.num < 2) printf("[]\n");
 
     int64_t str_len = 2;
@@ -476,12 +478,12 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
                 else if (var->value.type == Value_Array) {
-                    Value *array = vm->func->arrays.data[var->value.val.num];
+                    Value *array = vm->arrays.data[var->value.val.num];
                     for (int i = 1; i < array[0].val.num; i++) {
                         if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str);
                     }
-                    free(vm->func->arrays.data[var->value.val.num]);
-                    Value *new_array = vm->func->arrays.data[value.val.num];
+                    free(vm->arrays.data[var->value.val.num]);
+                    Value *new_array = vm->arrays.data[value.val.num];
                     array = calloc(new_array[0].val.num, sizeof(Value));
 
                     for (int i = 0; i < new_array[0].val.num; i++) {
@@ -490,7 +492,7 @@ void run(VM *vm) {
                         else 
                             array[i] = new_array[i];
                     }
-                    vm->func->arrays.data[var->value.val.num] = array;
+                    vm->arrays.data[var->value.val.num] = array;
                 } else if (var->value.type == Value_String && var->value.mutable) {
                     free(var->value.val.str);
                     var->value = value;
@@ -533,16 +535,16 @@ void run(VM *vm) {
                     }));                  
                 } else {
                     int64_t arr_index = var->value.val.num;
-                    if (vm->func->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
-                        Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->func->arrays.data[arr_index][index.val.num].hash)->value;
+                    if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
+                        Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
                         stack_push(var->value);
-                    } else if (vm->func->arrays.data[arr_index][index.val.num].type == Value_String && vm->func->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
+                    } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
                         Value_String, 
-                        .val.str=vm->func->arrays.data[arr_index][index.val.num].val.str,
+                        .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
                         false,
                         0
                     }));
-                    else stack_push(vm->func->arrays.data[arr_index][index.val.num]);
+                    else stack_push(vm->arrays.data[arr_index][index.val.num]);
                 }
 
                 break;}
@@ -556,8 +558,8 @@ void run(VM *vm) {
                     var->value.val.str[index.val.num - 1] = new_val.val.str[0];
                 } else {
                     int64_t var_index = var->value.val.num;
-                    if (vm->func->arrays.data[var_index][index.val.num].type == Value_String && vm->func->arrays.data[var_index][index.val.num].mutable) free(vm->func->arrays.data[var_index][index.val.num].val.str);
-                    vm->func->arrays.data[var_index][index.val.num] = new_val;
+                    if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str);
+                    vm->arrays.data[var_index][index.val.num] = new_val;
                 }
 
                 break;}
@@ -599,7 +601,7 @@ void run(VM *vm) {
                 if (array.type == Value_Array) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=vm->func->arrays.data[array.val.num][0].val.num - 1,
+                        .val.num=vm->arrays.data[array.val.num][0].val.num - 1,
                         false,
                         0
                     }));
@@ -668,12 +670,12 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str);
 
-                Value *array = vm->func->arrays.data[var->value.val.num];
+                Value *array = vm->arrays.data[var->value.val.num];
                 int64_t arr_len = array[0].val.num + 1;
                 array = realloc(array, arr_len * sizeof(Value));
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
-                vm->func->arrays.data[var->value.val.num] = array;
+                vm->arrays.data[var->value.val.num] = array;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
