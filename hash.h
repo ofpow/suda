@@ -67,7 +67,6 @@ typedef struct Value {
 typedef struct Variable {
     char *name;
     Value value;
-    int64_t index;
 } Variable;
 
 void free_ast_value(AST_Value *value) {
