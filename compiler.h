@@ -57,6 +57,7 @@
     X(OP_POWER)\
     X(OP_RETURN_NOTHING)\
     X(OP_APPEND)\
+    X(OP_BREAK)\
 
 typedef enum {
 #define X(x) x,
@@ -394,12 +395,22 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 }
 
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
-                    u_int16_t index = c->while_indices.data[--c->while_indices.index];
-                    u_int16_t x = c->func.code.index + 3 - index;
-                    c->func.code.data[index + 1] = FIRST_BYTE(x);
-                    c->func.code.data[index + 2] = SECOND_BYTE(x);
+                    while (1) {
+                        u_int16_t index = c->while_indices.data[--c->while_indices.index];
+                        if (c->func.code.data[index] == OP_JUMP_IF_FALSE) {
+                            u_int16_t x = c->func.code.index + 3 - index;
+                            c->func.code.data[index + 1] = FIRST_BYTE(x);
+                            c->func.code.data[index + 2] = SECOND_BYTE(x);
+                            break;
+                        } else if (c->func.code.data[index] == OP_BREAK) {
+                            u_int16_t x = c->func.code.index + 3 - index;
+                            c->func.code.data[index + 1] = FIRST_BYTE(x);
+                            c->func.code.data[index + 2] = SECOND_BYTE(x);
+                        }
 
-                    index = c->while_indices.data[--c->while_indices.index];
+                    }
+
+                    u_int16_t index = c->while_indices.data[--c->while_indices.index];
                     append_code(OP_JUMP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
@@ -481,6 +492,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
 
+                break;}
+            case AST_Break:{
+                append(c->while_indices, c->func.code.index);
+                append_code(OP_BREAK, current_loc(nodes[i]));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
                 break;}
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }

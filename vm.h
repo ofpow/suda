@@ -263,6 +263,10 @@ void disassemble(VM *vm) {
                     print_value(vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])]);
                     i += 2;
                     break;
+                case OP_BREAK:
+                    printf("%-6d OP_BREAK:         offset %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
+                    i += 2;
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(vm->funcs.data[j].code.data[i]));
             }
@@ -676,6 +680,9 @@ void run(VM *vm) {
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
                 vm->arrays.data[var->value.val.num] = array;
+                break;}
+            case OP_BREAK:{
+                i += read_index - 1;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
