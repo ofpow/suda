@@ -58,6 +58,7 @@
     X(OP_RETURN_NOTHING)\
     X(OP_APPEND)\
     X(OP_BREAK)\
+    X(OP_CONTINUE)\
 
 typedef enum {
 #define X(x) x,
@@ -395,6 +396,14 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 }
 
                 if (nodes[nodes[i]->jump_index]->type == AST_While) {
+                    u_int16_t start_index = 0;
+                    for (int i = c->while_indices.index; i; i--) {
+                        if (c->func.code.data[c->while_indices.data[i]] == OP_JUMP_IF_FALSE) {
+                            start_index = c->while_indices.data[i - 1];
+                            break;
+                        }
+                    }
+
                     while (1) {
                         u_int16_t index = c->while_indices.data[--c->while_indices.index];
                         if (c->func.code.data[index] == OP_JUMP_IF_FALSE) {
@@ -406,6 +415,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                             u_int16_t x = c->func.code.index + 3 - index;
                             c->func.code.data[index + 1] = FIRST_BYTE(x);
                             c->func.code.data[index + 2] = SECOND_BYTE(x);
+                        } else if (c->func.code.data[index] == OP_CONTINUE) {
+                            c->func.code.data[index + 1] = FIRST_BYTE(start_index);
+                            c->func.code.data[index + 2] = SECOND_BYTE(start_index);
                         }
 
                     }
@@ -496,6 +508,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
             case AST_Break:{
                 append(c->while_indices, c->func.code.index);
                 append_code(OP_BREAK, current_loc(nodes[i]));
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
+                break;}
+            case AST_Continue:{
+                append(c->while_indices, c->func.code.index);
+                append_code(OP_CONTINUE, current_loc(nodes[i]));
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 break;}
