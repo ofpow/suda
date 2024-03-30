@@ -308,13 +308,21 @@ void run(VM *vm) {
                 break;}
             case OP_DEFINE_GLOBAL:;
                 Value name = vm->func->constants.data[read_index];
-                i += 2;
                 Value value = stack_pop;
+
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str;
                 var->value = value;
-                var->index = -1;
-                insert_entry(vm->vars, name.hash, Entry_Variable, var);
+
+                Entry *entry = get_entry(vm->vars->entries, vm->vars->capacity, name.hash);
+                if (entry->key != 0) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str)
+
+                vm->vars->count++;
+                entry->key = name.hash;
+                entry->type = Entry_Variable;
+                entry->value = var;
+
+                i += 2;
                 break;
             case OP_ADD:;
                 Value op2 = stack_pop;
