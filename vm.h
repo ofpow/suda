@@ -705,7 +705,7 @@ void run(VM *vm) {
                         stack_push(vm->arrays.data[array.val.num][1]);
                     } else if (index->val.num >= vm->arrays.data[array.val.num][0].val.num) {
                         index->val.num = 1;
-                        i += read_index - 1;
+                        i = read_index - 1;
                     } else {
                         *local = vm->arrays.data[array.val.num][index->val.num];
                     }
