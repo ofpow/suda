@@ -271,6 +271,10 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_CONTINUE:      index %d\n", i, COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2]));
                     i += 2;
                     break;
+                case OP_FOR:
+                    printf("%-6d OP_FOR\n", i);
+                    i += 5;
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(vm->funcs.data[j].code.data[i]));
             }
@@ -690,6 +694,23 @@ void run(VM *vm) {
                 break;}
             case OP_CONTINUE:{
                 i = read_index - 1;
+                break;}
+            case OP_FOR:{
+                Value array = stack_pop;
+                Value *index = &vm->func->constants.data[read_index];
+                i += 2;
+                Value *local = &frame->slots[vm->func->code.data[++i]];
+                if (array.type == Value_Array) {
+                    if (index->val.num == 1) {
+                        stack_push(vm->arrays.data[array.val.num][1]);
+                    } else if (index->val.num >= vm->arrays.data[array.val.num][0].val.num) {
+                        index->val.num = 1;
+                        i += read_index - 1;
+                    } else {
+                        *local = vm->arrays.data[array.val.num][index->val.num];
+                    }
+                    index->val.num++;
+                } else ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }

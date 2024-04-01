@@ -59,6 +59,7 @@
     X(OP_APPEND)\
     X(OP_BREAK)\
     X(OP_CONTINUE)\
+    X(OP_FOR)\
 
 typedef enum {
 #define X(x) x,
@@ -137,6 +138,7 @@ typedef struct Local {
 typedef struct Compiler {
     Jump_Indices if_indices;
     Jump_Indices while_indices;
+    Jump_Indices for_indices;
 
     Function func;
 
@@ -146,6 +148,21 @@ typedef struct Compiler {
     u_int8_t locals_count;
     int64_t depth;
 } Compiler;
+
+void add_local(Node *n, Compiler *c) {
+    if (c->locals_count >= LOCALS_MAX - 1) ERR("ERROR in %s on line %ld: too many local vars\n", n->file, n->line)
+    
+    for (int i = c->locals_count - 1; i >= 0; i--) {
+        if (c->locals[i].depth != -1 && c->locals[i].depth < c->depth) break;
+
+        if (ast_value_equal(c->locals[i].name, n->value)) 
+            ERR("ERROR in %s on line %ld: cant redefine local variable %s\n", n->file, n->line, STR(n->value->value))
+    }
+
+    c->locals[c->locals_count].name = n->value;
+    c->locals[c->locals_count].depth = c->depth;
+    c->locals_count++;
+}
 
 u_int8_t resolve_local(AST_Value *name, Compiler *c) {
     for (int i = c->locals_count - 1; i >= 0; i--) {
@@ -329,18 +346,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_expr(nodes[i]->left, c); // value
                 
                 if (c->depth > 0) {
-                    if (c->locals_count >= LOCALS_MAX - 1) ERR("ERROR in %s on line %ld: too many local vars\n", nodes[i]->file, nodes[i]->line)
-                    
-                    for (int i = c->locals_count - 1; i >= 0; i--) {
-                        if (c->locals[i].depth != -1 && c->locals[i].depth < c->depth) break;
-
-                        if (ast_value_equal(c->locals[i].name, nodes[i]->value)) 
-                            ERR("ERROR in %s on line %ld: cant redefine local variable %s\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value))
-                    }
-
-                    c->locals[c->locals_count].name = nodes[i]->value;
-                    c->locals[c->locals_count].depth = c->depth;
-                    c->locals_count++;
+                    add_local(nodes[i], c);
                 } else {
                     append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;
@@ -389,7 +395,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 u_int16_t amount = 0;
                 while(c->locals_count > 0 && c->locals[c->locals_count - 1].depth > c->depth) { amount++; c->locals_count--; }
 
-                if (amount > 0) {
+                if (amount > 0 && nodes[nodes[i]->jump_index]->type != AST_For) {
                     append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(amount), INVALID_LOC);
                     append_code(SECOND_BYTE(amount), INVALID_LOC);
@@ -424,6 +430,22 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
 
                     u_int16_t index = c->while_indices.data[--c->while_indices.index];
                     append_code(OP_JUMP, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                } else if (nodes[nodes[i]->jump_index]->type == AST_For) {
+                    u_int16_t index = c->for_indices.data[--c->for_indices.index];
+                    u_int16_t offset = c->func.code.index;
+                    
+                    c->func.code.data[index] = FIRST_BYTE(offset);
+                    c->func.code.data[index + 1] = SECOND_BYTE(offset);
+
+                    index = c->for_indices.data[--c->for_indices.index];
+                    append_code(OP_JUMP, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+
+                    index = 1;
+                    append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
@@ -486,10 +508,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 for (int j = 0; j < nodes[i]->func_args_index; j++) {
                     compile_expr(nodes[i]->func_args[j], c);
                 }
-                u_int16_t index = resolve_func(nodes[i]->value);
                 append_code(OP_CALL, current_loc(nodes[i]));
-                append_code(FIRST_BYTE(index), INVALID_LOC);
-                append_code(SECOND_BYTE(index), INVALID_LOC);
                 break;}
             case AST_Return:{
                 compile_expr(nodes[i]->left, c);
@@ -517,6 +536,23 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 break;}
+            case AST_For:{
+                append(c->for_indices, c->func.code.index);
+                compile_expr(nodes[i]->right, c);
+                add_local(nodes[i]->left, c);
+                
+                append(c->func.constants, ((Value){Value_Number, .val.num=1, false, 0}));
+                u_int16_t index = c->func.constants.index - 1;
+                
+                append_code(OP_FOR, current_loc(nodes[i]));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+                append_code(resolve_local(nodes[i]->right->value, c), INVALID_LOC);
+
+                append(c->for_indices, c->func.code.index);
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
+                break;}
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }
     }
@@ -532,6 +568,7 @@ Function compile_func(AST_Function *func, Arrays *arrays){
     }
     c.if_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
     c.while_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
+    c.for_indices = (Jump_Indices){calloc(10, sizeof(int64_t)), 0, 10};
     c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
     c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
     c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
@@ -549,5 +586,6 @@ Function compile_func(AST_Function *func, Arrays *arrays){
 
     free(c.if_indices.data);
     free(c.while_indices.data);
+    free(c.for_indices.data);
     return c.func;
 }
