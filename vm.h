@@ -708,6 +708,10 @@ void run(VM *vm) {
                 } else ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
                 i += 2;
                 break;}
+            case OP_EXIT:{
+                Value val = stack_pop;
+                free_mem(val.val.num);
+                break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
     }

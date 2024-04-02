@@ -60,6 +60,7 @@
     X(OP_BREAK)\
     X(OP_CONTINUE)\
     X(OP_FOR)\
+    X(OP_EXIT)\
 
 typedef enum {
 #define X(x) x,
@@ -553,6 +554,10 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
                 break;}
+            case AST_Exit:
+                compile_expr(nodes[i]->left, c);
+                append_code(OP_EXIT, current_loc(nodes[i]));
+                break;
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }
     }
