@@ -328,13 +328,8 @@ void run(VM *vm) {
                 var->name = name.val.str;
                 var->value = value;
 
-                Entry *entry = get_entry(vm->vars->entries, vm->vars->capacity, name.hash);
-                if (entry->key != 0) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str)
-
-                vm->vars->count++;
-                entry->key = name.hash;
-                entry->type = Entry_Variable;
-                entry->value = var;
+                bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
+                if (!valid) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str)
 
                 i += 2;
                 break;
