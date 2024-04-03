@@ -705,7 +705,32 @@ void run(VM *vm) {
                         *local = vm->arrays.data[array.val.num][index->val.num];
                     }
                     index->val.num++;
-                } else ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
+                } else if (array.type == Value_String) {
+                    if (index->val.num == 1) {
+                        stack_push(((Value){
+                            Value_String,
+                            .val.str=format_str(2, "%c", array.val.str[index->val.num - 1]),
+                            true,
+                            0
+                        }));
+                    } else if (index->val.num >= (int64_t)strlen(array.val.str) + 1) {
+                        free(local->val.str);
+                        index->val.num = 1;
+                        i = read_index + 1;
+                    } else {
+                        free(local->val.str);
+                        *local = (Value){
+                            Value_String,
+                            .val.str=format_str(2, "%c", array.val.str[index->val.num - 1]),
+                            true,
+                            0
+                        };
+                    }
+                    index->val.num++;
+                } else {
+                    i -= 3;
+                    ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
+                } 
                 i += 2;
                 break;}
             case OP_EXIT:{
