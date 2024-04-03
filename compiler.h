@@ -197,9 +197,9 @@ void compile_constant(Node *n, Compiler *c) {
     if (n->value->type == Value_Number)
         append(c->func.constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}));
     else if (n->value->type == Value_String)
-        append(c->func.constants, ((Value){n->value->type, .val.str=n->value->value, false, 0}));
+        append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, 0}));
     else if (n->value->type == Value_Identifier)
-        append(c->func.constants, ((Value){n->value->type, .val.str=n->value->value, false, n->value->hash}));
+        append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash}));
     else
         ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->value->type)
 
@@ -226,7 +226,7 @@ void compile_expr(Node *n, Compiler *c) {
                 append_code(OP_GET_LOCAL, current_loc(n));
                 append_code(resolve_local(n->value, c), INVALID_LOC);
             } else {
-                append(c->func.constants, ((Value){Value_Identifier, .val.str=n->value->value, false, n->value->hash})); // name
+                append(c->func.constants, ((Value){Value_Identifier, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash})); // name
                 u_int16_t index = c->func.constants.index - 1;
                 append_code(OP_GET_GLOBAL, current_loc(n));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
@@ -279,15 +279,16 @@ void compile_expr(Node *n, Compiler *c) {
                         break;
                     case Value_String:
                         array[i].type = Value_String;
-                        char *s = format_str(strlen(n->value[i].value), "%.*s", strlen(n->value[i].value) - 2, STR(n->value[i].value) + 1);
-                        array[i].val.str = s;
+                        size_t len = strlen(n->value[i].value);
+                        char *s = format_str(len, "%.*s", len - 2, STR(n->value[i].value) + 1);
+                        array[i].val.str = (string){s, len - 2};
                         array[i].mutable = true;
                         free(n->value[i].value);
                         n->value[i].value = NULL;
                         break;
                     case Value_Identifier:
                         array[i].type = Value_Identifier;
-                        array[i].val.str = STR(n->value[i].value);
+                        array[i].val.str.chars = STR(n->value[i].value);
                         array[i].mutable = true;
                         array[i].hash = n->value[i].hash;
                         n->value[i].value = NULL;
@@ -349,7 +350,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 if (c->depth > 0) {
                     add_local(nodes[i], c);
                 } else {
-                    append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;
                     append_code(OP_DEFINE_GLOBAL, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
@@ -363,7 +364,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(OP_SET_LOCAL, current_loc(nodes[i]));
                     append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
                 } else {
-                    append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;
                     append_code(OP_SET_GLOBAL, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
@@ -518,7 +519,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
             case AST_Append:{
                 compile_constant(nodes[i]->left, c);
 
-                append(c->func.constants, ((Value){Value_Identifier, .val.str=nodes[i]->value->value, false, nodes[i]->value->hash})); // name
+                append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
                 u_int16_t index = c->func.constants.index - 1;
                 append_code(OP_APPEND, current_loc(nodes[i]));
                 append_code(FIRST_BYTE(index), INVALID_LOC);

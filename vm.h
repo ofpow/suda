@@ -73,15 +73,15 @@ void print_array(VM *vm, Value *val) {
             strcat(str, ", ");
             free(num);
         } else if (array[i].type == Value_Identifier) {
-            str_len += (strlen(array[i].val.str) + 2);
+            str_len += array[i].val.str.len + 2;
             str = realloc(str, str_len);
-            strcat(str, array[i].val.str);
+            strcat(str, array[i].val.str.chars);
             strcat(str, ", ");
         } else if (array[i].type == Value_String) {
-            int len = strlen(array[i].val.str) + 4;
+            int len = array[i].val.str.len + 4;
             str_len += len;
             str = realloc(str, str_len);
-            char *x = format_str(len + 1, "\"%s\"", array[i].val.str);
+            char *x = format_str(len + 1, "\"%s\"", array[i].val.str.chars);
             strcat(str, x);
             strcat(str, ", ");
             free(x);
@@ -99,10 +99,10 @@ void print_value(Value val) {
             printf("%ld\n", val.val.num);
             break;
         case Value_String:
-            printf("\"%s\"\n", val.val.str);
+            printf("\"%.*s\"\n", Print(val.val.str));
             break;
         case Value_Identifier:
-            printf("%s\n", val.val.str);
+            printf("%.*s\n", Print(val.val.str));
             break;
         default: ERR("cant print type %s\n", find_value_type(val.type))
     }
@@ -141,7 +141,7 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_PRINT\n", i);
                     break;
                 case OP_DEFINE_GLOBAL:
-                    printf("%-6d OP_DEFINE_GLOBAL: var %s\n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
+                    printf("%-6d OP_DEFINE_GLOBAL: var %s\n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_ADD:
@@ -184,11 +184,11 @@ void disassemble(VM *vm) {
                     printf("%-6d OP_NOT_EQUAL\n", i);
                     break;
                 case OP_SET_GLOBAL:
-                    printf("%-6d OP_SET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
+                    printf("%-6d OP_SET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_GET_GLOBAL:
-                    printf("%-6d OP_GET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str);
+                    printf("%-6d OP_GET_GLOBAL:    var %s \n", i, vm->funcs.data[j].constants.data[COMBYTE(vm->funcs.data[j].code.data[i + 1], vm->funcs.data[j].code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_JUMP_IF_FALSE:
@@ -301,8 +301,8 @@ void run(VM *vm) {
                 if (print.type == Value_Number) {
                     printf("%ld\n", print.val.num);
                 } else if (print.type == Value_String) {
-                    printf("%s\n", print.val.str);
-                    if (print.mutable == true) free(print.val.str);
+                    printf("%.*s\n", Print(print.val.str));
+                    if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
                 } else
@@ -313,8 +313,8 @@ void run(VM *vm) {
                 if (print.type == Value_Number) {
                     printf("%ld", print.val.num);
                 } else if (print.type == Value_String) {
-                    printf("%s", print.val.str);
-                    if (print.mutable == true) free(print.val.str);
+                    printf("%.*s", Print(print.val.str));
+                    if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
                     print_array(vm, &print);
                 } else
@@ -325,11 +325,11 @@ void run(VM *vm) {
                 Value value = stack_pop;
 
                 Variable *var = calloc(1, sizeof(Variable));
-                var->name = name.val.str;
+                var->name = name.val.str.chars;
                 var->value = value;
 
                 bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
-                if (!valid) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str)
+                if (!valid) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str.chars)
 
                 i += 2;
                 break;
@@ -353,8 +353,8 @@ void run(VM *vm) {
                     bool free2 = false;
 
                     if (op1.type == Value_String) {
-                        op1_len = strlen(op1.val.str);
-                        str1 = op1.val.str;
+                        op1_len = op1.val.str.len;
+                        str1 = op1.val.str.chars;
                         if (op1.mutable) free1 = true;
                     } else if (op1.type == Value_Number) {
                         op1_len = num_len(op1.val.num);
@@ -362,8 +362,8 @@ void run(VM *vm) {
                         free1 = true;
                     }
                     if (op2.type == Value_String) {
-                        op2_len = strlen(op2.val.str);
-                        str2 = op2.val.str;
+                        op2_len = op2.val.str.len;
+                        str2 = op2.val.str.chars;
                         if (op2.mutable) free2 = true;
                     } else if (op2.type == Value_Number) {
                         op2_len = num_len(op2.val.num);
@@ -373,7 +373,7 @@ void run(VM *vm) {
 
                     stack_push(((Value){
                         Value_String,
-                        .val.str=format_str(op1_len + op2_len + 1, "%s%s", str1, str2),
+                        .val.str={format_str(op1_len + op2_len + 1, "%s%s", str1, str2), op1_len + op2_len},
                         true,
                         0
                     }));
@@ -441,7 +441,7 @@ void run(VM *vm) {
                 } else if (op1.type == Value_String && op2.type == Value_String) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=!!strcmp(op1.val.str, op2.val.str),
+                        .val.num=!!strcmp(op1.val.str.chars, op2.val.str.chars),
                         false,
                         0
                     }));
@@ -466,7 +466,7 @@ void run(VM *vm) {
                 } else if (op1.type == Value_String && op2.type == Value_String) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=!strcmp(op1.val.str, op2.val.str),
+                        .val.num=!strcmp(op1.val.str.chars, op2.val.str.chars),
                         false,
                         0
                     }));
@@ -483,11 +483,11 @@ void run(VM *vm) {
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %s\n", get_loc, name.val.str)
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
                 else if (var->value.type == Value_Array) {
                     Value *array = vm->arrays.data[var->value.val.num];
                     for (int i = 1; i < array[0].val.num; i++) {
-                        if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str);
+                        if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str.chars);
                     }
                     free(vm->arrays.data[var->value.val.num]);
                     Value *new_array = vm->arrays.data[value.val.num];
@@ -495,13 +495,13 @@ void run(VM *vm) {
 
                     for (int i = 0; i < new_array[0].val.num; i++) {
                         if (new_array[i].type == Value_String && new_array[i].mutable)
-                            array[i] = (Value){Value_String, .val.str=strdup(new_array[i].val.str), true, 0};
+                            array[i] = (Value){Value_String, .val.str={strdup(new_array[i].val.str.chars), new_array[i].val.str.len}, true, 0};
                         else 
                             array[i] = new_array[i];
                     }
                     vm->arrays.data[var->value.val.num] = array;
                 } else if (var->value.type == Value_String && var->value.mutable) {
-                    free(var->value.val.str);
+                    free(var->value.val.str.chars);
                     var->value = value;
                 } else {
                 var->value = value;}
@@ -536,7 +536,7 @@ void run(VM *vm) {
                 if (var->value.type == Value_String) {
                     stack_push(((Value) {
                         Value_String,
-                        .val.str=format_str(2, "%c", var->value.val.str[index.val.num - 1]),
+                        .val.str={format_str(2, "%c", var->value.val.str.chars[index.val.num - 1]), 1},
                         true,
                         0
                     }));                  
@@ -562,10 +562,10 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
                 if (var->value.type == Value_String) {
-                    var->value.val.str[index.val.num - 1] = new_val.val.str[0];
+                    var->value.val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
                 } else {
                     int64_t var_index = var->value.val.num;
-                    if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str);
+                    if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str.chars);
                     vm->arrays.data[var_index][index.val.num] = new_val;
                 }
 
@@ -574,7 +574,7 @@ void run(VM *vm) {
                 Value var_name = vm->func->constants.data[read_index];
                 i += 2;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str);
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
                 if (var->value.type == Value_String && var->value.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=var->value.val.str,
@@ -596,7 +596,7 @@ void run(VM *vm) {
                 break;}
             case OP_SET_LOCAL: {
                 i++;
-                if (frame->slots[vm->func->code.data[i]].type == Value_String && frame->slots[vm->func->code.data[i]].mutable) free(frame->slots[vm->func->code.data[i]].val.str);
+                if (frame->slots[vm->func->code.data[i]].type == Value_String && frame->slots[vm->func->code.data[i]].mutable) free(frame->slots[vm->func->code.data[i]].val.str.chars);
                 frame->slots[vm->func->code.data[i]] = stack_pop;
                 break;}
             case OP_POP:
@@ -615,7 +615,7 @@ void run(VM *vm) {
                 } else if (array.type == Value_String) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=strlen(array.val.str),
+                        .val.num=array.val.str.len,
                         false,
                         0
                     }));
@@ -624,20 +624,22 @@ void run(VM *vm) {
             case OP_CAST_STR:{
                 Value val = stack_pop;
                 if (val.type == Value_String) stack_push(val);
-                else if (val.type == Value_Number) stack_push(((Value) {
-                    Value_String, 
-                    .val.str=format_str(num_len(val.val.num) + 1, "%ld", val.val.num),
-                    true,
-                    0
-                }));
-                else ERR("ERROR in %s on line %ld: cant cast type %s as string\n", get_loc, find_value_type(val.type))
+                else if (val.type == Value_Number) {
+                    int len = num_len(val.val.num);
+                    stack_push(((Value) {
+                        Value_String, 
+                        .val.str={format_str(len + 1, "%ld", val.val.num), len},
+                        true,
+                        0
+                    }));
+                } else ERR("ERROR in %s on line %ld: cant cast type %s as string\n", get_loc, find_value_type(val.type))
                 break;}
             case OP_CAST_NUM:{
                 Value val = stack_pop;
                 if (val.type == Value_Number) stack_push(val);
                 else if (val.type == Value_String) stack_push(((Value) {
                     Value_Number,
-                    .val.num=strtoint(val.val.str, strlen(val.val.str)),
+                    .val.num=strtoint(val.val.str.chars, val.val.str.len),
                     false,
                     0
                 }));
@@ -675,7 +677,7 @@ void run(VM *vm) {
                 i += 2;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str);
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str.chars);
 
                 Value *array = vm->arrays.data[var->value.val.num];
                 int64_t arr_len = array[0].val.num + 1;
@@ -709,19 +711,19 @@ void run(VM *vm) {
                     if (index->val.num == 1) {
                         stack_push(((Value){
                             Value_String,
-                            .val.str=format_str(2, "%c", array.val.str[index->val.num - 1]),
+                            .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
                             true,
                             0
                         }));
-                    } else if (index->val.num >= (int64_t)strlen(array.val.str) + 1) {
-                        free(local->val.str);
+                    } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
+                        free(local->val.str.chars);
                         index->val.num = 1;
                         i = read_index + 1;
                     } else {
-                        free(local->val.str);
+                        free(local->val.str.chars);
                         *local = (Value){
                             Value_String,
-                            .val.str=format_str(2, "%c", array.val.str[index->val.num - 1]),
+                            .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
                             true,
                             0
                         };

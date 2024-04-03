@@ -57,8 +57,8 @@ typedef struct AST_Variable {
 typedef struct Value {
     Value_Type type;
     union {
+        string str;
         int64_t num;
-        char *str;
     } val;
     bool mutable;
     u_int32_t hash;
@@ -91,7 +91,7 @@ void free_entry(Entry entry) {
             break;
         case Entry_Variable:;{
             Variable *var = (Variable*)entry.value;
-            if (var->value.mutable == true) free(var->value.val.str);
+            if (var->value.mutable == true) free(var->value.val.str.chars);
             free(var);
             break;}
         case Entry_AST_Variable:;{

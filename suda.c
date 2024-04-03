@@ -141,6 +141,7 @@ char **call_stack = NULL;
 int call_stack_index;
 int call_stack_capacity;
 
+#include "str.h"
 #include "hash.h"
 #include "variable.h"
 #include "lexer.h"
@@ -176,7 +177,7 @@ void free_mem(int exit_val) {
         for (int i = 0; i < vm.arrays.index; i++) {
             for (int j = 0; j < vm.arrays.data[i][0].val.num; j++) {
                 if (vm.arrays.data[i][j].mutable == true)
-                    free(vm.arrays.data[i][j].val.str);
+                    free(vm.arrays.data[i][j].val.str.chars);
             }
             free(vm.arrays.data[i]);
         }
