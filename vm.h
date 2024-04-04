@@ -293,6 +293,7 @@ void disassemble(VM *vm) {
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(func.code.data[i]));
             }
         free(line_str);
+        line_str = NULL;
         }
     }
 }
