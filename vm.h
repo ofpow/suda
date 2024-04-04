@@ -66,7 +66,8 @@ void print_array(VM *vm, Value *val) {
     for (int i = 1; i < array[0].val.num; i++) {
         if (array[i].type == Value_Number) {
             int64_t len = num_len(array[i].val.num) + 2;
-            char *num = format_str(len, "%d", array[i].val.num);
+            if (array[i].val.num < 0) len++;
+            char *num = format_str(len, "%ld", array[i].val.num);
             str_len += len;
             str = realloc(str, str_len);
             strcat(str, num);
