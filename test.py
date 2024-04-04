@@ -45,7 +45,6 @@ if __name__ == "__main__":
     subprocess.run(["gcc", "-o", "suda", "suda.c"])
     if len(sys.argv) != 2:
         run_tests(False)
-    elif sys.argv[1].startswith('b'):
         run_tests(True)
     elif sys.argv[1] == 'record':
         record_tests()
