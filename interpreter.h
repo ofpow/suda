@@ -55,6 +55,7 @@ char *format_array(AST_Value *array) {
         if (array[i].value == NULL) ERR("array has null value at index %d\n", i)
         if (array[i].type == Value_Number) {
             int len = num_len(NUM(array[i].value)) + 1;
+            if (NUM(array[i].value) < 0) len++;
             char *num = format_str(len, "%ld", NUM(array[i].value));
             str_len += (len + 1);
             array_str = realloc(array_str, str_len);
