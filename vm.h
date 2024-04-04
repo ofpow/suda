@@ -283,7 +283,9 @@ void disassemble(VM *vm) {
                     i += 2;
                     break;
                 case OP_FOR:
-                    printf("%-6d %s OP_FOR\n", i, line_str);
+                    printf("%-6d %s OP_FOR            iter %d, local %d, index %d\n", i, line_str,
+                            COMBYTE(func.code.data[i + 1], func.code.data[i + 2]), func.code.data[i + 3],
+                            COMBYTE(func.code.data[i + 4], func.code.data[i + 5]));
                     i += 5;
                     break;
                 case OP_EXIT:
