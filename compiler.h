@@ -450,6 +450,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
+                    c->locals_count--;
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
 
@@ -549,11 +550,12 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(OP_FOR, current_loc(nodes[i]));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
-                append_code(resolve_local(nodes[i]->right->value, c), INVALID_LOC);
+                append_code(resolve_local(nodes[i]->left->value, c), INVALID_LOC);
 
                 append(c->for_indices, c->func.code.index);
                 append_code(0, INVALID_LOC);
                 append_code(0, INVALID_LOC);
+                c->depth++;
                 break;}
             case AST_Exit:
                 compile_expr(nodes[i]->left, c);

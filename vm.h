@@ -719,12 +719,13 @@ void run(VM *vm) {
                     if (index->val.num == 1) {
                         stack_push(vm->arrays.data[array.val.num][1]);
                     } else if (index->val.num >= vm->arrays.data[array.val.num][0].val.num) {
-                        index->val.num = 1;
-                        i = read_index - 1;
+                        index->val.num = 0;
+                        i = read_index + 3;
+                        vm->stack_top--;
+                        *local = vm->arrays.data[array.val.num][1];
                     } else {
                         *local = vm->arrays.data[array.val.num][index->val.num];
                     }
-                    index->val.num++;
                 } else if (array.type == Value_String) {
                     if (index->val.num == 1) {
                         stack_push(((Value){
@@ -733,12 +734,20 @@ void run(VM *vm) {
                             true,
                             0
                         }));
+                        *local = *(vm->stack_top - 1);
                     } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
-                        free(local->val.str.chars);
-                        index->val.num = 1;
-                        i = read_index + 1;
+                        //free(local->val.str.chars);
+                        index->val.num = 0;
+                        i = read_index + 3;
+                        vm->stack_top--;
+                        *local = (Value){
+                            Value_String,
+                            .val.str={NULL, 0},
+                            false,
+                            0
+                        };
                     } else {
-                        free(local->val.str.chars);
+                        //free(local->val.str.chars);
                         *local = (Value){
                             Value_String,
                             .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
@@ -746,11 +755,11 @@ void run(VM *vm) {
                             0
                         };
                     }
-                    index->val.num++;
                 } else {
                     i -= 3;
                     ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
                 } 
+                index->val.num++;
                 i += 2;
                 break;}
             case OP_EXIT:{
