@@ -736,7 +736,7 @@ void run(VM *vm) {
                         }));
                         *local = *(vm->stack_top - 1);
                     } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
-                        //free(local->val.str.chars);
+                        free(local->val.str.chars);
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
@@ -747,7 +747,7 @@ void run(VM *vm) {
                             0
                         };
                     } else {
-                        //free(local->val.str.chars);
+                        free(local->val.str.chars);
                         *local = (Value){
                             Value_String,
                             .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
