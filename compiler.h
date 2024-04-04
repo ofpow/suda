@@ -12,18 +12,6 @@
 #define append_code(_code, _loc) append(c->func.code, _code); append(c->func.locs, _loc)
 #define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
 
-#define compile_identifier(_op, _n) do {                                                                                                        \
-    u_int16_t _index = 0;                                                                                                                       \
-    int _x = var_exists(_n->value, c);                                                                                                          \
-    if (_x < 0) {                                                                                                                               \
-        append(c->func.constants, ((Value){Value_Identifier, .val.str={_n->value->value, strlen(_n->value->value)}, false, _n->value->hash}));  \
-        _index = c->func.constants.index - 1;                                                                                                   \
-    } else _index = _x;                                                                                                                         \
-    append_code(_op, current_loc(_n));                                                                                                          \
-    append_code(FIRST_BYTE(_index), INVALID_LOC);                                                                                               \
-    append_code(SECOND_BYTE(_index), INVALID_LOC);                                                                                              \
-} while (0)                                                                                                                                     \
-
 #define ops \
     X(OP_CONSTANT)\
     X(OP_CONSTANT_LONG)\
@@ -162,14 +150,6 @@ typedef struct Compiler {
     int64_t depth;
 } Compiler;
 
-int var_exists(AST_Value *name, Compiler *c) {
-    for (int i = 0; i < c->func.constants.index - 1; i++) {
-        if (c->func.constants.data[i].type != Value_Identifier) continue;
-        if (!strcmp(STR(name->value), c->func.constants.data[i].val.str.chars)) return i;
-    }
-    return -1;
-}
-
 void add_local(Node *n, Compiler *c) {
     if (c->locals_count >= LOCALS_MAX - 1) ERR("ERROR in %s on line %ld: too many local vars\n", n->file, n->line)
     
@@ -214,35 +194,26 @@ void free_func(Function func) {
 }
 
 void compile_constant(Node *n, Compiler *c) {
-    u_int16_t index = 0;
     if (n->value->type == Value_Number)
         append(c->func.constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}));
     else if (n->value->type == Value_String)
         append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, 0}));
-    else if (n->value->type == Value_Identifier) {
-        int x = var_exists(n->value, c);
-        if (x < 0) {
-            append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash}));
-        } else {
-            index = x;
-            goto finish;
-        }
-    } else
+    else if (n->value->type == Value_Identifier)
+        append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash}));
+    else
         ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->value->type)
 
-    index = c->func.constants.index - 1;
-
-    finish:
-        if (index < 255) {
-            append_code(OP_CONSTANT, current_loc(n));
-            append_code(index, INVALID_LOC);
-        } else if (index == 65535) {
-            ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
-        } else {
-            append_code(OP_CONSTANT_LONG, current_loc(n));
-            append_code(FIRST_BYTE(index), INVALID_LOC);
-            append_code(SECOND_BYTE(index), INVALID_LOC);
-        }
+    u_int16_t index = c->func.constants.index - 1;
+    if (index < 255) {
+        append_code(OP_CONSTANT, current_loc(n));
+        append_code(index, INVALID_LOC);
+    } else if (index == 65535) {
+        ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
+    } else {
+        append_code(OP_CONSTANT_LONG, current_loc(n));
+        append_code(FIRST_BYTE(index), INVALID_LOC);
+        append_code(SECOND_BYTE(index), INVALID_LOC);
+    }
 }
 
 void compile_expr(Node *n, Compiler *c) {
@@ -255,7 +226,11 @@ void compile_expr(Node *n, Compiler *c) {
                 append_code(OP_GET_LOCAL, current_loc(n));
                 append_code(resolve_local(n->value, c), INVALID_LOC);
             } else {
-                compile_identifier(OP_GET_GLOBAL, n);
+                append(c->func.constants, ((Value){Value_Identifier, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash})); // name
+                u_int16_t index = c->func.constants.index - 1;
+                append_code(OP_GET_GLOBAL, current_loc(n));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
             }
             break;
         case AST_Add:
@@ -375,7 +350,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 if (c->depth > 0) {
                     add_local(nodes[i], c);
                 } else {
-                    compile_identifier(OP_DEFINE_GLOBAL, nodes[i]);
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_DEFINE_GLOBAL, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
                 break;
             case AST_Identifier:
@@ -385,6 +364,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(OP_SET_LOCAL, current_loc(nodes[i]));
                     append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
                 } else {
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_SET_GLOBAL, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
                 break;
             case AST_If:
