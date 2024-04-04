@@ -722,7 +722,6 @@ void run(VM *vm) {
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
-                        *local = vm->arrays.data[array.val.num][1];
                     } else {
                         *local = vm->arrays.data[array.val.num][index->val.num];
                     }
@@ -740,12 +739,6 @@ void run(VM *vm) {
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
-                        *local = (Value){
-                            Value_String,
-                            .val.str={NULL, 0},
-                            false,
-                            0
-                        };
                     } else {
                         free(local->val.str.chars);
                         *local = (Value){
