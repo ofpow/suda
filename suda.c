@@ -459,13 +459,13 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        if (suda_argc != NULL) {
-            Variable *argcc = calloc(1, sizeof(Variable));
-            Variable *argvv = calloc(1, sizeof(Variable));
+        Variable *argcc = calloc(1, sizeof(Variable));
+        Variable *argvv = calloc(1, sizeof(Variable));
+        argcc->name = strdup("argc");
+        argvv->name = strdup("argv");
 
-            argcc->name = strdup("argc");
+        if (suda_argc != NULL) {
             argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), false, hash("argc", 4) };
-            argvv->name = strdup("argv");
             argvv->value = (Value){ Value_Array, .val.num=0, false, hash("argv", 4) };
 
             Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
@@ -477,20 +477,13 @@ int main(int argc, char *argv[]) {
 
             append(arrays, x);
             argvv->value.val.num = arrays.index - 1;
-
-            insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
-            insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
         } else {
-            Variable *argcc = calloc(1, sizeof(Variable));
-            Variable *argvv = calloc(1, sizeof(Variable));
-
-            argcc->name = strdup("argc");
             argcc->value = (Value){ Value_Number, .val.num=0, false, hash("argc", 4) };
-            argvv->name = strdup("argv");
             argvv->value = (Value){ Value_Array, .val.num=-1, false, hash("argv", 4) };
-            insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
-            insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
         }
+
+        insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
+        insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
 
         vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0, ((Location){file_path, 0})};
         vm.call_stack_count++;
