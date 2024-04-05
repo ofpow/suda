@@ -56,7 +56,7 @@ typedef struct VM {
     int call_stack_count;
 } VM;
 
-void print_array(VM *vm, Value *val) {
+void print_array(VM *vm, Value *val, bool new_line) {
     Value *array = vm->arrays.data[val->val.num];
     if (array[0].val.num < 2) printf("[]\n");
 
@@ -90,7 +90,10 @@ void print_array(VM *vm, Value *val) {
     }
     str[str_len - 3] = ']';
     str[str_len - 2] = 0;
-    printf("%s\n", str);
+    if (new_line)
+        printf("%s\n", str);
+    else
+        printf("%s", str);
     free(str);
 }
 
@@ -323,7 +326,7 @@ void run(VM *vm) {
                     printf("%.*s\n", Print(print.val.str));
                     if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
-                    print_array(vm, &print);
+                    print_array(vm, &print, true);
                 } else
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
@@ -335,7 +338,7 @@ void run(VM *vm) {
                     printf("%.*s", Print(print.val.str));
                     if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
-                    print_array(vm, &print);
+                    print_array(vm, &print, false);
                 } else
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;}
