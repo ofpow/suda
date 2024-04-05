@@ -518,7 +518,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(OP_RETURN, current_loc(nodes[i]));
                 break;}
             case AST_Append:{
-                compile_constant(nodes[i]->left, c);
+                compile_expr(nodes[i]->left, c);
 
                 append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
                 u_int16_t index = c->func.constants.index - 1;
