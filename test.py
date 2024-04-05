@@ -23,7 +23,6 @@ def run_tests(bytecode):
 
     for entry in os.scandir("./tests"):
         if entry.is_file() and entry.path.endswith(".suda"):
-            print(f"[TEST] {entry.path}")
             if os.path.isfile(entry.path[:-len(".suda")] + ".txt"):
                 with open (entry.path[:-len(".suda")] + ".txt", "r") as f:
                     cmd.append(entry.path)
