@@ -480,6 +480,10 @@ int main(int argc, char *argv[]) {
         } else {
             argcc->value = (Value){ Value_Number, .val.num=0, false, hash("argc", 4) };
             argvv->value = (Value){ Value_Array, .val.num=-1, false, hash("argv", 4) };
+            Value *x = calloc(1, sizeof(Value));
+            x[0].val.num = 1;
+            append(arrays, x);
+            argvv->value.val.num = arrays.index - 1;
         }
 
         insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
