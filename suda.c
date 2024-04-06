@@ -470,6 +470,7 @@ int main(int argc, char *argv[]) {
 
             Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
             x[0].val.num = argcc->value.val.num + 1;
+            x[0].type = Value_Array;
             for (int i = 1; i < argcc->value.val.num + 1; i++) {
                 size_t len = strlen(suda_argv[i].value);
                 x[i] = (Value){ Value_String, .val.str={format_str(len - 1, "%.*s", len - 2, STR(suda_argv[i].value) + 1), len - 2}, true, 0 };
@@ -482,6 +483,7 @@ int main(int argc, char *argv[]) {
             argvv->value = (Value){ Value_Array, .val.num=-1, false, hash("argv", 4) };
             Value *x = calloc(1, sizeof(Value));
             x[0].val.num = 1;
+            x[0].type = Value_Array;
             append(arrays, x);
             argvv->value.val.num = arrays.index - 1;
         }

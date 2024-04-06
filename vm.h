@@ -556,6 +556,9 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
                 if (var->value.type == Value_String) {
+                    if (index.val.num > (int64_t)var->value.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+
                     stack_push(((Value) {
                         Value_String,
                         .val.str={format_str(2, "%c", var->value.val.str.chars[index.val.num - 1]), 1},
@@ -564,6 +567,10 @@ void run(VM *vm) {
                     }));                  
                 } else {
                     int64_t arr_index = var->value.val.num;
+
+                    if (index.val.num >= vm->arrays.data[arr_index][0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+
                     if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
                         Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
                         stack_push(var->value);
@@ -584,9 +591,16 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
                 if (var->value.type == Value_String) {
+                    if (index.val.num > (int64_t)var->value.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+
                     var->value.val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
                 } else {
                     int64_t var_index = var->value.val.num;
+
+                    if (index.val.num >= vm->arrays.data[var_index][0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+
                     if (vm->arrays.data[var_index][index.val.num].type == Value_String && vm->arrays.data[var_index][index.val.num].mutable) free(vm->arrays.data[var_index][index.val.num].val.str.chars);
                     vm->arrays.data[var_index][index.val.num] = new_val;
                 }
