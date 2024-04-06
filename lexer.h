@@ -386,13 +386,8 @@ Token scan_token(Lexer *l) {
     exit(1);
 }
 
-Token *lex_file(const char *file_path, String_Array *programs) {
+Token *lex_file(const char *file_path, String_Array *programs, String_Array *include_paths) {
     debug("LEX FILE %s\n", file_path)
-    String_Array include_paths = {
-        calloc(2, sizeof(char*)),
-        0,
-        2,
-    };
 
     char *program = read_file(file_path);
     Lexer lexer = { program, program, 1, file_path };
@@ -413,8 +408,8 @@ Token *lex_file(const char *file_path, String_Array *programs) {
             tok = scan_token(&lexer);
             char *include_path = format_str(tok.length - 1, "%.*s", tok.length, tok.start + 1);
             bool included = false;
-            for (int i = 0; i < include_paths.index; i++) {
-                if (!strcmp(include_path, include_paths.data[i])) {
+            for (int i = 0; i < include_paths->index; i++) {
+                if (!strcmp(include_path, include_paths->data[i])) {
                     included = true;
                 }
             }
@@ -424,7 +419,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
                 continue;
             }
 
-            append(include_paths, include_path);
+            append((*include_paths), include_path);
 
             Token_Array new_tokens = {
                 calloc(10, sizeof(Token)),
@@ -432,7 +427,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
                 10,
             };
 
-            Token *to_include = lex_file(include_path, programs);
+            Token *to_include = lex_file(include_path, programs, include_paths);
 
             for (int i = 0; to_include[i].type != Tok_Eof; i++) {
                 append(new_tokens, to_include[i]);
@@ -451,7 +446,7 @@ Token *lex_file(const char *file_path, String_Array *programs) {
         }
         debug("TOKEN ( `%s` | '%.*s' )\n", find_tok_type(tok.type), (int)tok.length, tok.start)
     } 
-    free_array(include_paths, free);
+    //free_array(include_paths, free);
 
     append((*programs), program);
 

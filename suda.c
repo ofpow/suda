@@ -154,6 +154,7 @@ int call_stack_capacity;
 //global variables for access to freeing from anywhere
 Token *tokens;
 String_Array programs = {0};
+String_Array include_paths = {0};
 Interpreter interpreter = {0};
 VM vm = {0};
 Compiler c = {0};
@@ -285,7 +286,11 @@ int main(int argc, char *argv[]) {
     programs.index = 0;
     programs.capacity = 2;
 
-    tokens = lex_file(file_path, &programs);
+    include_paths.data = calloc(2, sizeof(char*));
+    include_paths.index = 0;
+    include_paths.capacity = 2;
+
+    tokens = lex_file(file_path, &programs, &include_paths);
 
     report_time("LEXING       time: %f seconds\n");
 
