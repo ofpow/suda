@@ -553,35 +553,47 @@ void run(VM *vm) {
             case OP_GET_ELEMENT:{
                 Value array = stack_pop;
                 Value index = stack_pop;
+                
+                if (array.type == Value_Identifier){
+                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
+                    if (var->value.type == Value_String) {
+                        if (index.val.num > (int64_t)var->value.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                        else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
 
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
-                if (var->value.type == Value_String) {
-                    if (index.val.num > (int64_t)var->value.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+                        stack_push(((Value) {
+                            Value_String,
+                            .val.str={format_str(2, "%c", var->value.val.str.chars[index.val.num - 1]), 1},
+                            true,
+                            0
+                        }));                  
+                    } else {
+                        int64_t arr_index = var->value.val.num;
+
+                        if (index.val.num >= vm->arrays.data[arr_index][0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
+                        else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
+
+                        if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
+                            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
+                            stack_push(var->value);
+                        } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
+                            Value_String, 
+                            .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
+                            false,
+                            0
+                        }));
+                        else stack_push(vm->arrays.data[arr_index][index.val.num]);
+                    }
+                } else if (array.type == Value_String) {
+                    if (index.val.num > (int64_t)array.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array.val.str))
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array.val.str))
 
                     stack_push(((Value) {
                         Value_String,
-                        .val.str={format_str(2, "%c", var->value.val.str.chars[index.val.num - 1]), 1},
+                        .val.str={format_str(2, "%c", array.val.str.chars[index.val.num - 1]), 1},
                         true,
                         0
                     }));                  
-                } else {
-                    int64_t arr_index = var->value.val.num;
-
-                    if (index.val.num >= vm->arrays.data[arr_index][0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds for %s\n", get_loc, index.val.num, var->name)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access %s at index less than 1\n", get_loc, var->name)
-
-                    if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
-                        Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, vm->arrays.data[arr_index][index.val.num].hash)->value;
-                        stack_push(var->value);
-                    } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
-                        Value_String, 
-                        .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
-                        false,
-                        0
-                    }));
-                    else stack_push(vm->arrays.data[arr_index][index.val.num]);
-                }
+                } else ERR("type %s\n", find_value_type(array.type))
 
                 break;}
             case OP_SET_ELEMENT:{

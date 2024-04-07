@@ -193,6 +193,20 @@ void free_func(Function func) {
     free(func.constants.data);
 }
 
+void compile_identifier(Node *n, Compiler *c) {
+    if (is_local(n->value, c)) {
+        append_code(OP_GET_LOCAL, current_loc(n));
+        append_code(resolve_local(n->value, c), INVALID_LOC);
+        return;
+    } else {
+        append(c->func.constants, ((Value){n->value->type, .val.str={n->value->value, strlen(n->value->value)}, false, n->value->hash}));
+    }
+    u_int16_t index = c->func.constants.index - 1;
+    append_code(OP_GET_GLOBAL, current_loc(n));
+    append_code(FIRST_BYTE(index), INVALID_LOC);
+    append_code(SECOND_BYTE(index), INVALID_LOC);
+}
+
 void compile_constant(Node *n, Compiler *c) {
     if (n->value->type == Value_Number)
         append(c->func.constants, ((Value){n->value->type, .val.num=NUM(n->value->value), false, 0}));
@@ -305,7 +319,7 @@ void compile_expr(Node *n, Compiler *c) {
             break;}
         case AST_At:{
             compile_expr(n->left, c); // the index
-            compile_constant(n, c); //var name
+            compile_identifier(n, c);
             append_code(OP_GET_ELEMENT, current_loc(n));
             break;}
         case AST_Len:
