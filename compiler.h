@@ -512,7 +512,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 break;}
             case AST_At:
-                compile_constant(nodes[i], c); // var name
+                compile_identifier(nodes[i], c);
                 compile_expr(nodes[i]->left, c); // index
                 if (nodes[i]->right) {// new value
                     compile_expr(nodes[i]->right, c); 
