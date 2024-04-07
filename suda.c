@@ -209,6 +209,7 @@ void free_mem(int exit_val) {
         free(call_stack);
     }
     free_array(programs, free);
+    free_array(include_paths, free);
     exit(exit_val);
 }
 
