@@ -58,7 +58,7 @@ typedef struct VM {
 
 void print_array(VM *vm, Value *val, bool new_line) {
     Value *array = vm->arrays.data[val->val.num];
-    if (array[0].val.num < 2) printf("[]\n");
+    if (array[0].val.num < 2) {printf("[]\n"); return;}
 
     int64_t str_len = 2;
     char *str = format_str(str_len, "[");
