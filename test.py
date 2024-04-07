@@ -46,4 +46,4 @@ if __name__ == "__main__":
         run_tests(False)
         run_tests(True)
     elif sys.argv[1] == 'record':
-        record_tests()
+        record()

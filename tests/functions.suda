@@ -12,3 +12,9 @@ fn add(a, b)
 ;
 
 println add(34, 17 + 18)
+
+fn foo(x)
+    println x@3
+;
+
+foo("hello")

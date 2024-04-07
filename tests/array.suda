@@ -20,3 +20,9 @@ println len(var_one@5)
 var_one = [1, 2, 3]
 
 println var_one
+
+let x = [1, 2, -1]
+
+append x (1 + 2)
+
+println x

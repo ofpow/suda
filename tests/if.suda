@@ -21,3 +21,10 @@ if 0
 elif 0
     println "E"
 ;
+
+if 1
+    if 1
+    elif 1
+    ;
+elif 1
+;
