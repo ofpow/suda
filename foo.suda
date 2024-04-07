@@ -1,3 +1,6 @@
-println argc
-println argv
-println argv@1
+if 1
+    if 1
+    elif 1
+    ;
+elif 1
+;

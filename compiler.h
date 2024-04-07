@@ -461,7 +461,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     while (1) {
                         if (c->if_indices.index < 1) break;
                         u_int16_t index = c->if_indices.data[--c->if_indices.index];
-                        if (c->func.code.data[index] == OP_START_IF) break;
+                        if (c->func.code.data[index] == OP_START_IF) {c->if_indices.index++; break;}
                         else if (c->func.code.data[index] == OP_JUMP_IF_FALSE &&
                                 COMBYTE(c->func.code.data[index + 1], c->func.code.data[index + 2]) != 0) continue;
                         c->func.code.data[index + 1] = FIRST_BYTE(c->func.code.index);
