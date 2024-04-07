@@ -511,7 +511,11 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 for (int j = 0; j < nodes[i]->func_args_index; j++) {
                     compile_expr(nodes[i]->func_args[j], c);
                 }
+
+                u_int16_t index = resolve_func(nodes[i]->value);
                 append_code(OP_CALL, current_loc(nodes[i]));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
                 break;}
             case AST_Return:{
                 compile_expr(nodes[i]->left, c);
