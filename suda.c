@@ -466,8 +466,6 @@ int main(int argc, char *argv[]) {
 
         Variable *argcc = calloc(1, sizeof(Variable));
         Variable *argvv = calloc(1, sizeof(Variable));
-        argcc->name = strdup("argc");
-        argvv->name = strdup("argv");
 
         if (suda_argc != NULL) {
             argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), false, hash("argc", 4) };
