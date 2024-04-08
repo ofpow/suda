@@ -501,7 +501,6 @@ void run(VM *vm) {
                 break;}
             case OP_SET_GLOBAL:{
                 Value name = vm->func->constants.data[read_index];
-                i += 2;
                 Value value = stack_pop;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
@@ -527,6 +526,7 @@ void run(VM *vm) {
                     var->value = value;
                 } else {
                 var->value = value;}
+                i += 2;
                 break;}
             case OP_START_IF:
             case OP_JUMP_IF_FALSE:{
@@ -617,7 +617,6 @@ void run(VM *vm) {
                 break;}
             case OP_GET_GLOBAL:{
                 Value var_name = vm->func->constants.data[read_index];
-                i += 2;
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
                 if (var->value.type == Value_String && var->value.mutable) stack_push(((Value) {
@@ -627,6 +626,7 @@ void run(VM *vm) {
                     0
                 }));
                 else stack_push(var->value);
+                i += 2;
                 break;}
             case OP_GET_LOCAL: {
                 i++;
@@ -719,7 +719,6 @@ void run(VM *vm) {
             case OP_APPEND:{
                 Value val = stack_pop;
                 Value var_name = vm->func->constants.data[read_index];
-                i += 2;
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str.chars);
@@ -730,6 +729,7 @@ void run(VM *vm) {
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
                 vm->arrays.data[var->value.val.num] = array;
+                i += 2;
                 break;}
             case OP_BREAK:{
                 i += read_index - 1;
