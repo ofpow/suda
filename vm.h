@@ -274,9 +274,7 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_RETURN_NOTHING\n", i, line_str);
                     break;
                 case OP_APPEND:
-                    printf("%-6d %s OP_APPEND:        var ", i, line_str);
-                    print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
-                    i += 2;
+                    printf("%-6d %s OP_APPEND\n", i, line_str);
                     break;
                 case OP_BREAK:
                     printf("%-6d %s OP_BREAK:         offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
@@ -718,17 +716,20 @@ void run(VM *vm) {
                 break;}
             case OP_APPEND:{
                 Value val = stack_pop;
-                Value var_name = vm->func->constants.data[read_index];
+                Value appendee = stack_pop;
 
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, var_name.val.str.chars);
+                if (appendee.type == Value_Identifier) {
+                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, appendee.hash)->value;
+                    if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, appendee.val.str.chars);
+                    appendee = var->value;
+                }
 
-                Value *array = vm->arrays.data[var->value.val.num];
+                Value *array = vm->arrays.data[appendee.val.num];
                 int64_t arr_len = array[0].val.num + 1;
                 array = realloc(array, arr_len * sizeof(Value));
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
-                vm->arrays.data[var->value.val.num] = array;
+                vm->arrays.data[appendee.val.num] = array;
                 i += 2;
                 break;}
             case OP_BREAK:{

@@ -477,7 +477,7 @@ Node *statement(Parser *p) {
         case Tok_Append:
             n = new_node(AST_Append, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
-            n->value = new_ast_value(Value_String, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), 1, hash(CURRENT_TOK.start, CURRENT_TOK.length));
+            n->value = new_ast_value(Value_Identifier, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), 1, hash(CURRENT_TOK.start, CURRENT_TOK.length));
             p->tok_index++;
             n->left = expr(p, NULL);
             return n;

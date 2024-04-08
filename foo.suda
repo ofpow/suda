@@ -1,5 +1,8 @@
-if 1
-elif 1
-elif 1
-elif 1
+fn foo(a)
+    let x = [1, 2]
+    println x
+    append x a
+    return x
 ;
+
+println foo(3)
