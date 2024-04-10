@@ -471,9 +471,9 @@ void run(VM *vm) {
                         false,
                         0
                     }));
-                break;}
                 if (op1.type == Value_String && op1.mutable) free(op1.val.str.chars);
                 if (op2.type == Value_String && op2.mutable) free(op2.val.str.chars);
+                break;}
             case OP_IS_EQUAL: {
                 Value op2 = stack_pop;
                 Value op1 = stack_pop;
