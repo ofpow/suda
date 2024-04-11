@@ -534,14 +534,21 @@ void run(VM *vm) {
             case OP_GET_ELEMENT:{
                 Value array = stack_pop;
                 Value index = stack_pop;
-                
-                if (array.type == Value_Identifier){
-                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, array.hash)->value;
-                    if (var == NULL) ERR("ERROR in %s on line %ld: tried to get element of nonexistent array %.*s\n", get_loc, Print(array.val.str))
-                    array = var->value;
-                };
 
-                if (array.type == Value_String) {
+                if (array.type == Value_Array) {
+                    if (index.val.num >= array.val.array[0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %ld\n", get_loc, index.val.num, array.val.array[0].val.num - 1)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+
+                    if (array.val.array[index.val.num].type == Value_Identifier) {
+                        stack_push(array);
+                    } else if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) stack_push(((Value) {
+                        Value_String, 
+                        .val.str=array.val.array[index.val.num].val.str,
+                        false,
+                        0
+                    }));
+                    else stack_push(array.val.array[index.val.num]);
+                } else if (array.type == Value_String) {
                     if (index.val.num > (int64_t)array.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array.val.str))
                     else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array.val.str))
 
@@ -551,22 +558,7 @@ void run(VM *vm) {
                         true,
                         0
                     }));                  
-                } else {
-                    int64_t arr_index = array.val.num;
-
-                    if (index.val.num >= vm->arrays.data[arr_index][0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
-
-                    if (vm->arrays.data[arr_index][index.val.num].type == Value_Identifier) {
-                        stack_push(array);
-                    } else if (vm->arrays.data[arr_index][index.val.num].type == Value_String && vm->arrays.data[arr_index][index.val.num].mutable) stack_push(((Value) {
-                        Value_String, 
-                        .val.str=vm->arrays.data[arr_index][index.val.num].val.str,
-                        false,
-                        0
-                    }));
-                    else stack_push(vm->arrays.data[arr_index][index.val.num]);
-                }
+                } else ERR("ERROR in %s on line %ld: cant get element of type %s\n", get_loc, find_value_type(array.type))
 
                 break;}
             case OP_SET_ELEMENT:{
