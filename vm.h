@@ -142,10 +142,6 @@ void disassemble(VM *vm) {
                     print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
                     i += 2;
                     break;
-                case OP_ARRAY:
-                    printf("%-6d %s OP_ARRAY:         index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
-                    i += 2;
-                    break;
                 case OP_GET_ELEMENT:
                     printf("%-6d %s OP_GET_ELEMENT\n", i, line_str);
                     break;
@@ -535,16 +531,6 @@ void run(VM *vm) {
             case OP_JUMP:
                 i = read_index - 1;
                 break;
-            case OP_ARRAY:{
-                u_int16_t index = read_index;
-                stack_push(((Value) {
-                    Value_Array,      
-                    .val.num=index,   
-                    false,            
-                    0                 
-                }));                  
-                i += 2;
-                break;}
             case OP_GET_ELEMENT:{
                 Value array = stack_pop;
                 Value index = stack_pop;

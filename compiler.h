@@ -36,7 +36,6 @@
     X(OP_NOT_EQUAL)\
     X(OP_JUMP_IF_FALSE)\
     X(OP_JUMP)\
-    X(OP_ARRAY)\
     X(OP_GET_ELEMENT)\
     X(OP_SET_ELEMENT)\
     X(OP_START_IF)\
@@ -318,8 +317,6 @@ void compile_expr(Node *n, Compiler *c) {
             };
             append(c->func.constants, val);
 
-
-            //append_verbose(c->arrays->data, array, c->arrays->index, c->arrays->capacity);
             u_int16_t index = c->func.constants.index - 1;
             if (index < 255) {
                 append_code(OP_CONSTANT, current_loc(n));
@@ -331,10 +328,6 @@ void compile_expr(Node *n, Compiler *c) {
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
             }
-            //append_code(OP_ARRAY, current_loc(n));
-            //u_int16_t index = c->arrays->index - 1;
-            //append_code(FIRST_BYTE(index), INVALID_LOC);
-            //append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
         case AST_At:{
             compile_expr(n->left, c); // the index
