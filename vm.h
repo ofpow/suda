@@ -511,26 +511,16 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
                 else if (var->value.type == Value_Array) {
-                    Value *array = vm->arrays.data[var->value.val.num];
-                    for (int i = 1; i < array[0].val.num; i++) {
-                        if (array[i].type == Value_String && array[i].mutable == true) free(array[i].val.str.chars);
+                    Value *array = var->value.val.array;
+                    for (int j = 1; i < array[0].val.num; j++) {
+                        if (array[j].type == Value_String && array[j].mutable)
+                            free(array[j].val.str.chars);
                     }
-                    free(vm->arrays.data[var->value.val.num]);
-                    Value *new_array = vm->arrays.data[value.val.num];
-                    array = calloc(new_array[0].val.num, sizeof(Value));
-
-                    for (int i = 0; i < new_array[0].val.num; i++) {
-                        if (new_array[i].type == Value_String && new_array[i].mutable)
-                            array[i] = (Value){Value_String, .val.str={strdup(new_array[i].val.str.chars), new_array[i].val.str.len}, true, 0};
-                        else 
-                            array[i] = new_array[i];
-                    }
-                    vm->arrays.data[var->value.val.num] = array;
+                    free(array);
                 } else if (var->value.type == Value_String && var->value.mutable) {
                     free(var->value.val.str.chars);
-                    var->value = value;
-                } else {
-                var->value = value;}
+                }
+                var->value = value;
                 i += 2;
                 break;}
             case OP_START_IF:
