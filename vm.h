@@ -734,7 +734,6 @@ void run(VM *vm) {
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
                 vm->arrays.data[appendee.val.num] = array;
-                i += 2;
                 break;}
             case OP_BREAK:{
                 i += read_index - 1;
