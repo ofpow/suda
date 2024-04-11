@@ -310,12 +310,31 @@ void compile_expr(Node *n, Compiler *c) {
                     default: ERR("ERROR in %s on line %ld: cant do array type %s\n", n->file, n->line, find_value_type(n->value[i].type))
                 }
             }
+            Value val = {
+                Value_Array,
+                .val.array=array,
+                true,
+                0
+            };
+            append(c->func.constants, val);
 
-            append_verbose(c->arrays->data, array, c->arrays->index, c->arrays->capacity);
-            append_code(OP_ARRAY, current_loc(n));
-            u_int16_t index = c->arrays->index - 1;
-            append_code(FIRST_BYTE(index), INVALID_LOC);
-            append_code(SECOND_BYTE(index), INVALID_LOC);
+
+            //append_verbose(c->arrays->data, array, c->arrays->index, c->arrays->capacity);
+            u_int16_t index = c->func.constants.index - 1;
+            if (index < 255) {
+                append_code(OP_CONSTANT, current_loc(n));
+                append_code(index, INVALID_LOC);
+            } else if (index == 65535) {
+                ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
+            } else {
+                append_code(OP_CONSTANT_LONG, current_loc(n));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+            }
+            //append_code(OP_ARRAY, current_loc(n));
+            //u_int16_t index = c->arrays->index - 1;
+            //append_code(FIRST_BYTE(index), INVALID_LOC);
+            //append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
         case AST_At:{
             compile_expr(n->left, c); // the index

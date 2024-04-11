@@ -57,6 +57,7 @@ typedef struct AST_Variable {
 typedef struct Value {
     Value_Type type;
     union {
+        struct Value *array;
         string str;
         int64_t num;
     } val;
