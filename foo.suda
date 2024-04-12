@@ -1,4 +1,7 @@
 let x = "123"
 let y = [1, 2, 3]
-println x@3
-println y@2
+x@3 = "5"
+y@2 = 5
+
+println x
+println y
