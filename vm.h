@@ -272,8 +272,14 @@ void disassemble(VM *vm) {
                 case OP_RETURN_NOTHING:
                     printf("%-6d %s OP_RETURN_NOTHING\n", i, line_str);
                     break;
-                case OP_APPEND:
-                    printf("%-6d %s OP_APPEND\n", i, line_str);
+                case OP_APPEND_LOCAL:
+                    printf("%-6d %s OP_APPEND_LOCAL   index %d\n", i, line_str, func.code.data[i + 1]);
+                    i++;
+                    break;
+                case OP_APPEND_GLOBAL:
+                    printf("%-6d %s OP_APPEND_GLOBAL   var ", i, line_str);
+                    print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
+                    i += 2;
                     break;
                 case OP_BREAK:
                     printf("%-6d %s OP_BREAK:         offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
@@ -610,7 +616,16 @@ void run(VM *vm) {
                 frame->slots[vm->func->code.data[i]] = stack_pop;
                 break;}
             case OP_POP:
-                vm->stack_top -= read_index;
+                for (Value *val = vm->stack_top; val > frame->slots; val--) 
+                    if (val->type == Value_Array) {
+                        Value *array = val->val.array;
+                        for (int j = 1; i < array[0].val.num; j++) {
+                            if (array[j].type == Value_String && array[j].mutable)
+                                free(array[j].val.str.chars);
+                        }
+                        free(array);
+                    }
+
                 i += 2;
                 break;
             case OP_LEN:;
@@ -681,22 +696,39 @@ void run(VM *vm) {
                 vm->func = frame->func;
                 i = frame->return_index;
                 break;}
-            case OP_APPEND:{
+            case OP_APPEND_GLOBAL:{
                 Value val = stack_pop;
                 Value appendee = stack_pop;
 
-                if (appendee.type == Value_Identifier) {
-                    Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, appendee.hash)->value;
-                    if (var == NULL) ERR("ERROR in %s on line %ld: tried to append to nonexistent var %s\n", get_loc, appendee.val.str.chars);
-                    appendee = var->value;
-                }
-
-                Value *array = vm->arrays.data[appendee.val.num];
+                Value *array = appendee.val.array;
                 int64_t arr_len = array[0].val.num + 1;
                 array = realloc(array, arr_len * sizeof(Value));
                 array[arr_len - 1] = val;
                 array[0].val.num = arr_len;
-                vm->arrays.data[appendee.val.num] = array;
+                appendee.val.array = array;
+
+                Value name = vm->func->constants.data[read_index];
+
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
+                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get append to nonexistent variable %.*s\n", get_loc, Print(name.val.str));
+
+                var->value = appendee;
+
+                i += 2;
+                break;}
+            case OP_APPEND_LOCAL:{
+                Value val = stack_pop;
+                Value appendee = stack_pop;
+
+                Value *array = appendee.val.array;
+                int64_t arr_len = array[0].val.num + 1;
+                array = realloc(array, arr_len * sizeof(Value));
+                array[arr_len - 1] = val;
+                array[0].val.num = arr_len;
+                appendee.val.array = array;
+                
+                frame->slots[vm->func->code.data[++i]] = appendee;
+
                 break;}
             case OP_BREAK:{
                 i += read_index - 1;

@@ -55,7 +55,8 @@
     X(OP_RSHIFT)\
     X(OP_POWER)\
     X(OP_RETURN_NOTHING)\
-    X(OP_APPEND)\
+    X(OP_APPEND_GLOBAL)\
+    X(OP_APPEND_LOCAL)\
     X(OP_BREAK)\
     X(OP_CONTINUE)\
     X(OP_FOR)\
@@ -558,7 +559,16 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 compile_identifier(nodes[i], c);
                 compile_expr(nodes[i]->left, c);
 
-                append_code(OP_APPEND, current_loc(nodes[i]));
+                if (is_local(nodes[i]->value, c)) {
+                    append_code(OP_APPEND_LOCAL, current_loc(nodes[i]));
+                    append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
+                } else {
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash}));
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_APPEND_GLOBAL, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                }
 
                 break;}
             case AST_Break:{

@@ -1,7 +1,12 @@
-let x = "123"
-let y = [1, 2, 3]
-x@3 = "5"
-y@2 = 5
+if 1
+    let x = [1, 2]
+
+    append x 3
+
+    println x
+;
+let x = [1, 2]
+
+append x 3
 
 println x
-println y
