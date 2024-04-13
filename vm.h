@@ -633,7 +633,7 @@ void run(VM *vm) {
                 if (array.type == Value_Array) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=vm->arrays.data[array.val.num][0].val.num - 1,
+                        .val.num=array.val.array[0].val.num - 1,
                         false,
                         0
                     }));
