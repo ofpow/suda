@@ -743,13 +743,13 @@ void run(VM *vm) {
                 Value *local = &frame->slots[vm->func->code.data[++i]];
                 if (array.type == Value_Array) {
                     if (index->val.num == 1) {
-                        stack_push(vm->arrays.data[array.val.num][1]);
-                    } else if (index->val.num >= vm->arrays.data[array.val.num][0].val.num) {
+                        stack_push(array.val.array[1]);
+                    } else if (index->val.num >= array.val.array[0].val.num) {
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
                     } else {
-                        *local = vm->arrays.data[array.val.num][index->val.num];
+                        *local = array.val.array[index->val.num];
                     }
                 } else if (array.type == Value_String) {
                     if (index->val.num == 1) {
