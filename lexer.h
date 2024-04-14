@@ -437,6 +437,7 @@ Token *lex_file(const char *file_path, String_Array *programs, String_Array *inc
             }
 
             free(to_include);
+            free(tokens.data);
 
             tokens.data = new_tokens.data;
             tokens.index = new_tokens.index;
