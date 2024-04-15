@@ -143,8 +143,6 @@ typedef struct Compiler {
 
     Function func;
 
-    Arrays *arrays;
-
     Local locals[LOCALS_MAX];
     u_int8_t locals_count;
     int64_t depth;
@@ -610,7 +608,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
     }
 }
 
-Function compile_func(AST_Function *func, Arrays *arrays){
+Function compile_func(AST_Function *func){
     Compiler c = {0};
     if (func->name != NULL) c.depth++;
     for (int i = 0; i < func->arity; i++) {
@@ -624,8 +622,6 @@ Function compile_func(AST_Function *func, Arrays *arrays){
     c.func.code = (Code){calloc(10, sizeof(u_int8_t)), 0, 10};
     c.func.constants = (Constants){calloc(10, sizeof(Value)), 0, 10};
     c.func.locs = (Locations){calloc(10, sizeof(Location)), 0, 10};
-
-    c.arrays = arrays;
 
     compile(func->nodes.data, func->nodes.index, &c);
 
