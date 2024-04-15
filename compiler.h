@@ -188,6 +188,17 @@ u_int16_t resolve_func(AST_Value *func) {
 void free_func(Function func) {
     free(func.code.data);
     free(func.locs.data);
+    for (int i = 0; i < func.constants.index; i++) {
+        if (func.constants.data[i].type == Value_Array) {
+            Value *array = func.constants.data[i].val.array;
+            for (int i = 1; i < array[0].val.num; i++) {
+                if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
+                    array[i].mutable)
+                    free(array[i].val.str.chars);
+            }
+            free(array);
+        }
+    }
     free(func.constants.data);
 }
 

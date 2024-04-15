@@ -56,6 +56,32 @@ typedef struct VM {
     int call_stack_count;
 } VM;
 
+Value *dup_array(Value *val) {
+    int len = val[0].val.num;
+    Value *array = calloc(len, sizeof(Value));
+
+    for (int i = 0; i < len; i++) {
+        if ((val[i].type == Value_Number) || (val[i].type == Value_Array)) {
+            array[i] = val[i];
+        } else if (val[i].type == Value_String) {
+            array[i] = (Value){
+                Value_String,
+                .val.str={strdup(val[i].val.str.chars), val[i].val.str.len},
+                true,
+                0
+            };
+        } else if (val[i].type == Value_Identifier) {
+            array[i] = (Value){
+                Value_String,
+                .val.str={strdup(val[i].val.str.chars), val[i].val.str.len},
+                true,
+                val[i].hash
+            };
+        }
+    }
+    return array;
+}
+
 void print_array(Value *val, bool new_line) {
     Value *array = val->val.array;
     if (array[0].val.num < 2) {printf("[]\n"); return;}
@@ -351,6 +377,8 @@ void run(VM *vm) {
 
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str.chars;
+
+                if (value.type == Value_Array) value.val.array = dup_array(value.val.array);
                 var->value = value;
 
                 bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
@@ -522,6 +550,8 @@ void run(VM *vm) {
                 } else if (var->value.type == Value_String && var->value.mutable) {
                     free(var->value.val.str.chars);
                 }
+
+                if (value.type == Value_Array) value.val.array = dup_array(value.val.array);
                 var->value = value;
                 i += 2;
                 break;}
