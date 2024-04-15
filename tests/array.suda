@@ -26,3 +26,6 @@ let x = [1, 2, -1]
 append x (1 + 2)
 
 println x
+
+x = var_one
+println x
