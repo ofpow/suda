@@ -460,8 +460,8 @@ int main(int argc, char *argv[]) {
         Variable *argvv = calloc(1, sizeof(Variable));
 
         if (suda_argc != NULL) {
-            argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), false, hash("argc", 4) };
-            argvv->value = (Value){ Value_Array, .val.array=NULL, false, hash("argv", 4) };
+            argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), true, hash("argc", 4) };
+            argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
 
             Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
             x[0].val.num = argcc->value.val.num + 1;
@@ -473,8 +473,8 @@ int main(int argc, char *argv[]) {
 
             argvv->value.val.array = x;
         } else {
-            argcc->value = (Value){ Value_Number, .val.num=0, false, hash("argc", 4) };
-            argvv->value = (Value){ Value_Array, .val.array=NULL, false, hash("argv", 4) };
+            argcc->value = (Value){ Value_Number, .val.num=0, true, hash("argc", 4) };
+            argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
             Value *x = calloc(1, sizeof(Value));
             x[0].val.num = 1;
             x[0].type = Value_Array;

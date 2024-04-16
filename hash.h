@@ -91,8 +91,20 @@ void free_entry(Entry entry) {
         case Entry_Tombstone:
             break;
         case Entry_Variable:;{
-            Variable *var = (Variable*)entry.value;
-            if (var->value.mutable == true) free(var->value.val.str.chars);
+            Variable *var = entry.value;
+            if (var->value.mutable == true) {
+                if (var->value.type == Value_String)
+                    free(var->value.val.str.chars);
+                else if (var->value.type == Value_Array) {
+                    Value *array = var->value.val.array;
+                    for (int i = 1; i < array[0].val.num; i++) {
+                        if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
+                            array[i].mutable)
+                            free(array[i].val.str.chars);
+                    }
+                    free(array);
+                }
+            }
             free(var);
             break;}
         case Entry_AST_Variable:;{
