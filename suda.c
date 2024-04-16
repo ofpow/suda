@@ -456,37 +456,34 @@ int main(int argc, char *argv[]) {
 
         vm.vars = new_map(8);
 
-        //TODO: fix argv
-        //Variable *argcc = calloc(1, sizeof(Variable));
-        //Variable *argvv = calloc(1, sizeof(Variable));
+        Variable *argcc = calloc(1, sizeof(Variable));
+        Variable *argvv = calloc(1, sizeof(Variable));
 
-        //if (suda_argc != NULL) {
-        //    argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), false, hash("argc", 4) };
-        //    argvv->value = (Value){ Value_Array, .val.num=0, false, hash("argv", 4) };
+        if (suda_argc != NULL) {
+            argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), false, hash("argc", 4) };
+            argvv->value = (Value){ Value_Array, .val.array=NULL, false, hash("argv", 4) };
 
-        //    Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
-        //    x[0].val.num = argcc->value.val.num + 1;
-        //    x[0].type = Value_Array;
-        //    for (int i = 1; i < argcc->value.val.num + 1; i++) {
-        //        size_t len = strlen(suda_argv[i].value);
-        //        x[i] = (Value){ Value_String, .val.str={format_str(len - 1, "%.*s", len - 2, STR(suda_argv[i].value) + 1), len - 2}, true, 0 };
-        //    }
+            Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
+            x[0].val.num = argcc->value.val.num + 1;
+            x[0].type = Value_Array;
+            for (int i = 1; i < argcc->value.val.num + 1; i++) {
+                size_t len = strlen(suda_argv[i].value);
+                x[i] = (Value){ Value_String, .val.str={format_str(len - 1, "%.*s", len - 2, STR(suda_argv[i].value) + 1), len - 2}, true, 0 };
+            }
 
-        //    append(arrays, x);
-        //    argvv->value.val.num = arrays.index - 1;
-        //} else {
-        //    argcc->value = (Value){ Value_Number, .val.num=0, false, hash("argc", 4) };
-        //    argvv->value = (Value){ Value_Array, .val.num=-1, false, hash("argv", 4) };
-        //    Value *x = calloc(1, sizeof(Value));
-        //    x[0].val.num = 1;
-        //    x[0].type = Value_Array;
+            argvv->value.val.array = x;
+        } else {
+            argcc->value = (Value){ Value_Number, .val.num=0, false, hash("argc", 4) };
+            argvv->value = (Value){ Value_Array, .val.array=NULL, false, hash("argv", 4) };
+            Value *x = calloc(1, sizeof(Value));
+            x[0].val.num = 1;
+            x[0].type = Value_Array;
 
-        //    append(arrays, x);
-        //    argvv->value.val.num = arrays.index - 1;
-        //}
+            argvv->value.val.array = x;
+        }
 
-        //insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
-        //insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
+        insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
+        insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
 
         vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0, ((Location){file_path, 0})};
         vm.call_stack_count++;
