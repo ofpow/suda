@@ -84,12 +84,13 @@ Value *dup_array(Value *val) {
 
 void print_array(Value *val, bool new_line) {
     Value *array = val->val.array;
-    if (array[0].val.num < 2) {printf("[]\n"); return;}
+    if (ARRAY_LEN(array[0].val.num) < 2) {printf("[]\n"); return;}
 
     int64_t str_len = 2;
     char *str = format_str(str_len, "[");
 
-    for (int i = 1; i < array[0].val.num; i++) {
+    u_int32_t len = ARRAY_LEN(array[0].val.num);
+    for (u_int32_t i = 1; i < len; i++) {
         if (array[i].type == Value_Number) {
             int64_t len = num_len(array[i].val.num) + 2;
             if (array[i].val.num < 0) len++;
@@ -397,6 +398,8 @@ void run(VM *vm) {
                         false,
                         0
                     }));
+                } else if (op1.type == Value_Array && op2.type == Value_Array) {
+                    ERR("NONONONNONONONON\n");
                 } else {
                     char *str1;
                     char *str2;
@@ -572,7 +575,7 @@ void run(VM *vm) {
                 Value index = stack_pop;
 
                 if (array.type == Value_Array) {
-                    if (index.val.num >= array.val.array[0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %ld\n", get_loc, index.val.num, array.val.array[0].val.num - 1)
+                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %ld\n", get_loc, index.val.num, array.val.array[0].val.num - 1)
                     else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
 
                     if (array.val.array[index.val.num].type == Value_Identifier) {
@@ -608,7 +611,7 @@ void run(VM *vm) {
 
                     array.val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
                 } else if (array.type == Value_Array) {
-                    if (index.val.num >= array.val.array[0].val.num) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
+                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
                     else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
 
                     if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) free(array.val.array[index.val.num].val.str.chars);

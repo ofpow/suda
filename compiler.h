@@ -108,6 +108,12 @@ Op_Code ast_to_op_code(AST_Type type) {
     return 0;
 }
 
+u_int32_t next_power_of_two(u_int32_t num) {
+    u_int32_t result = 1;
+    for (; result < num; result *= 2);
+    return result;
+}
+
 define_array(Code, u_int8_t);
 define_array(Constants, Value);
 define_array(Arrays, Value*);
@@ -191,7 +197,8 @@ void free_func(Function func) {
     for (int i = 0; i < func.constants.index; i++) {
         if (func.constants.data[i].type == Value_Array) {
             Value *array = func.constants.data[i].val.array;
-            for (int i = 1; i < array[0].val.num; i++) {
+            u_int32_t len = array[0].val.num;
+            for (u_int32_t i = 1; i < len; i++) {
                 if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
                     array[i].mutable)
                     free(array[i].val.str.chars);
@@ -288,13 +295,19 @@ void compile_expr(Node *n, Compiler *c) {
             append_code(OP_BIT_NOT, current_loc(n));
             break;
         case AST_Array:{
-            int64_t array_len = NUM(n->value[0].value);
-            Value *array = calloc(array_len, sizeof(Value));
-            for (int i = 0; i < array_len; i++) {
+            u_int32_t array_len = NUM(n->value[0].value);
+            u_int32_t array_size = next_power_of_two(array_len);
+            Value *array = calloc(array_size, sizeof(Value));
+            for (u_int32_t i = 0; i < array_len; i++) {
                 switch (n->value[i].type) {
                     case Value_Array:
                         array[i].type = Value_Array;
-                        array[i].val.num = NUM(n->value[i].value);
+                        // first 4 bytes: allocated size
+                        // last 4 bytes: number of elements
+                        array[i].val.num = array_size;
+                        array[i].val.num = (array[i].val.num << 32);
+
+                        array[i].val.num |= array_len;
                         break;
                     case Value_Number:
                         array[i].type = Value_Number;

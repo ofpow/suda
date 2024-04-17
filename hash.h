@@ -1,5 +1,8 @@
 #pragma once
 
+#define ARRAY_LEN(_x) ((u_int32_t)_x)
+#define ARRAY_SIZE(_x) ((u_int32_t)(_x >> 32))
+
 typedef enum {
     Entry_Empty,
     Entry_Tombstone,
@@ -97,7 +100,8 @@ void free_entry(Entry entry) {
                     free(var->value.val.str.chars);
                 else if (var->value.type == Value_Array) {
                     Value *array = var->value.val.array;
-                    for (int i = 1; i < array[0].val.num; i++) {
+                    u_int32_t len = ARRAY_LEN(array[0].val.num);
+                    for (u_int32_t i = 1; i < len; i++) {
                         if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
                             array[i].mutable)
                             free(array[i].val.str.chars);
