@@ -450,7 +450,7 @@ void run(VM *vm) {
             case OP_GREATER_EQUAL:
                 binary_op(>=, "ERROR in %s on line %ld: cant greater equal than type %s and %s\n");
             case OP_AND:
-                binary_op(==, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
+                binary_op(&&, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
             case OP_OR:
                 binary_op(||, "ERROR in %s on line %ld: cant logical or type %s and %s\n");
             case OP_MODULO:
