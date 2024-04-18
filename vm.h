@@ -800,9 +800,10 @@ void run(VM *vm) {
                 i += 2;
                 Value *local = &frame->slots[vm->func->code.data[++i]];
                 if (array.type == Value_Array) {
+                    u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
                     if (index->val.num == 1) {
                         stack_push(array.val.array[1]);
-                    } else if (index->val.num >= array.val.array[0].val.num) {
+                    } else if (index->val.num >= len) {
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
