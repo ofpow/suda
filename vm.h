@@ -57,10 +57,10 @@ typedef struct VM {
 } VM;
 
 Value *dup_array(Value *val) {
-    int len = val[0].val.num;
-    Value *array = calloc(len, sizeof(Value));
+    Value *array = calloc(ARRAY_SIZE(val[0].val.num), sizeof(Value));
 
-    for (int i = 0; i < len; i++) {
+    u_int32_t len = ARRAY_LEN(val[0].val.num);
+    for (u_int32_t i = 0; i < len; i++) {
         if ((val[i].type == Value_Number) || (val[i].type == Value_Array)) {
             array[i] = val[i];
         } else if (val[i].type == Value_String) {
@@ -545,7 +545,8 @@ void run(VM *vm) {
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
                 else if (var->value.type == Value_Array) {
                     Value *array = var->value.val.array;
-                    for (int j = 1; i < array[0].val.num; j++) {
+                    u_int32_t len = ARRAY_LEN(array[0].val.num);
+                    for (u_int32_t j = 1; j < len; j++) {
                         if (array[j].type == Value_String && array[j].mutable)
                             free(array[j].val.str.chars);
                     }
@@ -666,7 +667,7 @@ void run(VM *vm) {
                 if (array.type == Value_Array) {
                     stack_push(((Value){
                         Value_Number,
-                        .val.num=array.val.array[0].val.num - 1,
+                        .val.num=ARRAY_LEN(array.val.array[0].val.num) - 1,
                         false,
                         0
                     }));
@@ -734,10 +735,22 @@ void run(VM *vm) {
                 Value appendee = stack_pop;
 
                 Value *array = appendee.val.array;
-                int64_t arr_len = array[0].val.num + 1;
-                array = realloc(array, arr_len * sizeof(Value));
-                array[arr_len - 1] = val;
-                array[0].val.num = arr_len;
+
+                u_int32_t len = ARRAY_LEN(array[0].val.num);
+                u_int32_t size = ARRAY_SIZE(array[0].val.num);
+
+                if (len >= size) {
+                    size *= 2;
+                    array = realloc(array, size * sizeof(Value));
+                }
+
+                array[len] = val;
+
+                array[0].val.num = size;
+                array[0].val.num = (array[0].val.num << 32);
+
+                array[0].val.num |= len + 1;
+
                 appendee.val.array = array;
 
                 Value name = vm->func->constants.data[read_index];
@@ -754,10 +767,22 @@ void run(VM *vm) {
                 Value appendee = stack_pop;
 
                 Value *array = appendee.val.array;
-                int64_t arr_len = array[0].val.num + 1;
-                array = realloc(array, arr_len * sizeof(Value));
-                array[arr_len - 1] = val;
-                array[0].val.num = arr_len;
+
+                u_int32_t len = ARRAY_LEN(array[0].val.num);
+                u_int32_t size = ARRAY_SIZE(array[0].val.num);
+
+                if (len >= size) {
+                    size *= 2;
+                    array = realloc(array, size * sizeof(Value));
+                }
+
+                array[len] = val;
+
+                array[0].val.num = size;
+                array[0].val.num = (array[0].val.num << 32);
+
+                array[0].val.num |= len + 1;
+
                 appendee.val.array = array;
                 
                 frame->slots[vm->func->code.data[++i]] = appendee;
