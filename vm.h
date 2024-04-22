@@ -755,10 +755,7 @@ void run(VM *vm) {
 
                 array[len] = val;
 
-                array[0].val.num = size;
-                array[0].val.num = (array[0].val.num << 32);
-
-                array[0].val.num |= len + 1;
+                array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
 
                 appendee.val.array = array;
 
@@ -787,10 +784,7 @@ void run(VM *vm) {
 
                 array[len] = val;
 
-                array[0].val.num = size;
-                array[0].val.num = (array[0].val.num << 32);
-
-                array[0].val.num |= len + 1;
+                array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
 
                 appendee.val.array = array;
                 

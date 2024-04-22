@@ -302,12 +302,10 @@ void compile_expr(Node *n, Compiler *c) {
                 switch (n->value[i].type) {
                     case Value_Array:
                         array[i].type = Value_Array;
+
                         // first 4 bytes: allocated size
                         // last 4 bytes: number of elements
-                        array[i].val.num = array_size;
-                        array[i].val.num = (array[i].val.num << 32);
-
-                        array[i].val.num |= array_len;
+                        array[i].val.num = MAKE_ARRAY_INFO(array_size, array_len);
                         break;
                     case Value_Number:
                         array[i].type = Value_Number;

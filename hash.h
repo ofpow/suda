@@ -2,6 +2,7 @@
 
 #define ARRAY_LEN(_x) ((u_int32_t)_x)
 #define ARRAY_SIZE(_x) ((u_int32_t)(_x >> 32))
+#define MAKE_ARRAY_INFO(_capacity, _index) ((((u_int64_t)_capacity) << 32) | ((u_int64_t)_index))
 
 typedef enum {
     Entry_Empty,
