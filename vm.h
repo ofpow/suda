@@ -7,6 +7,10 @@
     vm->stack_top++;          \
 } while (0)                   \
 
+#define dup_value(_val) (_val.type == Value_String) ?                                         \
+    (Value){Value_String, .val.str={strdup(_val.val.str.chars), _val.val.str.len}, true, 0} : \
+    _val                                                                                      \
+
 #define binary_op(op, msg) do {                                                     \
     Value op2 = stack_pop;                                                          \
     Value op1 = stack_pop;                                                          \
@@ -399,7 +403,30 @@ void run(VM *vm) {
                         0
                     }));
                 } else if (op1.type == Value_Array && op2.type == Value_Array) {
-                    ERR("NONONONNONONONON\n");
+                    u_int32_t arr1_len = ARRAY_LEN(op1.val.array[0].val.num);
+                    u_int32_t arr2_len = ARRAY_LEN(op2.val.array[0].val.num);
+
+                    u_int32_t len = arr1_len + arr2_len - 1;
+                    u_int32_t size = next_power_of_two(len);
+
+                    Value *array = calloc(size, sizeof(Value));
+
+                    for (u_int32_t i = 1; i < arr1_len; i++) {
+                        array[i] = dup_value(op1.val.array[i]);
+                    }
+
+                    for (u_int32_t i = 1; i < arr2_len; i++) {
+                        array[i + arr1_len - 1] = op2.val.array[i];
+                    }
+
+                    array[0].val.num = MAKE_ARRAY_INFO(size, len);
+
+                    stack_push(((Value){
+                        Value_Array,
+                        .val.array=array,
+                        true,
+                        0
+                    }));
                 } else {
                     char *str1;
                     char *str2;
