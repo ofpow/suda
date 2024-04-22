@@ -522,12 +522,21 @@ void run(VM *vm) {
                         0
                     }));
                 } else if (op1.type == Value_String && op2.type == Value_String) {
-                    stack_push(((Value){
-                        Value_Number,
-                        .val.num=!strcmp(op1.val.str.chars, op2.val.str.chars),
-                        false,
-                        0
-                    }));
+                    if (op1.val.str.len != op2.val.str.len) {
+                        stack_push(((Value){
+                            Value_Number,
+                            .val.num=0,
+                            false,
+                            0
+                        }));
+                    } else {
+                        stack_push(((Value){
+                            Value_Number,
+                            .val.num=!strcmp(op1.val.str.chars, op2.val.str.chars),
+                            false,
+                            0
+                        }));
+                    }
                 } else stack_push(((Value){
                         Value_Number,
                         .val.num=0,
