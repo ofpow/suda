@@ -590,13 +590,13 @@ void run(VM *vm) {
 
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
-                else if (var->value.type == Value_Array) {
+                else if (var->value.type == Value_Array && var->value.mutable) {
                     free_value_array(var->value.val.array);
                 } else if (var->value.type == Value_String && var->value.mutable) {
                     free(var->value.val.str.chars);
                 }
 
-                if (value.type == Value_Array) value.val.array = dup_array(value.val.array);
+                if (value.type == Value_Array && !value.mutable) value.val.array = dup_array(value.val.array);
                 var->value = value;
                 i += 2;
                 break;}
@@ -688,7 +688,11 @@ void run(VM *vm) {
             case OP_SET_LOCAL: {
                 i++;
                 if (frame->slots[vm->func->code.data[i]].type == Value_String && frame->slots[vm->func->code.data[i]].mutable) free(frame->slots[vm->func->code.data[i]].val.str.chars);
-                frame->slots[vm->func->code.data[i]] = stack_pop;
+                else if (frame->slots[vm->func->code.data[i]].type == Value_Array && frame->slots[vm->func->code.data[i]].mutable) free_value_array(frame->slots[vm->func->code.data[i]].val.array);
+
+                Value val = stack_pop;
+                if (val.type == Value_Array && val.mutable == false) val.val.array = dup_array(val.val.array);
+                frame->slots[vm->func->code.data[i]] = val;
                 break;}
             case OP_POP:
                 for (Value *val = vm->stack_top; val > frame->slots; val--) 
