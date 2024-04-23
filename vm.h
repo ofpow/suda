@@ -86,6 +86,15 @@ Value *dup_array(Value *val) {
     return array;
 }
 
+void free_value_array(Value *array) {
+    u_int32_t len = ARRAY_LEN(array[0].val.num);
+    for (u_int32_t i = 1; i < len; i++) {
+        if ((((array[i].type == Value_String)) || (array[i].type == Value_Identifier)) && array[i].mutable)
+            free(array[i].val.str.chars);
+    }
+    free(array);
+}
+
 void print_array(Value *val, bool new_line) {
     Value *array = val->val.array;
     if (ARRAY_LEN(array[0].val.num) < 2) {printf("[]\n"); return;}
@@ -383,7 +392,7 @@ void run(VM *vm) {
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str.chars;
 
-                if (value.type == Value_Array) value.val.array = dup_array(value.val.array);
+                if (value.type == Value_Array && value.mutable == false) value.val.array = dup_array(value.val.array);
                 var->value = value;
 
                 bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
@@ -419,6 +428,7 @@ void run(VM *vm) {
                         array[i + arr1_len - 1] = op2.val.array[i];
                     }
 
+                    array[0].type = Value_Array;
                     array[0].val.num = MAKE_ARRAY_INFO(size, len);
 
                     stack_push(((Value){
@@ -427,6 +437,7 @@ void run(VM *vm) {
                         true,
                         0
                     }));
+
                 } else {
                     char *str1;
                     char *str2;
@@ -580,13 +591,7 @@ void run(VM *vm) {
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
                 else if (var->value.type == Value_Array) {
-                    Value *array = var->value.val.array;
-                    u_int32_t len = ARRAY_LEN(array[0].val.num);
-                    for (u_int32_t j = 1; j < len; j++) {
-                        if (array[j].type == Value_String && array[j].mutable)
-                            free(array[j].val.str.chars);
-                    }
-                    free(array);
+                    free_value_array(var->value.val.array);
                 } else if (var->value.type == Value_String && var->value.mutable) {
                     free(var->value.val.str.chars);
                 }

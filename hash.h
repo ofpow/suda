@@ -69,6 +69,8 @@ typedef struct Value {
     u_int32_t hash;
 } Value;
 
+void free_value_array(Value *val);
+
 typedef struct Variable {
     char *name;
     Value value;
@@ -96,20 +98,12 @@ void free_entry(Entry entry) {
             break;
         case Entry_Variable:;{
             Variable *var = entry.value;
-            if (var->value.mutable == true) {
-                if (var->value.type == Value_String)
-                    free(var->value.val.str.chars);
-                else if (var->value.type == Value_Array) {
-                    Value *array = var->value.val.array;
-                    u_int32_t len = ARRAY_LEN(array[0].val.num);
-                    for (u_int32_t i = 1; i < len; i++) {
-                        if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
-                            array[i].mutable)
-                            free(array[i].val.str.chars);
-                    }
-                    free(array);
-                }
-            }
+
+            if (var->value.mutable == true && var->value.type == Value_String) 
+                free(var->value.val.str.chars);
+            if (var->value.type == Value_Array)
+                free_value_array(var->value.val.array); 
+
             free(var);
             break;}
         case Entry_AST_Variable:;{

@@ -196,14 +196,7 @@ void free_func(Function func) {
     free(func.locs.data);
     for (int i = 0; i < func.constants.index; i++) {
         if (func.constants.data[i].type == Value_Array) {
-            Value *array = func.constants.data[i].val.array;
-            u_int32_t len = array[0].val.num;
-            for (u_int32_t i = 1; i < len; i++) {
-                if (((array[i].type == Value_String) || (array[i].type == Value_Identifier)) &&
-                    array[i].mutable)
-                    free(array[i].val.str.chars);
-            }
-            free(array);
+            free_value_array(func.constants.data[i].val.array);
         }
     }
     free(func.constants.data);
@@ -333,7 +326,7 @@ void compile_expr(Node *n, Compiler *c) {
             Value val = {
                 Value_Array,
                 .val.array=array,
-                true,
+                false,
                 0
             };
             append(c->func.constants, val);
