@@ -29,3 +29,6 @@ println x
 
 x = var_one
 println x
+
+x = (x + var_one)
+println x
