@@ -374,6 +374,7 @@ void run(VM *vm) {
                     if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
                     print_array(&print, true);
+                    if (print.mutable == true) free_value_array(print.val.array);
                 } else
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;
@@ -386,6 +387,7 @@ void run(VM *vm) {
                     if (print.mutable == true) free(print.val.str.chars);
                 } else if (print.type == Value_Array) {
                     print_array(&print, false);
+                    if (print.mutable == true) free_value_array(print.val.array);
                 } else
                     ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
                 break;}
@@ -429,7 +431,7 @@ void run(VM *vm) {
                     }
 
                     for (u_int32_t i = 1; i < arr2_len; i++) {
-                        array[i + arr1_len - 1] = op2.val.array[i];
+                        array[i + arr1_len - 1] = dup_value(op2.val.array[i]);
                     }
 
                     array[0].type = Value_Array;
