@@ -61,6 +61,7 @@
     X(OP_CONTINUE)\
     X(OP_FOR)\
     X(OP_EXIT)\
+    X(OP_ARRAY)\
 
 typedef enum {
 #define X(x) x,
@@ -332,16 +333,9 @@ void compile_expr(Node *n, Compiler *c) {
             append(c->func.constants, val);
 
             u_int16_t index = c->func.constants.index - 1;
-            if (index < 255) {
-                append_code(OP_CONSTANT, current_loc(n));
-                append_code(index, INVALID_LOC);
-            } else if (index == 65535) {
-                ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
-            } else {
-                append_code(OP_CONSTANT_LONG, current_loc(n));
-                append_code(FIRST_BYTE(index), INVALID_LOC);
-                append_code(SECOND_BYTE(index), INVALID_LOC);
-            }
+            append_code(OP_ARRAY, current_loc(n));
+            append_code(FIRST_BYTE(index), INVALID_LOC);
+            append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
         case AST_At:{
             compile_expr(n->left, c); // the index

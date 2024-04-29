@@ -338,6 +338,10 @@ void disassemble(VM *vm) {
                 case OP_EXIT:
                     printf("%-6d %s OP_EXIT\n", i, line_str);
                     break;
+                case OP_ARRAY:
+                    printf("%-6d %s OP_ARRAY:         index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    i += 2;
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(func.code.data[i]));
             }
@@ -671,6 +675,12 @@ void run(VM *vm) {
                     false,
                     0
                 }));
+                else if (var->value.type == Value_Array && var->value.mutable) stack_push(((Value) {
+                    Value_Array, 
+                    .val.array=var->value.val.array,
+                    false,
+                    0
+                }));
                 else stack_push(var->value);
                 i += 2;
                 break;}
@@ -680,6 +690,12 @@ void run(VM *vm) {
                 if (val.type == Value_String && val.mutable) stack_push(((Value) {
                     Value_String, 
                     .val.str=val.val.str,
+                    false,
+                    0
+                }));
+                if (val.type == Value_Array && val.mutable) stack_push(((Value) {
+                    Value_Array, 
+                    .val.array=val.val.array,
                     false,
                     0
                 }));
@@ -794,6 +810,7 @@ void run(VM *vm) {
                 array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
 
                 appendee.val.array = array;
+                appendee.mutable = true;
 
                 Value name = vm->func->constants.data[read_index];
 
@@ -823,6 +840,7 @@ void run(VM *vm) {
                 array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
 
                 appendee.val.array = array;
+                appendee.mutable = true;
                 
                 frame->slots[vm->func->code.data[++i]] = appendee;
 
@@ -882,6 +900,15 @@ void run(VM *vm) {
             case OP_EXIT:{
                 Value val = stack_pop;
                 free_mem(val.val.num);
+                break;}
+            case OP_ARRAY:{
+                stack_push(((Value){
+                    Value_Array,
+                    .val.array=dup_array(vm->func->constants.data[read_index].val.array),
+                    true,
+                    0
+                }));
+                i += 2;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
