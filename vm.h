@@ -779,6 +779,13 @@ void run(VM *vm) {
                 break;}
             case OP_RETURN:{
                 Value result = stack_pop;
+                if ((result.type == Value_Array) && !result.mutable) {
+                    result.val.array = dup_array(result.val.array);
+                    result.mutable = true;
+                }
+                for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
+                    if ((val->type == Value_Array) && val->mutable) free_value_array(val->val.array);
+                }
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
                 frame = &vm->call_stack[vm->call_stack_count - 1];
