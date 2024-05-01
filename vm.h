@@ -867,6 +867,7 @@ void run(VM *vm) {
                 Value *local = &frame->slots[vm->func->code.data[++i]];
                 if (array.type == Value_Array) {
                     u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
+                    if (len < 2) {i -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
                     if (index->val.num == 1) {
                         stack_push(array.val.array[1]);
                     } else if (index->val.num >= len) {

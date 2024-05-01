@@ -1,7 +1,5 @@
-fn f(a)
-    let x = []
-    append x a
-    return  x
-;
+let x = []
 
-println f(1)
+for i in x
+    println i
+;
