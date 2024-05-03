@@ -1,5 +1,7 @@
 #pragma once
 
+char for_chars[] = {' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~'};
+
 #define read_index (COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]))
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
@@ -881,22 +883,19 @@ void run(VM *vm) {
                     if (index->val.num == 1) {
                         stack_push(((Value){
                             Value_String,
-                            .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
-                            true,
+                            .val.str={&for_chars[array.val.str.chars[index->val.num - 1] - 32], 1},
+                            false,
                             0
                         }));
-                        *local = *(vm->stack_top - 1);
                     } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
-                        free(local->val.str.chars);
                         index->val.num = 0;
                         i = read_index + 3;
                         vm->stack_top--;
                     } else {
-                        free(local->val.str.chars);
                         *local = (Value){
                             Value_String,
-                            .val.str={format_str(2, "%c", array.val.str.chars[index->val.num - 1]), 1},
-                            true,
+                            .val.str={&for_chars[array.val.str.chars[index->val.num - 1] - 32], 1},
+                            false,
                             0
                         };
                     }
