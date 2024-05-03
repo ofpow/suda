@@ -664,7 +664,7 @@ void run(VM *vm) {
 
                     if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) free(array.val.array[index.val.num].val.str.chars);
                     array.val.array[index.val.num] = new_val;
-                } else ERR("ERROR in %s on line %ld: cant get element from type %s\n", get_loc, find_value_type(array.type))
+                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array.type))
 
                 break;}
             case OP_GET_GLOBAL:{
