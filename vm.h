@@ -445,7 +445,8 @@ void run(VM *vm) {
                         true,
                         0
                     }));
-
+                    if (op1.mutable) free_value_array(op1.val.array);
+                    if (op2.mutable) free_value_array(op2.val.array);
                 } else {
                     char *str1;
                     char *str2;
