@@ -1,5 +1,12 @@
-let x = []
-
-for i in x
-    println i
+fn foo(a)
+    a@3 = 5
+    return a
 ;
+
+let x = [1, 2, 3]
+let y = foo(x)
+
+x@1 = 10
+
+println x
+println y

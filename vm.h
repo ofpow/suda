@@ -175,20 +175,25 @@ void disassemble(VM *vm) {
             }
             switch(func.code.data[i]) {
                 case OP_CONSTANT:
-                    printf("%-6d %s OP_CONSTANT:      ", i, line_str);
+                    printf("%-6d %s OP_CONSTANT:          ", i, line_str);
                     print_value(func.constants.data[func.code.data[i + 1]]);
                     i++;
                     break;
                 case OP_CONSTANT_LONG:
-                    printf("%-6d %s OP_CONSTANT_LONG: ", i, line_str);
+                    printf("%-6d %s OP_CONSTANT_LONG:     ", i, line_str);
                     print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
                     i += 2;
                     break;
                 case OP_GET_ELEMENT:
                     printf("%-6d %s OP_GET_ELEMENT\n", i, line_str);
                     break;
-                case OP_SET_ELEMENT:
-                    printf("%-6d %s OP_SET_ELEMENT\n", i, line_str);
+                case OP_SET_ELEMENT_GLOBAL:
+                    printf("%-6d %s OP_SET_ELEMENT_GLOBAL\n", i, line_str);
+                    i += 2;
+                    break;
+                case OP_SET_ELEMENT_LOCAL:
+                    printf("%-6d %s OP_SET_ELEMENT_LOCAL\n", i, line_str);
+                    i++;
                     break;
                 case OP_PRINTLN:
                     printf("%-6d %s OP_PRINTLN\n", i, line_str);
@@ -197,7 +202,7 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_PRINT\n", i, line_str);
                     break;
                 case OP_DEFINE_GLOBAL:
-                    printf("%-6d %s OP_DEFINE_GLOBAL: var %s\n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
+                    printf("%-6d %s OP_DEFINE_GLOBAL:     var %s\n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_ADD:
@@ -240,35 +245,35 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_NOT_EQUAL\n", i, line_str);
                     break;
                 case OP_SET_GLOBAL:
-                    printf("%-6d %s OP_SET_GLOBAL:    var %s \n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
+                    printf("%-6d %s OP_SET_GLOBAL:        var %s \n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_GET_GLOBAL:
-                    printf("%-6d %s OP_GET_GLOBAL:    var %s \n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
+                    printf("%-6d %s OP_GET_GLOBAL:        var %s \n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
                 case OP_JUMP_IF_FALSE:
-                    printf("%-6d %s OP_JUMP_IF_FALSE: offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_JUMP_IF_FALSE:     offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 case OP_START_IF:
-                    printf("%-6d %s OP_START_IF:      offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_START_IF:          offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 case OP_JUMP:
-                    printf("%-6d %s OP_JUMP:          index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_JUMP:              index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 case OP_SET_LOCAL:
-                    printf("%-6d %s OP_SET_LOCAL:     index %d\n", i, line_str, func.code.data[i + 1]);
+                    printf("%-6d %s OP_SET_LOCAL:         index %d\n", i, line_str, func.code.data[i + 1]);
                     i++;
                     break;
                 case OP_GET_LOCAL:
-                    printf("%-6d %s OP_GET_LOCAL:     index %d\n", i, line_str, func.code.data[i + 1]);
+                    printf("%-6d %s OP_GET_LOCAL:         index %d\n", i, line_str, func.code.data[i + 1]);
                     i++;
                     break;
                 case OP_POP:
-                    printf("%-6d %s OP_POP:           amount: %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2])); 
+                    printf("%-6d %s OP_POP:               amount: %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2])); 
                     i += 2;
                     break;
                 case OP_LEN:
@@ -281,7 +286,7 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_CAST_NUM\n", i, line_str);
                     break;
                 case OP_CALL:
-                    printf("%-6d %s OP_CALL:          func: %s\n", i, line_str, vm->funcs.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].name); 
+                    printf("%-6d %s OP_CALL:              func: %s\n", i, line_str, vm->funcs.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].name); 
                     i += 2;
                     break;
                 case OP_RETURN:
@@ -315,24 +320,24 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_RETURN_NOTHING\n", i, line_str);
                     break;
                 case OP_APPEND_LOCAL:
-                    printf("%-6d %s OP_APPEND_LOCAL   index %d\n", i, line_str, func.code.data[i + 1]);
+                    printf("%-6d %s OP_APPEND_LOCAL       index %d\n", i, line_str, func.code.data[i + 1]);
                     i++;
                     break;
                 case OP_APPEND_GLOBAL:
-                    printf("%-6d %s OP_APPEND_GLOBAL   var ", i, line_str);
+                    printf("%-6d %s OP_APPEND_GLOBAL       var ", i, line_str);
                     print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
                     i += 2;
                     break;
                 case OP_BREAK:
-                    printf("%-6d %s OP_BREAK:         offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_BREAK:             offset %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 case OP_CONTINUE:
-                    printf("%-6d %s OP_CONTINUE:      index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_CONTINUE:          index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 case OP_FOR:
-                    printf("%-6d %s OP_FOR            iter %d, local %d, index %d\n", i, line_str,
+                    printf("%-6d %s OP_FOR                iter %d, local %d, index %d\n", i, line_str,
                             COMBYTE(func.code.data[i + 1], func.code.data[i + 2]), func.code.data[i + 3],
                             COMBYTE(func.code.data[i + 4], func.code.data[i + 5]));
                     i += 5;
@@ -341,7 +346,7 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_EXIT\n", i, line_str);
                     break;
                 case OP_ARRAY:
-                    printf("%-6d %s OP_ARRAY:         index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
+                    printf("%-6d %s OP_ARRAY:             index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
                 default:
@@ -651,24 +656,59 @@ void run(VM *vm) {
                 } else ERR("ERROR in %s on line %ld: cant get element of type %s\n", get_loc, find_value_type(array.type))
 
                 break;}
-            case OP_SET_ELEMENT:{
+            case OP_SET_ELEMENT_GLOBAL:{
                 Value new_val = stack_pop;
                 Value index = stack_pop;
-                Value array = stack_pop;
 
-                if (array.type == Value_String) {
-                    if (index.val.num > (int64_t)array.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array.val.str))
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array.val.str))
+                Value var_name = vm->func->constants.data[read_index];
+                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+                if (!var) ERR("ERROR in %s on line %ld: tried to set element of nonexistent array %.*s\n", get_loc, Print(var_name.val.str))
 
-                    array.val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
-                } else if (array.type == Value_Array) {
-                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
+                Value *array = &var->value;
+                if (!array->mutable) {
+                    array->val.array = dup_array(array->val.array);
+                    array->mutable = true;
+                }
+
+                if (array->type == Value_String) {
+                    if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
+
+                    array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
+                } else if (array->type == Value_Array) {
+                    if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
                     else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
 
-                    if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) free(array.val.array[index.val.num].val.str.chars);
-                    array.val.array[index.val.num] = new_val;
-                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array.type))
+                    if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
+                    array->val.array[index.val.num] = new_val;
+                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
 
+                i += 2;
+                break;}
+            case OP_SET_ELEMENT_LOCAL:{
+                Value new_val = stack_pop;
+                Value index = stack_pop;
+
+                Value *array = &frame->slots[vm->func->code.data[i + 1]];
+                if (!array->mutable) {
+                    array->val.array = dup_array(array->val.array);
+                    array->mutable = true;
+                }
+
+                if (array->type == Value_String) {
+                    if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
+
+                    array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
+                } else if (array->type == Value_Array) {
+                    if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
+                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+
+                    if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
+                    array->val.array[index.val.num] = new_val;
+                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
+                
+                i++;
                 break;}
             case OP_GET_GLOBAL:{
                 Value var_name = vm->func->constants.data[read_index];

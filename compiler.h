@@ -37,7 +37,8 @@
     X(OP_JUMP_IF_FALSE)\
     X(OP_JUMP)\
     X(OP_GET_ELEMENT)\
-    X(OP_SET_ELEMENT)\
+    X(OP_SET_ELEMENT_GLOBAL)\
+    X(OP_SET_ELEMENT_LOCAL)\
     X(OP_START_IF)\
     X(OP_POP)\
     X(OP_LEN)\
@@ -539,14 +540,23 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 break;}
             case AST_At:
-                compile_identifier(nodes[i], c);
                 compile_expr(nodes[i]->left, c); // index
                 if (nodes[i]->right) {// new value
                     compile_expr(nodes[i]->right, c); 
                 } else {
                     compile_expr(nodes[i]->left->left, c);
                 }
-                append_code(OP_SET_ELEMENT, current_loc(nodes[i]));
+
+                if (is_local(nodes[i]->value, c)) {
+                    append_code(OP_SET_ELEMENT_LOCAL, current_loc(nodes[i]));
+                    append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
+                } else {
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash}));
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_SET_ELEMENT_GLOBAL, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                }
                 break;
             case AST_Fn_Call:{
                 for (int j = 0; j < nodes[i]->func_args_index; j++) {
