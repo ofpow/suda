@@ -665,7 +665,7 @@ void run(VM *vm) {
                 if (!var) ERR("ERROR in %s on line %ld: tried to set element of nonexistent array %.*s\n", get_loc, Print(var_name.val.str))
 
                 Value *array = &var->value;
-                if (!array->mutable) {
+                if (!array->mutable && array->type == Value_Array) {
                     array->val.array = dup_array(array->val.array);
                     array->mutable = true;
                 }
@@ -690,7 +690,7 @@ void run(VM *vm) {
                 Value index = stack_pop;
 
                 Value *array = &frame->slots[vm->func->code.data[i + 1]];
-                if (!array->mutable) {
+                if (!array->mutable && array->type == Value_Array) {
                     array->val.array = dup_array(array->val.array);
                     array->mutable = true;
                 }
