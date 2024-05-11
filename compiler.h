@@ -359,7 +359,11 @@ void compile_expr(Node *n, Compiler *c) {
             for (int j = 0; j < n->func_args_index; j++) {
                 compile_expr(n->func_args[j], c);
             }
+
             u_int16_t index = resolve_func(n->value);
+
+            ASSERT(p->funcs.data[index - 1]->arity == n->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", n->file, n->line, STR(n->value->value), n->func_args_index, p->funcs.data[index - 1]->arity)
+
             append_code(OP_CALL, current_loc(n));
             append_code(FIRST_BYTE(index), INVALID_LOC);
             append_code(SECOND_BYTE(index), INVALID_LOC);
@@ -564,6 +568,9 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 }
 
                 u_int16_t index = resolve_func(nodes[i]->value);
+
+                ASSERT(p->funcs.data[index - 1]->arity == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, p->funcs.data[index - 1]->arity)
+
                 append_code(OP_CALL, current_loc(nodes[i]));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
