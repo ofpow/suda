@@ -63,6 +63,7 @@
     X(OP_FOR)\
     X(OP_EXIT)\
     X(OP_ARRAY)\
+    X(OP_INPUT)\
 
 typedef enum {
 #define X(x) x,
@@ -367,6 +368,9 @@ void compile_expr(Node *n, Compiler *c) {
             append_code(OP_CALL, current_loc(n));
             append_code(FIRST_BYTE(index), INVALID_LOC);
             append_code(SECOND_BYTE(index), INVALID_LOC);
+            break;}
+        case AST_Input:{
+            append_code(OP_INPUT, current_loc(n));
             break;}
         default: ERR("ERROR in %s on line %ld: cant compile node type %s as expr\n", n->file, n->line, find_ast_type(n->type));
     }

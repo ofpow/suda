@@ -349,6 +349,9 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_ARRAY:             index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
+                case OP_INPUT:
+                    printf("%-6d %s OP_INPUT\n", i, line_str);
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(func.code.data[i]));
             }
@@ -959,6 +962,23 @@ void run(VM *vm) {
                     0
                 }));
                 i += 2;
+                break;}
+            case OP_INPUT:{
+                int input_capacity = 10;
+                int input_index = 0;
+                char *input = calloc(input_capacity, sizeof(char));
+                char c;
+                while ((c = fgetc(stdin))) {
+                    if (c == '\n') break;
+                    append_verbose(input, c, input_index, input_capacity)
+                }
+
+                stack_push(((Value){
+                    Value_String,
+                    .val.str={input, input_index},
+                    true,
+                    0
+                }));
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }
