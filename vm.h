@@ -634,7 +634,7 @@ void run(VM *vm) {
                 Value index = stack_pop;
 
                 if (array.type == Value_Array) {
-                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %ld\n", get_loc, index.val.num, array.val.array[0].val.num - 1)
+                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %d\n", get_loc, index.val.num, ARRAY_LEN(array.val.array[0].val.num) - 1)
                     else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
 
                     if (array.val.array[index.val.num].type == Value_Identifier) {
