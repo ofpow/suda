@@ -805,13 +805,15 @@ void run(VM *vm) {
             case OP_CAST_NUM:{
                 Value val = stack_pop;
                 if (val.type == Value_Number) stack_push(val);
-                else if (val.type == Value_String) stack_push(((Value) {
-                    Value_Number,
-                    .val.num=strtoint(val.val.str.chars, val.val.str.len),
-                    false,
-                    0
-                }));
-                else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
+                else if (val.type == Value_String) {
+                    stack_push(((Value) {
+                        Value_Number,
+                        .val.num=strtoint(val.val.str.chars, val.val.str.len),
+                        false,
+                        0
+                    }));
+                    if (val.mutable) free(val.val.str.chars);
+                } else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
                 break;}
             case OP_CALL:{
                 vm->call_stack[vm->call_stack_count - 1].return_index = i + 2;
