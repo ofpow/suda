@@ -141,15 +141,17 @@ AST_Value *call_function(Interpreter *interpreter, Node *n) {
 AST_Value *add_array(AST_Value *op1, AST_Value *op2) {
     int64_t op1_len = NUM(op1->value);
     int64_t op2_len = NUM(op2->value);
-    AST_Value *new = calloc(op1_len + op2_len + 1, sizeof(AST_Value));
+    AST_Value *new = calloc(op1_len + op2_len - 1, sizeof(AST_Value));
     new->type = Value_Array;
     new->value = dup_int(op1_len + op2_len - 1);
     new->mutable = true;
     for (int i = 1; i < op1_len; i++) {
-        new[i] = (AST_Value) { op1[i].type, strdup(op1[i].value), 1, 0 };
+        if (op1[i].type == Value_Number) new[i] = (AST_Value) { Value_Number, dup_int(NUM(op1[i].value)), 1, 0 };
+        else new[i] = (AST_Value) { op1[i].type, strdup(op1[i].value), 1, op1[i].hash };
     }
     for (int i = 1; i < op2_len; i++) {
-        new[i + op1_len - 1] = (AST_Value) { op2[i].type, strdup(op2[i].value), 1, 0 };
+        if (op2[i].type == Value_Number) new[i + op1_len - 1] = (AST_Value) { Value_Number, dup_int(NUM(op2[i].value)), 1, 0 };
+        else new[i + op1_len - 1] = (AST_Value) { op2[i].type, strdup(op2[i].value), 1, op2[i].hash };
     }
     return new;
 }
