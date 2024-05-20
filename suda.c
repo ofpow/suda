@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < vm.funcs.index; i++) {
             if (profiler[i])
-                printf("%-20s: %-15d: %f %% \n", vm.funcs.data[i].name, profiler[i], ((double)profiler[i] / total) * 100);
+                printf("%-20s: %-15d: %9.6f%% \n", vm.funcs.data[i].name, profiler[i], ((double)profiler[i] / total) * 100);
         }
 
         free(profiler);
