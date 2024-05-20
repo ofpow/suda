@@ -1,5 +1,8 @@
-let foo = [1, 2, 3]
+fn fib(n)
+    if (n < 2)
+        return 1
+    ;
+    return ((fib(n - 1)) + (fib(n - 2)))
+;
 
-foo = (foo + foo)
-
-println foo
+println fib(10)

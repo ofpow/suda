@@ -45,6 +45,9 @@ typedef struct Call_Frame {
     Value *slots;
     int64_t return_index;
     Location loc;
+#ifdef PROFILE
+    int index;
+#endif
 } Call_Frame;
 
 typedef struct VM {
@@ -364,6 +367,9 @@ void disassemble(VM *vm) {
 void run(VM *vm) {
     for (int i = 0; i < vm->func->code.index; i++) {
         Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
+#ifdef PROFILE
+        profiler[frame->index]++;
+#endif
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {
             case OP_CONSTANT:;{
@@ -822,6 +828,9 @@ void run(VM *vm) {
                 frame->func = &vm->funcs.data[read_index];
                 frame->slots = vm->stack_top - frame->func->arity;
                 frame->loc = vm->func->locs.data[i];
+                #ifdef PROFILE
+                frame->index = read_index;
+                #endif
                 vm->func = &vm->funcs.data[read_index];
                 i = -1;
                 break;}

@@ -5,6 +5,11 @@
     #define debug(...)
 #endif
 
+#define PROFILE
+#ifdef PROFILE
+int *profiler = 0;
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -448,6 +453,9 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < p->funcs.index; i++) {
             append(funcs, compile_func(p->funcs.data[i]));
         }
+#ifdef PROFILE
+        profiler = calloc(funcs.index, sizeof(int));
+#endif
 
         report_time("COMPILING    time: %f seconds\n");
 
@@ -485,12 +493,33 @@ int main(int argc, char *argv[]) {
         insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
         insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
 
-        vm.call_stack[0] = (Call_Frame){&vm.funcs.data[0], vm.stack, 0, ((Location){file_path, 0})};
+        vm.call_stack[0] = (Call_Frame){
+            &vm.funcs.data[0],
+            vm.stack,
+            0,
+            ((Location){file_path, 0}),
+#ifdef PROFILE
+            0
+#endif
+        };
         vm.call_stack_count++;
         vm.func = &vm.funcs.data[0];
 
         if (disassembly) disassemble(&vm);
         else run(&vm);
+
+#ifdef PROFILE
+        int total = 0;
+        for (int i = 0; i < vm.funcs.index; i++) 
+            total += profiler[i];
+
+        for (int i = 0; i < vm.funcs.index; i++) {
+            if (profiler[i])
+                printf("%-20s: %-15d: %f %% \n", vm.funcs.data[i].name, profiler[i], ((double)profiler[i] / total) * 100);
+        }
+
+        free(profiler);
+#endif
 
         report_time("RUNNING      time: %f seconds\n");
     } else {
