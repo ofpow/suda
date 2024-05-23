@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdarg.h>
+#include <time.h>
+#include <limits.h>
+
 //#define DEBUG
 #ifdef DEBUG
     #define debug(...) printf(__VA_ARGS__);
@@ -7,17 +15,9 @@
 
 //#define PROFILE
 #ifdef PROFILE
-int *instr_profiler = 0;
+u_int64_t *instr_profiler = 0;
 double *time_profiler = 0;
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdarg.h>
-#include <time.h>
-#include <limits.h>
 
 void free_mem(int exit_val);
 
@@ -455,7 +455,7 @@ int main(int argc, char *argv[]) {
             append(funcs, compile_func(p->funcs.data[i]));
         }
 #ifdef PROFILE
-        instr_profiler = calloc(funcs.index, sizeof(int));
+        instr_profiler = calloc(funcs.index, sizeof(u_int64_t));
         time_profiler = calloc(funcs.index, sizeof(double));
 #endif
 
@@ -513,7 +513,7 @@ int main(int argc, char *argv[]) {
 #ifdef PROFILE
         printf("FUNCTION NAME         INSTR COUNT    %% OF TOTAL      TIME     %% OF TOTAL\n");
 
-        int instr_total = 0;
+        u_int64_t instr_total = 0;
         double time_total = 0;
         for (int i = 0; i < vm.funcs.index; i++) {
             instr_total += instr_profiler[i];
@@ -522,7 +522,7 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < vm.funcs.index; i++) {
             if (instr_profiler[i])
-                printf("%-20s: %-15d: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
+                printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
                     instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
                     time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
         }
