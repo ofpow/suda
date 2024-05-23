@@ -5,9 +5,10 @@
     #define debug(...)
 #endif
 
-#define PROFILE
+//#define PROFILE
 #ifdef PROFILE
-int *profiler = 0;
+int *instr_profiler = 0;
+double *time_profiler = 0;
 #endif
 
 #include <stdio.h>
@@ -454,7 +455,8 @@ int main(int argc, char *argv[]) {
             append(funcs, compile_func(p->funcs.data[i]));
         }
 #ifdef PROFILE
-        profiler = calloc(funcs.index, sizeof(int));
+        instr_profiler = calloc(funcs.index, sizeof(int));
+        time_profiler = calloc(funcs.index, sizeof(double));
 #endif
 
         report_time("COMPILING    time: %f seconds\n");
@@ -509,16 +511,24 @@ int main(int argc, char *argv[]) {
         else run(&vm);
 
 #ifdef PROFILE
-        int total = 0;
-        for (int i = 0; i < vm.funcs.index; i++) 
-            total += profiler[i];
+        printf("FUNCTION NAME         INSTR COUNT    %% OF TOTAL      TIME     %% OF TOTAL\n");
 
+        int instr_total = 0;
+        double time_total = 0;
         for (int i = 0; i < vm.funcs.index; i++) {
-            if (profiler[i])
-                printf("%-20s: %-15d: %9.6f%% \n", vm.funcs.data[i].name, profiler[i], ((double)profiler[i] / total) * 100);
+            instr_total += instr_profiler[i];
+            time_total += time_profiler[i];
         }
 
-        free(profiler);
+        for (int i = 0; i < vm.funcs.index; i++) {
+            if (instr_profiler[i])
+                printf("%-20s: %-15d: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
+                    instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
+                    time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
+        }
+
+        free(instr_profiler);
+        free(time_profiler);
 #endif
 
         report_time("RUNNING      time: %f seconds\n");

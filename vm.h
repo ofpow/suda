@@ -365,10 +365,16 @@ void disassemble(VM *vm) {
 }
 
 void run(VM *vm) {
+#ifdef PROFILE
+    struct timespec tstart=(struct timespec){0,0};
+    struct timespec tend=(struct timespec){0,0};
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
+#endif
+
     for (int i = 0; i < vm->func->code.index; i++) {
         Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
 #ifdef PROFILE
-        profiler[frame->index]++;
+        instr_profiler[frame->index]++;
 #endif
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {
@@ -829,12 +835,25 @@ void run(VM *vm) {
                 frame->slots = vm->stack_top - frame->func->arity;
                 frame->loc = vm->func->locs.data[i];
                 #ifdef PROFILE
+                clock_gettime(CLOCK_MONOTONIC, &tend);
+                time_profiler[vm->call_stack[vm->call_stack_count - 2].index]
+                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+                clock_gettime(CLOCK_MONOTONIC, &tstart);
+
                 frame->index = read_index;
                 #endif
                 vm->func = &vm->funcs.data[read_index];
                 i = -1;
                 break;}
             case OP_RETURN:{
+                #ifdef PROFILE
+                clock_gettime(CLOCK_MONOTONIC, &tend);
+                time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
+                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+                clock_gettime(CLOCK_MONOTONIC, &tstart);
+                #endif
                 Value result = stack_pop;
                 if ((result.type == Value_Array) && !result.mutable) {
                     result.val.array = dup_array(result.val.array);
@@ -851,6 +870,16 @@ void run(VM *vm) {
                 stack_push(result);
                 break;}
             case OP_RETURN_NOTHING:{
+                #ifdef PROFILE
+                clock_gettime(CLOCK_MONOTONIC, &tend);
+                time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
+                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+                clock_gettime(CLOCK_MONOTONIC, &tstart);
+                #endif
+                for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
+                    if ((val->type == Value_Array) && val->mutable) free_value_array(val->val.array);
+                }
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
                 frame = &vm->call_stack[vm->call_stack_count - 1];
