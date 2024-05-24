@@ -774,7 +774,8 @@ void run(VM *vm) {
                 for (Value *val = vm->stack_top; val > frame->slots; val--) 
                     if (val->type == Value_Array) {
                         Value *array = val->val.array;
-                        for (int j = 1; i < array[0].val.num; j++) {
+                        u_int32_t len = ARRAY_LEN(array[0].val.num);
+                        for (u_int32_t j = 1; j < len; j++) {
                             if (array[j].type == Value_String && array[j].mutable)
                                 free(array[j].val.str.chars);
                         }
