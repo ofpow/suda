@@ -434,6 +434,16 @@ Node *expr(Parser *p, Node *child) {
             p->tok_index++;
             n->value = parse_list(p);
             return n;
+        case Tok_True:{
+            p->tok_index++;
+            int64_t *val = calloc(1, sizeof(int64_t));
+            *val = 1;
+            return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);}
+        case Tok_False:{
+            p->tok_index++;
+            int64_t *val = calloc(1, sizeof(int64_t));
+            *val = 0;
+            return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);}
         default: ERR("ERROR in %s on line %ld: Unsupported token type for expr %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;

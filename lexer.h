@@ -63,6 +63,8 @@ void shunt(char* dest, char* src) {
     X(Tok_For)\
     X(Tok_In)\
     X(Tok_Input)\
+    X(Tok_True)\
+    X(Tok_False)\
 
 typedef enum {
 #define X(x) x,
@@ -233,6 +235,8 @@ static Token_Type id_type(Lexer *l) {
                 switch (l->start[1]) {
                     case 'o':
                         return check_keyword(2, 1, "r", Tok_For, l);
+                    case 'a':
+                        return check_keyword(2, 3, "lse", Tok_False, l);
                     case 'n':
                         return Tok_Function;
                 }
@@ -273,6 +277,8 @@ static Token_Type id_type(Lexer *l) {
             return check_keyword(1, 5, "eturn", Tok_Return, l);
         case 's':
             return check_keyword(1, 2, "tr", Tok_Cast_Str, l);
+        case 't':
+            return check_keyword(1, 3, "rue", Tok_True, l);
         case 'w':
             return check_keyword(1, 4, "hile", Tok_While, l);
 
