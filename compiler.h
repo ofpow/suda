@@ -655,7 +655,7 @@ Function compile_func(AST_Function *func){
 
     compile(func->nodes.data, func->nodes.index, &c);
 
-    if (func->name != NULL && c.func.code.data[c.func.code.index - 1] != OP_RETURN) {
+    if (func->name != NULL && c.func.code.index > 0 && c.func.code.data[c.func.code.index - 1] != OP_RETURN) {
         append(c.func.code, OP_RETURN_NOTHING);
     }
 
