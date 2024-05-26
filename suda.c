@@ -520,6 +520,8 @@ int main(int argc, char *argv[]) {
             time_total += time_profiler[i];
         }
 
+        printf("OVERALL             : %-15ld: 100%%       : %9.5f: 100%%\n", instr_total, time_total);
+
         for (int i = 0; i < vm.funcs.index; i++) {
             if (instr_profiler[i])
                 printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
