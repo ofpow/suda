@@ -780,6 +780,7 @@ void run(VM *vm) {
                                 free(array[j].val.str.chars);
                         }
                         free(array);
+                        val->mutable = false;
                     }
 
                 i += 2;
@@ -861,7 +862,10 @@ void run(VM *vm) {
                     result.mutable = true;
                 }
                 for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if ((val->type == Value_Array) && val->mutable) free_value_array(val->val.array);
+                    if ((val->type == Value_Array) && val->mutable) {
+                        free_value_array(val->val.array);
+                        val->mutable = false;
+                    }
                 }
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
@@ -879,7 +883,10 @@ void run(VM *vm) {
                 clock_gettime(CLOCK_MONOTONIC, &tstart);
                 #endif
                 for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if ((val->type == Value_Array) && val->mutable) free_value_array(val->val.array);
+                    if ((val->type == Value_Array) && val->mutable) {
+                        free_value_array(val->val.array);
+                        val->mutable = false;
+                    }
                 }
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
