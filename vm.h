@@ -729,15 +729,9 @@ void run(VM *vm) {
                 Value var_name = vm->func->constants.data[read_index];
                 Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
                 if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
-                if (var->value.type == Value_String && var->value.mutable) stack_push(((Value) {
-                    Value_String, 
+                if (var->value.mutable) stack_push(((Value) {
+                    var->value.type, 
                     .val.str=var->value.val.str,
-                    false,
-                    0
-                }));
-                else if (var->value.type == Value_Array && var->value.mutable) stack_push(((Value) {
-                    Value_Array, 
-                    .val.array=var->value.val.array,
                     false,
                     0
                 }));
@@ -747,15 +741,9 @@ void run(VM *vm) {
             case OP_GET_LOCAL: {
                 i++;
                 Value val = frame->slots[vm->func->code.data[i]];
-                if (val.type == Value_String && val.mutable) stack_push(((Value) {
-                    Value_String, 
+                if (val.mutable) stack_push(((Value) {
+                    val.type, 
                     .val.str=val.val.str,
-                    false,
-                    0
-                }));
-                if (val.type == Value_Array && val.mutable) stack_push(((Value) {
-                    Value_Array, 
-                    .val.array=val.val.array,
                     false,
                     0
                 }));
