@@ -35,20 +35,28 @@ Value input() {
 
 typedef Value (*Native)(Value*, Location);
 
+#define NATIVES \
+    X(add1, 1)\
+    X(input, 0)\
+
+#define X(name, arity) name,
 Native natives[] = {
-    add1,
-    input,
+    NATIVES
 };
+#undef X
 
+#define X(name, arity) #name,
 char* native_names[] = {
-    "add1",
-    "input",
+    NATIVES
 };
+#undef X
 
+#define X(name, arity) arity,
 int native_arities[] = {
-    1, // add1
-    0, // input
+    NATIVES
 };
+#undef X
+
 
 int is_native(char *func) {
     for (u_int32_t i = 0; i < (sizeof(native_names) / 8); i++)
