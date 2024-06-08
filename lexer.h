@@ -62,7 +62,6 @@ void shunt(char* dest, char* src) {
     X(Tok_Println)\
     X(Tok_For)\
     X(Tok_In)\
-    X(Tok_Input)\
     X(Tok_True)\
     X(Tok_False)\
 
@@ -250,8 +249,6 @@ static Token_Type id_type(Lexer *l) {
                     case 'n':
                         if (l->start[2] == 'c')
                             return check_keyword(3, 4, "lude", Tok_Include, l);
-                        if (l->start[2] == 'p')
-                            return check_keyword(3, 2, "ut", Tok_Input, l);
                         else if (l->start[2] == ' ')
                             return Tok_In;
                 }

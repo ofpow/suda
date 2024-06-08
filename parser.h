@@ -84,7 +84,6 @@
     X(AST_Println)\
     X(AST_For)\
     X(AST_In)\
-    X(AST_Input)\
 
 typedef enum {
 #define X(x) x,
@@ -141,7 +140,6 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
         case Tok_Println: return AST_Println;
         case Tok_For: return AST_For;
         case Tok_In: return AST_In;
-        case Tok_Input: return AST_Input;
         default: ERR("ERROR in %s on line %ld: cant convert token type %s to ast\n", file, line, find_tok_type(type))
     }
     return -1;
@@ -453,9 +451,6 @@ Node *expr(Parser *p, Node *child) {
         case Tok_Comma:
             p->tok_index++;
             return new_node(AST_Comma, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
-        case Tok_Input:
-            p->tok_index++;
-            return new_node(AST_Input, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Right_Paren:
             p->tok_index++;
             return new_node(AST_Right_Paren, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);

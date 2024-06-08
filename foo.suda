@@ -1,1 +1,2 @@
-println add1(2)
+println "whats your name"
+println "hi " + input()

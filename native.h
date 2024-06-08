@@ -15,18 +15,39 @@ Value add1(Value *args, Location loc) {
     };
 }
 
+Value input() {
+    int input_capacity = 10;
+    int input_index = 0;
+    char *input = calloc(input_capacity, sizeof(char));
+    char c;
+    while ((c = fgetc(stdin))) {
+        if (c == '\n') break;
+        append_verbose(input, c, input_index, input_capacity)
+    }
+
+    return (Value){
+        Value_String,
+        .val.str={input, input_index},
+        true,
+        0
+    };
+}
+
 typedef Value (*Native)(Value*, Location);
 
 Native natives[] = {
-    add1
+    add1,
+    input,
 };
 
 char* native_names[] = {
     "add1",
+    "input",
 };
 
 int native_arities[] = {
     1, // add1
+    0, // input
 };
 
 int is_native(char *func) {
