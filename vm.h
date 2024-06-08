@@ -292,6 +292,10 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_CALL:              func: %s\n", i, line_str, vm->funcs.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].name); 
                     i += 2;
                     break;
+                case OP_CALL_NATIVE:
+                    printf("%-6d %s OP_CALL_NATIVE:       func: %s\n", i, line_str, native_names[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]); 
+                    i += 2;
+                    break;
                 case OP_RETURN:
                     printf("%-6d %s OP_RETURN\n", i, line_str);
                     break;
@@ -1015,6 +1019,13 @@ void run(VM *vm) {
                     true,
                     0
                 }));
+                break;}
+            case OP_CALL_NATIVE:{
+                Native native = natives[read_index];
+                Value result = native(vm->stack_top - native_arities[read_index], make_loc(get_loc));
+                vm->stack_top -= native_arities[read_index];
+                stack_push(result);
+                i += 2;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
         }

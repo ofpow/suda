@@ -10,7 +10,9 @@
 #define INVALID_LOC ((Location){ "INVALID LOCATION", -1 })
 #define current_loc(_node) ((Location){ _node->file, _node->line })
 #define append_code(_code, _loc) append(c->func.code, _code); append(c->func.locs, _loc)
+#define make_loc(_loc) (Location){_loc}
 #define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
+
 
 #define ops \
     X(OP_CONSTANT)\
@@ -64,6 +66,7 @@
     X(OP_EXIT)\
     X(OP_ARRAY)\
     X(OP_INPUT)\
+    X(OP_CALL_NATIVE)\
 
 typedef enum {
 #define X(x) x,
@@ -120,13 +123,6 @@ u_int32_t next_power_of_two(u_int32_t num) {
 define_array(Code, u_int8_t);
 define_array(Constants, Value);
 define_array(Arrays, Value*);
-
-typedef struct Location {
-    const char *file;
-    int64_t line;
-} Location;
-
-define_array(Locations, Location);
 
 typedef struct Function {
     Code code;
@@ -361,13 +357,23 @@ void compile_expr(Node *n, Compiler *c) {
                 compile_expr(n->func_args[j], c);
             }
 
-            u_int16_t index = resolve_func(n->value);
+            int index = is_native(n->value->value);
+            if (index > -1) {
+                ASSERT(native_arities[index] == n->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", n->file, n->line, STR(n->value->value), n->func_args_index, native_arities[index])
 
-            ASSERT(p->funcs.data[index - 1]->arity == n->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", n->file, n->line, STR(n->value->value), n->func_args_index, p->funcs.data[index - 1]->arity)
+                append_code(OP_CALL_NATIVE, current_loc(n));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+            } else {
 
-            append_code(OP_CALL, current_loc(n));
-            append_code(FIRST_BYTE(index), INVALID_LOC);
-            append_code(SECOND_BYTE(index), INVALID_LOC);
+                u_int16_t index = resolve_func(n->value);
+
+                ASSERT(p->funcs.data[index - 1]->arity == n->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", n->file, n->line, STR(n->value->value), n->func_args_index, p->funcs.data[index - 1]->arity)
+
+                append_code(OP_CALL, current_loc(n));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+            }
             break;}
         case AST_Input:{
             append_code(OP_INPUT, current_loc(n));
@@ -571,13 +577,23 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     compile_expr(nodes[i]->func_args[j], c);
                 }
 
-                u_int16_t index = resolve_func(nodes[i]->value);
+                int index = is_native(nodes[i]->value->value);
+                if (index > -1) {
 
-                ASSERT(p->funcs.data[index - 1]->arity == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, p->funcs.data[index - 1]->arity)
+                    ASSERT(native_arities[index - 1] == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, native_arities[index - 1])
+                    append_code(OP_CALL_NATIVE, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                } else {
 
-                append_code(OP_CALL, current_loc(nodes[i]));
-                append_code(FIRST_BYTE(index), INVALID_LOC);
-                append_code(SECOND_BYTE(index), INVALID_LOC);
+                    u_int16_t index = resolve_func(nodes[i]->value);
+
+                    ASSERT(p->funcs.data[index - 1]->arity == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call function %s with %ld args, it needs %ld\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, p->funcs.data[index - 1]->arity)
+
+                    append_code(OP_CALL, current_loc(nodes[i]));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                }
                 break;}
             case AST_Return:{
                 compile_expr(nodes[i]->left, c);
