@@ -149,11 +149,8 @@ int call_stack_capacity;
 
 #include "str.h"
 #include "hash.h"
-#include "variable.h"
 #include "lexer.h"
 #include "parser.h"
-#include "function.h"
-#include "interpreter.h"
 #include "native.h"
 #include "compiler.h"
 #include "vm.h"
@@ -162,38 +159,30 @@ int call_stack_capacity;
 Token *tokens;
 String_Array programs = {0};
 String_Array include_paths = {0};
-Interpreter interpreter = {0};
 VM vm = {0};
 Compiler c = {0};
-bool bytecode = false;
 bool disassembly = false;
 
 void free_mem(int exit_val) {
 
     debug("\n----------\nFREEING\n")
 
-    if (bytecode) {
-        if (vm.call_stack_count > 1 && exit_val) {
-            printf("Stack trace:\n");
-            for (int i = vm.call_stack_count - 1; i > 0; i--)
-                printf("%s:%ld\n", vm.call_stack[i].func->name, vm.call_stack[i].loc.line);
-        }
-        free(c.if_indices.data);
-        free(c.while_indices.data);
-        free_array(vm.funcs, free_func);
-        free_array(p->funcs, free_ast_function);
-        free_map(vm.vars);
+    if (vm.call_stack_count > 1 && exit_val) {
+        printf("Stack trace:\n");
+        for (int i = vm.call_stack_count - 1; i > 0; i--)
+            printf("%s:%ld\n", vm.call_stack[i].func->name, vm.call_stack[i].loc.line);
     }
-    if (!bytecode) {
-        free_map(interpreter.vars);
-        free_array(interpreter.funcs, free_ast_function);
-    }
+    free(c.if_indices.data);
+    free(c.while_indices.data);
+    free_array(vm.funcs, free_func);
+    free_array(p->funcs, free_ast_function);
+    free_map(vm.vars);
     free(tokens);
     free(p->jumps.data);
     for (int i = 0; i < p->nodes.index; i++) free_node(p->nodes.data[i]);
     free(p->nodes.data);
     free(p);
-    if (call_stack != NULL && !bytecode) {
+    if (call_stack != NULL) {
         if (exit_val > 0 && call_stack_index > 0) {
             printf("Stack trace:\n");
             for (int i = call_stack_index - 1; i >= 0; i--) {
@@ -231,10 +220,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
             time = true;
-        } else if (!strcmp(argv[i], "-b")) {
-            bytecode = true;
         } else if (!strcmp(argv[i], "-d")) {
-            bytecode = true;
             disassembly = true;
         } else if (!strcmp(argv[i], "-c")) {
             call_stack = calloc(10, sizeof(char*));
@@ -246,7 +232,6 @@ int main(int argc, char *argv[]) {
             printf("  -h: print this message\n");
             printf("  -t: print timing info\n");
             printf("  -c: print call stack on crash\n");
-            printf("  -b: use bytecode interpreter\n");
             printf("  -d: diassemble bytecode instead of running\n");
             return 0;
         } else {
@@ -403,7 +388,9 @@ int main(int argc, char *argv[]) {
             func = calloc(1, sizeof(AST_Function));
             func->name = format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start);
             func->line = CURRENT_TOK.line;
-            if (check_func(&p->funcs, func->name) > 0) ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
+            for (int i = 0; i < p->funcs.index; i++)
+                if (!strcmp(p->funcs.data[i]->name, func->name))
+                    ERR("ERROR in %s on line %ld: cant define function %s multiple times\n", CURRENT_TOK.file, CURRENT_TOK.line, func->name)
 
             p->tok_index++;
             ASSERT((p->jumps.index >= 0), "ERROR in %s on line %ld: unclosed block before function %s\n",  CURRENT_TOK.file,CURRENT_TOK.line, func->name)
@@ -446,119 +433,94 @@ int main(int argc, char *argv[]) {
     report_time("PARSING      time: %f seconds\n");
 
     debug("\n----------\nINTERPRETING\n")
-    if (bytecode) {
-        Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
+    Functions funcs = {calloc(10, sizeof(Function)), 0, 10};
 
-        append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
-        funcs.data[0].name = file_path;
+    append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
+    funcs.data[0].name = file_path;
 
-        for (int i = 0; i < p->funcs.index; i++) {
-            append(funcs, compile_func(p->funcs.data[i]));
-        }
-#ifdef PROFILE
-        instr_profiler = calloc(funcs.index, sizeof(u_int64_t));
-        time_profiler = calloc(funcs.index, sizeof(double));
-#endif
-
-        report_time("COMPILING    time: %f seconds\n");
-
-        vm.stack_top = vm.stack;
-        vm.funcs = funcs;
-
-        vm.vars = new_map(8);
-
-        Variable *argcc = calloc(1, sizeof(Variable));
-        Variable *argvv = calloc(1, sizeof(Variable));
-
-        if (suda_argc != NULL) {
-            argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), true, hash("argc", 4) };
-            argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
-
-            Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
-            x[0].val.num = argcc->value.val.num + 1;
-            x[0].type = Value_Array;
-            for (int i = 1; i < argcc->value.val.num + 1; i++) {
-                size_t len = strlen(suda_argv[i].value);
-                x[i] = (Value){ Value_String, .val.str={format_str(len - 1, "%.*s", len - 2, STR(suda_argv[i].value) + 1), len - 2}, true, 0 };
-            }
-
-            argvv->value.val.array = x;
-        } else {
-            argcc->value = (Value){ Value_Number, .val.num=0, true, hash("argc", 4) };
-            argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
-            Value *x = calloc(1, sizeof(Value));
-            x[0].val.num = 1;
-            x[0].type = Value_Array;
-
-            argvv->value.val.array = x;
-        }
-
-        insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
-        insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
-
-        vm.call_stack[0] = (Call_Frame){
-            &vm.funcs.data[0],
-            vm.stack,
-            0,
-            ((Location){file_path, 0}),
-#ifdef PROFILE
-            0
-#endif
-        };
-        vm.call_stack_count++;
-        vm.func = &vm.funcs.data[0];
-
-        if (disassembly) disassemble(&vm);
-        else run(&vm);
-
-#ifdef PROFILE
-        printf("FUNCTION NAME         INSTR COUNT    %% OF TOTAL      TIME     %% OF TOTAL\n");
-
-        u_int64_t instr_total = 0;
-        double time_total = 0;
-        for (int i = 0; i < vm.funcs.index; i++) {
-            instr_total += instr_profiler[i];
-            time_total += time_profiler[i];
-        }
-
-        printf("OVERALL             : %-15ld: 100%%       : %9.5f: 100%%\n", instr_total, time_total);
-
-        for (int i = 0; i < vm.funcs.index; i++) {
-            if (instr_profiler[i])
-                printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
-                    instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
-                    time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
-        }
-
-        free(instr_profiler);
-        free(time_profiler);
-#endif
-
-        report_time("RUNNING      time: %f seconds\n");
-    } else {
-        interpreter.nodes = p->nodes;
-
-        interpreter.vars = new_map(8);
-        interpreter.local_vars = NULL;
-        if (suda_argc == NULL) {
-            suda_argc = new_ast_value(Value_Number, dup_int(0), 1, hash("argc", 4));
-            suda_argv = calloc(1, sizeof(AST_Value));
-            suda_argv->hash = hash("argv", 4);
-            suda_argv->mutable = true;
-            suda_argv[0].value = dup_int(1);
-            suda_argv[0].type = Value_Array;
-        }
-        ast_assign_variable(&interpreter, "argc", suda_argc->hash, suda_argc, -1, file_path);
-        ast_assign_variable(&interpreter, "argv", suda_argv->hash, suda_argv, -1, file_path);
-
-        interpreter.funcs = p->funcs;
-
-        interpreter.auto_jump = 0;
-
-        interpret(&interpreter);
-
-        report_time("INTERPRETING time: %f seconds\n");
+    for (int i = 0; i < p->funcs.index; i++) {
+        append(funcs, compile_func(p->funcs.data[i]));
     }
+#ifdef PROFILE
+    instr_profiler = calloc(funcs.index, sizeof(u_int64_t));
+    time_profiler = calloc(funcs.index, sizeof(double));
+#endif
+
+    report_time("COMPILING    time: %f seconds\n");
+
+    vm.stack_top = vm.stack;
+    vm.funcs = funcs;
+
+    vm.vars = new_map(8);
+
+    Variable *argcc = calloc(1, sizeof(Variable));
+    Variable *argvv = calloc(1, sizeof(Variable));
+
+    if (suda_argc != NULL) {
+        argcc->value = (Value){ Value_Number, .val.num=NUM(suda_argc->value), true, hash("argc", 4) };
+        argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
+
+        Value *x = calloc(argcc->value.val.num + 1, sizeof(Value));
+        x[0].val.num = argcc->value.val.num + 1;
+        x[0].type = Value_Array;
+        for (int i = 1; i < argcc->value.val.num + 1; i++) {
+            size_t len = strlen(suda_argv[i].value);
+            x[i] = (Value){ Value_String, .val.str={format_str(len - 1, "%.*s", len - 2, STR(suda_argv[i].value) + 1), len - 2}, true, 0 };
+        }
+
+        argvv->value.val.array = x;
+    } else {
+        argcc->value = (Value){ Value_Number, .val.num=0, true, hash("argc", 4) };
+        argvv->value = (Value){ Value_Array, .val.array=NULL, true, hash("argv", 4) };
+        Value *x = calloc(1, sizeof(Value));
+        x[0].val.num = 1;
+        x[0].type = Value_Array;
+
+        argvv->value.val.array = x;
+    }
+
+    insert_entry(vm.vars, argcc->value.hash, Entry_Variable, argcc);
+    insert_entry(vm.vars, argvv->value.hash, Entry_Variable, argvv);
+
+    vm.call_stack[0] = (Call_Frame){
+        &vm.funcs.data[0],
+        vm.stack,
+        0,
+        ((Location){file_path, 0}),
+#ifdef PROFILE
+        0
+#endif
+    };
+    vm.call_stack_count++;
+    vm.func = &vm.funcs.data[0];
+
+    if (disassembly) disassemble(&vm);
+    else run(&vm);
+
+#ifdef PROFILE
+    printf("FUNCTION NAME         INSTR COUNT    %% OF TOTAL      TIME     %% OF TOTAL\n");
+
+    u_int64_t instr_total = 0;
+    double time_total = 0;
+    for (int i = 0; i < vm.funcs.index; i++) {
+        instr_total += instr_profiler[i];
+        time_total += time_profiler[i];
+    }
+
+    printf("OVERALL             : %-15ld: 100%%       : %9.5f: 100%%\n", instr_total, time_total);
+
+    for (int i = 0; i < vm.funcs.index; i++) {
+        if (instr_profiler[i])
+            printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
+                instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
+                time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
+    }
+
+    free(instr_profiler);
+    free(time_profiler);
+#endif
+
+    report_time("RUNNING      time: %f seconds\n");
 
     if (time) {
         printf("OVERALL      time: %f seconds\n",

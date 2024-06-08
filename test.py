@@ -14,12 +14,9 @@ def record():
             else:
                 print(f"[ERR] {entry.path} exited with non-zero exit code")
 
-def run_tests(bytecode):
+def run_tests():
     sucesses, failures = 0, 0
-    if bytecode:
-        cmd = ["./suda", "-b"]
-    else:
-        cmd = ["./suda"]
+    cmd = ["./suda"]
 
     for entry in os.scandir("./tests"):
         if entry.is_file() and entry.path.endswith(".suda"):
@@ -34,16 +31,13 @@ def run_tests(bytecode):
                     cmd.pop()
             else:
                 print(f"[ERR] test {entry.path} has no expected output")
-    if not bytecode:
-        print(f"TREE WALK: {sucesses} tests succeded and {failures} tests failed")
-    else:
-        print(f"BYTECODE:  {sucesses} tests succeded and {failures} tests failed")
+
+    print(f"BYTECODE:  {sucesses} tests succeded and {failures} tests failed")
 
 if __name__ == "__main__":
     print("[CMD] gcc -o suda suda.c")
     subprocess.run(["gcc", "-o", "suda", "suda.c"])
     if len(sys.argv) != 2:
-        run_tests(False)
-        run_tests(True)
+        run_tests()
     elif sys.argv[1] == 'record':
         record()

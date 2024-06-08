@@ -1,5 +1,25 @@
 #pragma once
 
+bool ast_value_equal(AST_Value *val1, AST_Value *val2) {
+    if (val1->type == Value_Number && val2->type == Value_Number) {
+        return (NUM(val1->value) == NUM(val2->value));
+    } else if (val1->type == Value_String && val2->type == Value_String) {
+        return (!strcmp(STR(val1->value), STR(val2->value)));
+    } else if (val1->type == Value_Identifier && val2->type == Value_Identifier) {
+        return (!strcmp(STR(val1->value), STR(val2->value)));
+    } else return false;
+}
+
+int exponentiate(int base, int64_t power) {
+    int64_t result = 1;
+
+    for (int i = 0; i < power; i++) {
+        result *= base;
+    }
+
+    return result;
+}
+
 #define STACK_SIZE 16384
 #define LOCALS_MAX 256
 #define CALL_STACK_SIZE 64
