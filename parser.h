@@ -326,35 +326,38 @@ AST_Value *parse_list(Parser *p) {
     return NULL;
 }
 
-Node *expr(Parser *p, Node *child) {
+Node *expr(Parser *p, Node *child, bool is_index) {
     Node *n;
     switch (CURRENT_TOK.type) {
         case Tok_String:
             p->tok_index++; 
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type) && !is_index)
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file), is_index);
             return new_node(AST_Literal, new_ast_value(Value_String, format_str(LAST_TOK.length - 1, "%.*s", LAST_TOK.length, LAST_TOK.start + 1), 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Number:
             p->tok_index++;
             int64_t *val = calloc(1, sizeof(int64_t));
             *val = strtoint(LAST_TOK.start, LAST_TOK.length);
-            if (IS_TOK_MATH_OP(CURRENT_TOK.type))
-                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, val, 2, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file));
+            if (IS_TOK_MATH_OP(CURRENT_TOK.type) && !is_index)
+                return expr(p, new_node(AST_Literal, new_ast_value(Value_Number, val, 2, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file), is_index);
             return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Identifier: 
             p->tok_index++; 
             if (CURRENT_TOK.type == Tok_Assign) {
                 n = new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 p->tok_index++;
-                n->left = expr(p, NULL);
+                n->left = expr(p, NULL, false);
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
                 n = new_node(AST_At, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 p->tok_index++;
-                n->left = expr(p, NULL);
+                if (CURRENT_TOK.type == Tok_Left_Paren)
+                    n->left = expr(p, NULL, false);
+                else
+                    n->left = expr(p, NULL, true);
                 if (CURRENT_TOK.type == Tok_Assign) {
                     p->tok_index++;
-                    n->right = expr(p, NULL);
+                    n->right = expr(p, NULL, false);
                 }
                 return n;
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
@@ -365,22 +368,22 @@ Node *expr(Parser *p, Node *child) {
                 n->func_args_capacity = 10;
                 p->tok_index++;
                 Node *arg;
-                while ((arg = expr(p, NULL)) != NULL) {
+                while ((arg = expr(p, NULL, is_index)) != NULL) {
                     if (arg->type == AST_Right_Paren) { free_node(arg); break; }
                     else if (arg->type == AST_Comma) free_node(arg);
                     else append_verbose(n->func_args, arg, n->func_args_index, n->func_args_capacity)
                 }
                 return n;
-            } else if (IS_TOK_MATH_OP(CURRENT_TOK.type)) {
-                return expr(p, new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file));
+            } else if (IS_TOK_MATH_OP(CURRENT_TOK.type) && !is_index) {
+                return expr(p, new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file), is_index);
             }
             return new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Left_Paren:
             p->tok_index++;
-            n = expr(p, NULL);
+            n = expr(p, NULL, is_index);
             while (CURRENT_TOK.type != Tok_Right_Paren) {
                 if (CURRENT_TOK.type == Tok_Eof) ERR("ERROR in %s on line %ld: Require closing parenthese\n", CURRENT_TOK.file, CURRENT_TOK.line)
-                n = expr(p, n);
+                n = expr(p, n, is_index);
             }
             p->tok_index++;
             return n;
@@ -404,8 +407,8 @@ Node *expr(Parser *p, Node *child) {
         case Tok_Or:
             n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
-            if (child != NULL) n->left = child; else n->left = expr(p, child);
-            n->right = expr(p, child);
+            if (child != NULL) n->left = child; else n->left = expr(p, child, is_index);
+            n->right = expr(p, child, is_index);
             return n;
 
         case Tok_Sub:
@@ -426,15 +429,15 @@ Node *expr(Parser *p, Node *child) {
                     return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 } else {
                     n = new_node(AST_Mult, NULL, -1, NEXT_TOK.line, NEXT_TOK.file);
-                    n->right = expr(p, NULL);
+                    n->right = expr(p, NULL, is_index);
                     n->left = new_node(AST_Literal, new_ast_value(Value_Number, dup_int(-1), 1, 0), -1, NEXT_TOK.line, NEXT_TOK.file);
                     return n;
                 }
             } else {
                 n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 p->tok_index++;
-                if (child != NULL) n->left = child; else n->left = expr(p, child);
-                n->right = expr(p, child);
+                if (child != NULL) n->left = child; else n->left = expr(p, child, is_index);
+                n->right = expr(p, child, is_index);
                 return n;
             }
 
@@ -445,7 +448,7 @@ Node *expr(Parser *p, Node *child) {
         case Tok_Cast_Str:
             n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
-            n->left = expr(p, NULL);
+            n->left = expr(p, NULL, is_index);
             return n;
 
         case Tok_Comma:
@@ -488,7 +491,7 @@ Node *statement(Parser *p) {
             p->tok_index++;
             ASSERT((CURRENT_TOK.type = Tok_Assign), "Require `=` to assign to variable\n")
             p->tok_index++;
-            n->left = expr(p, NULL);
+            n->left = expr(p, NULL, false);
             return n;
         case Tok_Print: //nodes with 1 arg
         case Tok_Println:
@@ -499,7 +502,7 @@ Node *statement(Parser *p) {
         case Tok_Elif:
             n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
-            n->left = expr(p, NULL);
+            n->left = expr(p, NULL, false);
             return n;
 
         case Tok_Break: //nodes with no args
@@ -516,22 +519,22 @@ Node *statement(Parser *p) {
             p->tok_index++;
             n->value = new_ast_value(Value_Identifier, format_str(CURRENT_TOK.length + 1, "%.*s", CURRENT_TOK.length, CURRENT_TOK.start), 1, hash(CURRENT_TOK.start, CURRENT_TOK.length));
             p->tok_index++;
-            n->left = expr(p, NULL);
+            n->left = expr(p, NULL, false);
             return n;
         case Tok_For:
             n = new_node(AST_For, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;
 
             ASSERT((CURRENT_TOK.type == Tok_Identifier), "ERROR in %s on line %ld: need identifier to follow for\n", CURRENT_TOK.file, CURRENT_TOK.line)
-            n->left = expr(p, NULL);
+            n->left = expr(p, NULL, false);
 
             ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %ld: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
             p->tok_index++;
-            n->right = expr(p, NULL);
+            n->right = expr(p, NULL, false);
             n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
             return n;
 
-        default: return expr(p, NULL); 
+        default: return expr(p, NULL, false); 
     }
     return NULL;
 }

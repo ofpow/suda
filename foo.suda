@@ -1,2 +1,7 @@
-println "whats your name"
-println "hi " + input()
+let x = [10, 2, 3]
+
+println (x@1 + x@2)
+
+let y = 1
+
+println (x@y + x@2)

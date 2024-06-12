@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
             func->arity = 0;
             func->args = calloc(args_capacity, sizeof(AST_Value*));
             while (1) {
-                Node *n = expr(p, NULL);
+                Node *n = expr(p, NULL, false);
                 if (n->type == AST_Identifier) {
                     append_verbose(func->args, n->value, func->arity, args_capacity)
                     n->value = NULL;
