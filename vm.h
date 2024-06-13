@@ -421,7 +421,10 @@ void run(VM *vm) {
                 Variable *var = calloc(1, sizeof(Variable));
                 var->name = name.val.str.chars;
 
-                if (value.type == Value_Array && value.mutable == false) value.val.array = dup_array(value.val.array);
+                if (value.type == Value_Array && value.mutable == false) {
+                    value.val.array = dup_array(value.val.array);
+                    value.mutable = true;
+                }
                 var->value = value;
 
                 bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
@@ -626,7 +629,10 @@ void run(VM *vm) {
                     free(var->value.val.str.chars);
                 }
 
-                if (value.type == Value_Array && !value.mutable) value.val.array = dup_array(value.val.array);
+                if (value.type == Value_Array && !value.mutable) {
+                    value.val.array = dup_array(value.val.array);
+                    value.mutable = true;
+                }
                 var->value = value;
                 i += 2;
                 break;}
@@ -756,7 +762,10 @@ void run(VM *vm) {
                 else if (frame->slots[vm->func->code.data[i]].type == Value_Array && frame->slots[vm->func->code.data[i]].mutable) free_value_array(frame->slots[vm->func->code.data[i]].val.array);
 
                 Value val = stack_pop;
-                if (val.type == Value_Array && val.mutable == false) val.val.array = dup_array(val.val.array);
+                if (val.type == Value_Array && val.mutable == false) {
+                    val.val.array = dup_array(val.val.array);
+                    val.mutable = true;
+                }
                 frame->slots[vm->func->code.data[i]] = val;
                 break;}
             case OP_POP:
