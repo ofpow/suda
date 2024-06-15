@@ -1,7 +1,6 @@
-let x = [1, 2, 3]
-let y = [4, 5, 6]
-x = y
-x = y
-x = y
-x = y
-println x
+fn foo()
+    return 1
+;
+
+let x = foo()
+println (foo() - x)

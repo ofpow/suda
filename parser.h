@@ -373,7 +373,11 @@ Node *expr(Parser *p, Node *child, bool is_index) {
                     else if (arg->type == AST_Comma) free_node(arg);
                     else append_verbose(n->func_args, arg, n->func_args_index, n->func_args_capacity)
                 }
-                return n;
+    
+                if (IS_TOK_MATH_OP(CURRENT_TOK.type) && !is_index)
+                    return expr(p, n, is_index);
+                else
+                    return n;
             } else if (IS_TOK_MATH_OP(CURRENT_TOK.type) && !is_index) {
                 return expr(p, new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file), is_index);
             }
@@ -414,7 +418,12 @@ Node *expr(Parser *p, Node *child, bool is_index) {
         case Tok_Sub:
             if (!TOK_IS_EVALUATABLE(LAST_TOK.type)) {
                 p->tok_index++;
-                if (CURRENT_TOK.type == Tok_Number) {
+                if (child != NULL) {
+                    n = new_node(AST_Sub, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                    n->left = child;
+                    n->right = expr(p, NULL, is_index);
+                    return n;
+                } else if (CURRENT_TOK.type == Tok_Number) {
                     int64_t *val = calloc(1, sizeof(int64_t));
                     *val = -strtoint(LAST_TOK.start, LAST_TOK.length);
                     p->tok_index++;
