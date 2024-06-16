@@ -45,8 +45,8 @@ Value clock_native() {
 typedef Value (*Native)(Value*, Location);
 
 #define NATIVES \
-    X(add1, add1, 1)\
-    X(input, add1, 0)\
+    X(add1,         add1,  1)\
+    X(input,        input, 0)\
     X(clock_native, clock, 0)\
 
 #define X(func, name, arity) func,
