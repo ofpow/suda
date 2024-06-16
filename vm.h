@@ -331,7 +331,7 @@ void disassemble(VM *vm) {
                     i++;
                     break;
                 case OP_APPEND_GLOBAL:
-                    printf("%-6d %s OP_APPEND_GLOBAL       var ", i, line_str);
+                    printf("%-6d %s OP_APPEND_GLOBAL      var ", i, line_str);
                     print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
                     i += 2;
                     break;
