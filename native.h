@@ -33,25 +33,35 @@ Value input() {
     };
 }
 
+Value clock_native() {
+    return (Value){
+        Value_Number,
+        .val.num=clock() / 1000,
+        false,
+        0
+    };
+}
+
 typedef Value (*Native)(Value*, Location);
 
 #define NATIVES \
-    X(add1, 1)\
-    X(input, 0)\
+    X(add1, add1, 1)\
+    X(input, add1, 0)\
+    X(clock_native, clock, 0)\
 
-#define X(name, arity) name,
+#define X(func, name, arity) func,
 Native natives[] = {
     NATIVES
 };
 #undef X
 
-#define X(name, arity) #name,
+#define X(func, name, arity) #name,
 char* native_names[] = {
     NATIVES
 };
 #undef X
 
-#define X(name, arity) arity,
+#define X(func, name, arity) arity,
 int native_arities[] = {
     NATIVES
 };
