@@ -87,6 +87,14 @@ int exponentiate(int base, int64_t power) {
     X(OP_ARRAY)\
     X(OP_CALL_NATIVE)\
 
+#ifdef PROFILE
+#define X(x) 0,
+u_int64_t op_profiler[] = {
+    ops
+};
+#undef X
+#endif
+
 typedef enum {
 #define X(x) x,
     ops

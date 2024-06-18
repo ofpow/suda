@@ -376,6 +376,7 @@ void run(VM *vm) {
         Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
 #ifdef PROFILE
         instr_profiler[frame->index]++;
+        op_profiler[vm->func->code.data[i]]++;
 #endif
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {

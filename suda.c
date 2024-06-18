@@ -515,6 +515,11 @@ int main(int argc, char *argv[]) {
                 instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
                 time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
     }
+    
+    printf("\nOPS:\n");
+#define X(x) if (op_profiler[x]) printf("%-20s: %-15ld: %9.6f%%\n", find_op_code(x), op_profiler[x], ((double)op_profiler[x] / instr_total) * 100);
+    ops
+#undef X
 
     free(instr_profiler);
     free(time_profiler);
