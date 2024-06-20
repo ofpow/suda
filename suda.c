@@ -222,16 +222,11 @@ int main(int argc, char *argv[]) {
             time = true;
         } else if (!strcmp(argv[i], "-d")) {
             disassembly = true;
-        } else if (!strcmp(argv[i], "-c")) {
-            call_stack = calloc(10, sizeof(char*));
-            call_stack_index = 0;
-            call_stack_capacity = 10;
         } else if (!strcmp(argv[i], "-h")) {
             printf("Usage: suda <args> [file] \n");
             printf("Arguments:\n");
             printf("  -h: print this message\n");
             printf("  -t: print timing info\n");
-            printf("  -c: print call stack on crash\n");
             printf("  -d: diassemble bytecode instead of running\n");
             return 0;
         } else {
