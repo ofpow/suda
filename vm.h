@@ -279,9 +279,6 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_POP:               amount: %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2])); 
                     i += 2;
                     break;
-                case OP_LEN:
-                    printf("%-6d %s OP_LEN\n", i, line_str);
-                    break;
                 case OP_CAST_STR:
                     printf("%-6d %s OP_CAST_STR\n", i, line_str);
                     break;
@@ -783,24 +780,6 @@ void run(VM *vm) {
                     }
 
                 i += 2;
-                break;
-            case OP_LEN:;
-                Value array = stack_pop;
-                if (array.type == Value_Array) {
-                    stack_push(((Value){
-                        Value_Number,
-                        .val.num=ARRAY_LEN(array.val.array[0].val.num) - 1,
-                        false,
-                        0
-                    }));
-                } else if (array.type == Value_String) {
-                    stack_push(((Value){
-                        Value_Number,
-                        .val.num=array.val.str.len,
-                        false,
-                        0
-                    }));
-                } else ERR("ERROR in %s on line %ld: cant do len of %s\n", get_loc, find_value_type(array.type))
                 break;
             case OP_CAST_STR:{
                 Value val = stack_pop;

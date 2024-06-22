@@ -44,7 +44,6 @@ void shunt(char* dest, char* src) {
     X(Tok_Break)\
     X(Tok_Comment)\
     X(Tok_Is_Equal)\
-    X(Tok_Len)\
     X(Tok_Exit)\
     X(Tok_Modulo)\
     X(Tok_Elif)\
@@ -255,15 +254,7 @@ static Token_Type id_type(Lexer *l) {
             }
             break;
         case 'l':
-            if (l->current - l->start > 2) {
-                switch (l->start[2]) {
-                    case 'n':
-                        return check_keyword(2, 1, "n", Tok_Len, l);
-                    case 't':
-                        return check_keyword(2, 1, "t", Tok_Let, l);
-                }
-            }
-            break;
+            return check_keyword(1, 2, "et", Tok_Let, l);
         case 'n':
             return check_keyword(1, 2, "um", Tok_Cast_Num, l);
         case 'p':

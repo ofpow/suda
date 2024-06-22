@@ -63,7 +63,6 @@ int exponentiate(int base, int64_t power) {
     X(OP_SET_ELEMENT_LOCAL)\
     X(OP_START_IF)\
     X(OP_POP)\
-    X(OP_LEN)\
     X(OP_CAST_STR)\
     X(OP_CAST_NUM)\
     X(OP_CALL)\
@@ -367,10 +366,6 @@ void compile_expr(Node *n, Compiler *c) {
             compile_identifier(n, c);
             append_code(OP_GET_ELEMENT, current_loc(n));
             break;}
-        case AST_Len:
-            compile_expr(n->left, c);
-            append_code(OP_LEN, current_loc(n));
-            break;
         case AST_Cast_Str:
             compile_expr(n->left, c);
             append_code(OP_CAST_STR, current_loc(n));

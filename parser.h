@@ -32,7 +32,7 @@
 #define NEXT_TOK p->tokens[p->tok_index + 1]
 #define IS_TOK_MATH_OP(expr) ((expr == Tok_Add) || (expr == Tok_Sub) || (expr == Tok_Mult) || (expr == Tok_Div) || (expr == Tok_Less) || (expr == Tok_Less_Equal) || (expr == Tok_Greater) || (expr == Tok_Greater_Equal) || (expr == Tok_Is_Equal) || (expr == Tok_And) || (expr == Tok_Or) || (expr == Tok_Not) || (expr == Tok_Not_Equal) || (expr == Tok_Modulo) || (expr == Tok_Bit_And) || (expr == Tok_Bit_Or) || (expr == Tok_Bit_Xor) || (expr == Tok_Bit_Not) || (expr == Tok_Lshift) || (expr == Tok_Rshift) || (expr == Tok_Power))
 #define IS_AST_MATH_OP(expr) ((expr == AST_Add) || (expr == AST_Sub) || (expr == AST_Mult) || (expr == AST_Div) || (expr == AST_Less) || (expr == AST_Less_Equal) || (expr == AST_Greater) || (expr == AST_Greater_Equal) || (expr == AST_Is_Equal) || (expr == AST_And) || (expr == AST_Or) || (expr == AST_Not) || (expr == AST_Not_Equal) || (expr == AST_Modulo) || (expr == AST_Bit_And) || (expr == AST_Bit_Or) || (expr == AST_Bit_Xor) || (expr == AST_Bit_Not) || (expr == AST_Lshift) || (expr == AST_Rshift) || (expr == AST_Power))
-#define TOK_IS_EVALUATABLE(type) ((type == Tok_String || type == Tok_Number || IS_TOK_MATH_OP(type) || type == Tok_Identifier || type == Tok_At || type == Tok_Function || type == Tok_Len || type == Tok_Cast_Num || type == Tok_Cast_Str))
+#define TOK_IS_EVALUATABLE(type) ((type == Tok_String || type == Tok_Number || IS_TOK_MATH_OP(type) || type == Tok_Identifier || type == Tok_At || type == Tok_Function || type == Tok_Cast_Num || type == Tok_Cast_Str))
 
 #define ast_types\
     X(AST_End)\
@@ -61,7 +61,6 @@
     X(AST_Right_Paren)\
     X(AST_Return)\
     X(AST_Fn_Call)\
-    X(AST_Len)\
     X(AST_Break)\
     X(AST_Exit)\
     X(AST_Continue)\
@@ -123,7 +122,6 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
         case Tok_Or: return AST_Or;
         case Tok_Bit_Not: return AST_Bit_Not;
         case Tok_Not: return AST_Not;
-        case Tok_Len: return AST_Len;
         case Tok_Cast_Num: return AST_Cast_Num;
         case Tok_Cast_Str: return AST_Cast_Str;
         case Tok_Print: return AST_Print;
@@ -452,7 +450,6 @@ Node *expr(Parser *p, Node *child, bool is_index) {
 
         case Tok_Bit_Not: // nodes with 1 argument
         case Tok_Not:
-        case Tok_Len:
         case Tok_Cast_Num:
         case Tok_Cast_Str:
             n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);

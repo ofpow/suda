@@ -42,12 +42,33 @@ Value clock_native() {
     };
 }
 
+Value len(Value *args, Location loc) {
+    if (args[0].type == Value_Array) {
+        return (Value){
+            Value_Number,
+            .val.num=ARRAY_LEN(args[0].val.array[0].val.num) - 1,
+            false,
+            0
+        };
+    } else if (args[0].type == Value_String) {
+        return (Value){
+            Value_Number,
+            .val.num=args[0].val.str.len,
+            false,
+            0
+        };
+    } else ERR("ERROR in %s on line %ld: cant do len of %s\n", loc.file, loc.line, find_value_type(args[0].type))
+
+    return (Value) {0};
+}
+
 typedef Value (*Native)(Value*, Location);
 
 #define NATIVES \
     X(add1,         add1,  1)\
     X(input,        input, 0)\
     X(clock_native, clock, 0)\
+    X(len,          len,   1)\
 
 #define X(func, name, arity) func,
 Native natives[] = {
