@@ -362,9 +362,15 @@ void compile_expr(Node *n, Compiler *c) {
             append_code(SECOND_BYTE(index), INVALID_LOC);
             break;}
         case AST_At:{
-            compile_expr(n->left, c); // the index
-            compile_identifier(n, c);
-            append_code(OP_GET_ELEMENT, current_loc(n));
+            if (n->right != NULL) {
+                compile_expr(n->left, c); // parent at
+                compile_expr(n->right, c); // index
+                append_code(OP_GET_ELEMENT, current_loc(n));
+            } else {
+                compile_expr(n->left, c); // the index
+                compile_identifier(n, c);
+                append_code(OP_GET_ELEMENT, current_loc(n));
+            }
             break;}
         case AST_Cast_Str:
             compile_expr(n->left, c);
@@ -573,6 +579,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 break;}
             case AST_At:
+            case AST_At_Assign:
                 compile_expr(nodes[i]->left, c); // index
                 if (nodes[i]->right) {// new value
                     compile_expr(nodes[i]->right, c); 

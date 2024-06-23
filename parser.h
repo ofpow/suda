@@ -55,6 +55,7 @@
     X(AST_While)\
     X(AST_Array)\
     X(AST_At)\
+    X(AST_At_Assign)\
     X(AST_Is_Equal)\
     X(AST_Fn)\
     X(AST_Comma)\
@@ -348,14 +349,18 @@ Node *expr(Parser *p, Node *child, bool is_index) {
                 return n;
             } else if (CURRENT_TOK.type == Tok_At) {
                 n = new_node(AST_At, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
-                p->tok_index++;
-                if (CURRENT_TOK.type == Tok_Left_Paren)
-                    n->left = expr(p, NULL, false);
-                else
-                    n->left = expr(p, NULL, true);
+                
+                // index
+                n->left = expr(p, NULL, p->tokens[++p->tok_index].type == Tok_Left_Paren);
+
                 if (CURRENT_TOK.type == Tok_Assign) {
                     p->tok_index++;
+
+                    // new value
                     n->right = expr(p, NULL, false);
+                    n->type = AST_At_Assign;
+                } else if (CURRENT_TOK.type == Tok_At) {
+                    return expr(p, n, NEXT_TOK.type == Tok_Left_Paren);
                 }
                 return n;
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
@@ -480,6 +485,14 @@ Node *expr(Parser *p, Node *child, bool is_index) {
             int64_t *val = calloc(1, sizeof(int64_t));
             *val = 0;
             return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);}
+        case Tok_At:{
+            p->tok_index++;
+            n = new_node(AST_At, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+            // index
+            n->left = expr(p, NULL, NEXT_TOK.type == Tok_Left_Paren);
+            // parent at
+            n->right = child;
+            return n;}
         default: ERR("ERROR in %s on line %ld: Unsupported token type for expr %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
