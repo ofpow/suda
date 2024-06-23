@@ -363,8 +363,8 @@ void compile_expr(Node *n, Compiler *c) {
             break;}
         case AST_At:{
             if (n->right != NULL) {
-                compile_expr(n->left, c); // parent at
-                compile_expr(n->right, c); // index
+                compile_expr(n->left, c); // index
+                compile_expr(n->right, c); // parent at
                 append_code(OP_GET_ELEMENT, current_loc(n));
             } else {
                 compile_expr(n->left, c); // the index

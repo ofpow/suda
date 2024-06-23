@@ -1,2 +1,5 @@
-let x = [1, 2, "hello", "world"]
-println x@3@5
+let foo = [1, 2, 3, "helloworld"]
+
+let x = 4
+let y = 6
+println foo@x@(y - 1)

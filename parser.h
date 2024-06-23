@@ -347,11 +347,11 @@ Node *expr(Parser *p, Node *child, bool is_index) {
                 p->tok_index++;
                 n->left = expr(p, NULL, false);
                 return n;
-            } else if (CURRENT_TOK.type == Tok_At) {
+            } else if (CURRENT_TOK.type == Tok_At && !is_index) {
                 n = new_node(AST_At, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 
                 // index
-                n->left = expr(p, NULL, p->tokens[++p->tok_index].type == Tok_Left_Paren);
+                n->left = expr(p, NULL, true);
 
                 if (CURRENT_TOK.type == Tok_Assign) {
                     p->tok_index++;
@@ -360,7 +360,13 @@ Node *expr(Parser *p, Node *child, bool is_index) {
                     n->right = expr(p, NULL, false);
                     n->type = AST_At_Assign;
                 } else if (CURRENT_TOK.type == Tok_At) {
-                    return expr(p, n, NEXT_TOK.type == Tok_Left_Paren);
+                    while (CURRENT_TOK.type == Tok_At) {
+                        Node *temp = n;
+                        n = new_node(AST_At, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                        n->right = temp;
+                        p->tok_index++;
+                        n->left = expr(p, NULL, true);
+                    }
                 }
                 return n;
             } else if (CURRENT_TOK.type == Tok_Left_Paren) {
@@ -387,10 +393,10 @@ Node *expr(Parser *p, Node *child, bool is_index) {
             return new_node(AST_Identifier, new_ast_value(Value_Identifier, format_str(LAST_TOK.length + 1, "%.*s", LAST_TOK.length, LAST_TOK.start), 1, hash(LAST_TOK.start, LAST_TOK.length)), -1, CURRENT_TOK.line, CURRENT_TOK.file);
         case Tok_Left_Paren:
             p->tok_index++;
-            n = expr(p, NULL, is_index);
+            n = expr(p, NULL, false);
             while (CURRENT_TOK.type != Tok_Right_Paren) {
                 if (CURRENT_TOK.type == Tok_Eof) ERR("ERROR in %s on line %ld: Require closing parenthese\n", CURRENT_TOK.file, CURRENT_TOK.line)
-                n = expr(p, n, is_index);
+                n = expr(p, n, false);
             }
             p->tok_index++;
             return n;
@@ -487,12 +493,7 @@ Node *expr(Parser *p, Node *child, bool is_index) {
             return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);}
         case Tok_At:{
             p->tok_index++;
-            n = new_node(AST_At, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
-            // index
-            n->left = expr(p, NULL, NEXT_TOK.type == Tok_Left_Paren);
-            // parent at
-            n->right = child;
-            return n;}
+            return expr(p, child, true);}
         default: ERR("ERROR in %s on line %ld: Unsupported token type for expr %s\n", CURRENT_TOK.file, CURRENT_TOK.line, find_tok_type(CURRENT_TOK.type))
     }
     return NULL;
