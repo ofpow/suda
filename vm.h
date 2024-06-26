@@ -353,6 +353,12 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_ARRAY:             index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
                     break;
+                case OP_ENUMERATE:
+                    printf("%-6d %s OP_ENUMERATE          iter %d, local %d, index %d, jump %d\n", i, line_str,
+                            COMBYTE(func.code.data[i + 1], func.code.data[i + 2]), func.code.data[i + 3],
+                            func.code.data[i + 4], COMBYTE(func.code.data[i + 5], func.code.data[i + 6]));
+                    i += 6;
+                    break;
                 default:
                     ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(func.code.data[i]));
             }
@@ -994,6 +1000,65 @@ void run(VM *vm) {
                 Value result = native(vm->stack_top - native_arities[read_index], make_loc(get_loc));
                 vm->stack_top -= native_arities[read_index];
                 stack_push(result);
+                i += 2;
+                break;}
+            case OP_ENUMERATE:{
+                Value array = stack_pop;
+                Value *index = &vm->func->constants.data[read_index];
+                i += 2;
+                Value *index_var = &frame->slots[vm->func->code.data[++i]];
+                Value *local = &frame->slots[vm->func->code.data[++i]];
+                if (array.type == Value_Array) {
+                    u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
+                    if (len < 2) {i -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
+                    if (index->val.num == 1) {
+                        stack_push(((Value){
+                            Value_Number,
+                            .val.num=1,
+                            false,
+                            0
+                        }));
+                        stack_push(array.val.array[1]);
+                    } else if (index->val.num >= len) {
+                        index->val.num = 0;
+                        i = read_index + 3;
+                        vm->stack_top -= 2;
+                    } else {
+                        index_var->val.num = index->val.num;
+                        *local = array.val.array[index->val.num];
+                    }
+                } else if (array.type == Value_String) {
+                    if (index->val.num == 1) {
+                        stack_push(((Value){
+                            Value_Number,
+                            .val.num=1,
+                            false,
+                            0
+                        }));
+                        stack_push(((Value){
+                            Value_String,
+                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                            false,
+                            0
+                        }));
+                    } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
+                        index->val.num = 0;
+                        i = read_index + 3;
+                        vm->stack_top -= 2;
+                    } else {
+                        index_var->val.num = index->val.num;
+                        *local = (Value){
+                            Value_String,
+                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                            false,
+                            0
+                        };
+                    }
+                } else {
+                    i -= 3;
+                    ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
+                } 
+                index->val.num++;
                 i += 2;
                 break;}
             default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))

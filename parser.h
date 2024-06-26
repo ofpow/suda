@@ -83,7 +83,7 @@
     X(AST_Cast_Num)\
     X(AST_Println)\
     X(AST_For)\
-    X(AST_In)\
+    X(AST_Enumerate)\
 
 typedef enum {
 #define X(x) x,
@@ -138,7 +138,6 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
         case Tok_Elif: return AST_Elif;
         case Tok_Println: return AST_Println;
         case Tok_For: return AST_For;
-        case Tok_In: return AST_In;
         default: ERR("ERROR in %s on line %ld: cant convert token type %s to ast\n", file, line, find_tok_type(type))
     }
     return -1;
@@ -547,11 +546,22 @@ Node *statement(Parser *p) {
 
             ASSERT((CURRENT_TOK.type == Tok_Identifier), "ERROR in %s on line %ld: need identifier to follow for\n", CURRENT_TOK.file, CURRENT_TOK.line)
             n->left = expr(p, NULL, false);
-
-            ASSERT((CURRENT_TOK.type == Tok_In), "ERROR in %s on line %ld: need `in` to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
-            p->tok_index++;
-            n->right = expr(p, NULL, false);
-            n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
+            
+            if (CURRENT_TOK.type == Tok_In) {
+                p->tok_index++;
+                n->right = expr(p, NULL, false);
+                n->value = new_ast_value(Value_Number, dup_int(0), 1, 0);
+            } else if (CURRENT_TOK.type == Tok_Comma) {
+                n->type = AST_Enumerate;
+                Node *temp = n->left;
+                p->tok_index++;
+                n->left = new_node(AST_Enumerate, NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
+                n->left->left = temp; // index
+                n->left->right = expr(p, NULL, false); // value
+                ASSERT(CURRENT_TOK.type == Tok_In, "ERROR in %s on line %ld: need in to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
+                p->tok_index++;
+                n->right = expr(p, NULL, false);
+            } else ERR("ERROR in %s on line %ld: need comma or in to follow identifier\n", CURRENT_TOK.file, CURRENT_TOK.line)
             return n;
 
         default: return expr(p, NULL, false); 

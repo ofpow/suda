@@ -323,7 +323,11 @@ int main(int argc, char *argv[]) {
             append(p->jumps, p->nodes.index);
             append(p->nodes, n);
         } else if (n->type == AST_For) {
-            debug("For: push index %ld\n", p->nodes.index)
+            debug("FOR: push index %ld\n", p->nodes.index)
+            append(p->jumps, p->nodes.index);
+            append(p->nodes, n);
+        } else if (n->type == AST_Enumerate) {
+            debug("ENUMERATE: push index %ld\n", p->nodes.index)
             append(p->jumps, p->nodes.index);
             append(p->nodes, n);
         } else if (n->type == AST_Else) {

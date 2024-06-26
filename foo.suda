@@ -1,5 +1,15 @@
 let foo = [1, 2, 3, "helloworld"]
 
-let x = 4
-let y = 6
-println foo@x@(y - 1)
+for i, x in foo
+    print x
+    print " is at index "
+    println i
+;
+
+let bar = "monday"
+
+for i, x in bar
+    print x
+    print " is at index "
+    println i
+;

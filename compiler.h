@@ -85,6 +85,7 @@ int exponentiate(int base, int64_t power) {
     X(OP_EXIT)\
     X(OP_ARRAY)\
     X(OP_CALL_NATIVE)\
+    X(OP_ENUMERATE)\
 
 #ifdef PROFILE
 #define X(x) 0,
@@ -471,7 +472,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 u_int16_t amount = 0;
                 while(c->locals_count > 0 && c->locals[c->locals_count - 1].depth > c->depth) { amount++; c->locals_count--; }
 
-                if (amount > 0 && nodes[nodes[i]->jump_index]->type != AST_For) {
+                if (amount > 0 && (nodes[nodes[i]->jump_index]->type != AST_For && nodes[nodes[i]->jump_index]->type != AST_Enumerate)) {
                     append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(amount), INVALID_LOC);
                     append_code(SECOND_BYTE(amount), INVALID_LOC);
@@ -508,7 +509,7 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(OP_JUMP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
-                } else if (nodes[nodes[i]->jump_index]->type == AST_For) {
+                } else if (nodes[nodes[i]->jump_index]->type == AST_For || nodes[nodes[i]->jump_index]->type == AST_Enumerate) {
                     u_int16_t index = c->for_indices.data[--c->for_indices.index];
                     u_int16_t offset = c->func.code.index;
                     
@@ -520,11 +521,19 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
 
-                    index = 1;
+                    if (nodes[nodes[i]->jump_index]->type == AST_For)
+                        index = 1;
+                    else if (nodes[nodes[i]->jump_index]->type == AST_Enumerate)
+                        index = 2;
+
                     append_code(OP_POP, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
-                    c->locals_count--;
+
+                    if (nodes[nodes[i]->jump_index]->type == AST_For)
+                        c->locals_count--;
+                    else if (nodes[nodes[i]->jump_index]->type == AST_Enumerate)
+                        c->locals_count -= 2;
                 } else if (nodes[nodes[i]->jump_index]->type == AST_If) {
                     u_int16_t index = c->if_indices.data[--c->if_indices.index];
 
@@ -665,6 +674,26 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
                 append_code(resolve_local(nodes[i]->left->value, c), INVALID_LOC);
+
+                append(c->for_indices, c->func.code.index);
+                append_code(0, INVALID_LOC);
+                append_code(0, INVALID_LOC);
+                c->depth++;
+                break;}
+            case AST_Enumerate:{
+                append(c->for_indices, c->func.code.index);
+                compile_expr(nodes[i]->right, c); // array
+                add_local(nodes[i]->left->left, c); // index
+                add_local(nodes[i]->left->right, c); // value
+    
+                append(c->func.constants, ((Value){Value_Number, .val.num=1, false, 0}));
+                u_int16_t index = c->func.constants.index - 1;
+                
+                append_code(OP_ENUMERATE, current_loc(nodes[i]));
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+                append_code(resolve_local(nodes[i]->left->left->value, c), INVALID_LOC);
+                append_code(resolve_local(nodes[i]->left->right->value, c), INVALID_LOC);
 
                 append(c->for_indices, c->func.code.index);
                 append_code(0, INVALID_LOC);
