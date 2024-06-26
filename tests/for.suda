@@ -10,3 +10,19 @@ for i in foo
         println j
     ;
 ;
+
+let foo1 = [1, 2, 3, "helloworld"]
+
+for i, x in foo1
+    print x
+    print " is at index "
+    println i
+;
+
+let bar1 = "monday"
+
+for i, x in bar1
+    print x
+    print " is at index "
+    println i
+;

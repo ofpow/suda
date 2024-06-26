@@ -53,3 +53,13 @@ d
 4
 5
 6
+1 is at index 1
+2 is at index 2
+3 is at index 3
+helloworld is at index 4
+m is at index 1
+o is at index 2
+n is at index 3
+d is at index 4
+a is at index 5
+y is at index 6
