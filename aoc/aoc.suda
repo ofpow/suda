@@ -33,7 +33,7 @@ fn split_by(string, delimiter)
         i = (i + 1)
     ;
 
-    append rtrn substr(string, start, (len(string) + 2))
+    append rtrn substr(string, start, (len(string) + 1))
 
     return rtrn
 ;
