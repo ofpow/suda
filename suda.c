@@ -162,6 +162,7 @@ String_Array include_paths = {0};
 VM vm = {0};
 Compiler c = {0};
 bool disassembly = false;
+bool instructions = false;
 
 void free_mem(int exit_val) {
 
@@ -222,12 +223,15 @@ int main(int argc, char *argv[]) {
             time = true;
         } else if (!strcmp(argv[i], "-d")) {
             disassembly = true;
+        } else if (!strcmp(argv[i], "-i")) {
+            instructions = true;
         } else if (!strcmp(argv[i], "-h")) {
             printf("Usage: suda <args> [file] \n");
             printf("Arguments:\n");
             printf("  -h: print this message\n");
             printf("  -t: print timing info\n");
             printf("  -d: diassemble bytecode instead of running\n");
+            printf("  -i: print instructions when profiling\n");
             return 0;
         } else {
             file_path = argv[i];
@@ -514,11 +518,12 @@ int main(int argc, char *argv[]) {
                 instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
                 time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
     }
-    
-    printf("\nOPS:\n");
+    if (instructions) { 
+        printf("\nOPS:\n");
 #define X(x) if (op_profiler[x]) printf("%-20s: %-15ld: %9.6f%%\n", find_op_code(x), op_profiler[x], ((double)op_profiler[x] / instr_total) * 100);
-    ops
+        ops
 #undef X
+    }
 
     free(instr_profiler);
     free(time_profiler);
