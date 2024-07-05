@@ -840,22 +840,34 @@ void run(VM *vm) {
                        ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
                 clock_gettime(CLOCK_MONOTONIC, &tstart);
                 #endif
+
                 Value result = stack_pop;
                 if ((result.type == Value_Array) && !result.mutable) {
                     result.val.array = dup_array(result.val.array);
                     result.mutable = true;
+                } else if (result.type == Value_String && !result.mutable) {
+                    result.val.str.chars = strdup(result.val.str.chars);
+                    result.mutable = true;
                 }
+
                 for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if ((val->type == Value_Array) && val->mutable) {
-                        free_value_array(val->val.array);
+                    if (val->mutable) {
                         val->mutable = false;
+                        if (val->type == Value_Array)
+                            free_value_array(val->val.array);
+                        else if (val->type == Value_String)
+                            free(val->val.str.chars);
+                        else
+                            ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
                     }
                 }
+
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
                 frame = &vm->call_stack[vm->call_stack_count - 1];
                 vm->func = frame->func;
                 i = frame->return_index;
+
                 stack_push(result);
                 break;}
             case OP_RETURN_NOTHING:{
@@ -866,12 +878,19 @@ void run(VM *vm) {
                        ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
                 clock_gettime(CLOCK_MONOTONIC, &tstart);
                 #endif
+
                 for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if ((val->type == Value_Array) && val->mutable) {
-                        free_value_array(val->val.array);
+                    if (val->mutable) {
                         val->mutable = false;
+                        if (val->type == Value_Array)
+                            free_value_array(val->val.array);
+                        else if (val->type == Value_String)
+                            free(val->val.str.chars);
+                        else
+                            ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
                     }
                 }
+
                 vm->call_stack_count--;
                 vm->stack_top = frame->slots;
                 frame = &vm->call_stack[vm->call_stack_count - 1];
