@@ -512,11 +512,22 @@ int main(int argc, char *argv[]) {
 
     printf("OVERALL             : %-15ld: 100%%       : %9.5f: 100%%\n", instr_total, time_total);
 
-    for (int i = 0; i < vm.funcs.index; i++) {
-        if (instr_profiler[i])
-            printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[i].name, 
-                instr_profiler[i], ((double)instr_profiler[i] / instr_total) * 100,
-                time_profiler[i], ((double)time_profiler[i] / time_total) * 100);
+    u_int64_t highest = 0;
+    int current_index = 0;
+
+    while (1) {
+        for (int i = 0; i < vm.funcs.index; i++) {
+            if (instr_profiler[i] > highest) {
+                highest = instr_profiler[i];
+                current_index = i;
+            }
+        }
+        if (highest == 0) break;
+        printf("%-20s: %-15ld: %9.6f%% : %9.6f: %9.6f%%\n", vm.funcs.data[current_index].name, 
+            instr_profiler[current_index], ((double)instr_profiler[current_index] / instr_total) * 100,
+            time_profiler[current_index], ((double)time_profiler[current_index] / time_total) * 100);
+        instr_profiler[current_index] = 0;
+        highest = 0;
     }
     if (instructions) { 
         printf("\nOPS:\n");
