@@ -323,7 +323,7 @@ void compile_expr(Node *n, Compiler *c) {
                         array[i].type = Value_Array;
 
                         // first 4 bytes: allocated size
-                        // last 4 bytes: number of elements
+                        // last 4 bytes: number of elements including header info
                         array[i].val.num = MAKE_ARRAY_INFO(array_size, array_len);
                         break;
                     case Value_Number:

@@ -64,6 +64,7 @@ Value len(Value *args, Location loc) {
 
 typedef Value (*Native)(Value*, Location);
 
+//    c function name     suda function name     number of arguments
 #define NATIVES \
     X(add1,         add1,  1)\
     X(input,        input, 0)\
