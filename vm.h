@@ -179,11 +179,6 @@ void disassemble(VM *vm) {
             switch(func.code.data[i]) {
                 case OP_CONSTANT:
                     printf("%-6d %s OP_CONSTANT:          ", i, line_str);
-                    print_value(func.constants.data[func.code.data[i + 1]]);
-                    i++;
-                    break;
-                case OP_CONSTANT_LONG:
-                    printf("%-6d %s OP_CONSTANT_LONG:     ", i, line_str);
                     print_value(func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]);
                     i += 2;
                     break;
@@ -383,15 +378,11 @@ void run(VM *vm) {
 #endif
         debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
         switch (vm->func->code.data[i]) {
-            case OP_CONSTANT:;{
-                u_int8_t index = vm->func->code.data[++i];
-                stack_push(vm->func->constants.data[index]);
-                break;}
-            case OP_CONSTANT_LONG:;
+            case OP_CONSTANT:{
                 u_int16_t index = read_index;
                 stack_push(vm->func->constants.data[index]);
                 i += 2;
-                break;
+                break;}
             case OP_PRINTLN:;
                 Value print = stack_pop;
                 if (print.type == Value_Number) {

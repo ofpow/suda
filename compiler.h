@@ -36,7 +36,6 @@ int exponentiate(int base, int64_t power) {
 
 #define ops \
     X(OP_CONSTANT)\
-    X(OP_CONSTANT_LONG)\
     X(OP_PRINTLN)\
     X(OP_DEFINE_GLOBAL)\
     X(OP_SET_GLOBAL)\
@@ -253,16 +252,9 @@ void compile_constant(Node *n, Compiler *c) {
         ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->value->type)
 
     u_int16_t index = c->func.constants.index - 1;
-    if (index < 255) {
-        append_code(OP_CONSTANT, current_loc(n));
-        append_code(index, INVALID_LOC);
-    } else if (index == 65535) {
-        ERR("ERROR in %s on line %ld: too many constants", n->file, n->line);
-    } else {
-        append_code(OP_CONSTANT_LONG, current_loc(n));
-        append_code(FIRST_BYTE(index), INVALID_LOC);
-        append_code(SECOND_BYTE(index), INVALID_LOC);
-    }
+    append_code(OP_CONSTANT, current_loc(n));
+    append_code(FIRST_BYTE(index), INVALID_LOC);
+    append_code(SECOND_BYTE(index), INVALID_LOC);
 }
 
 void compile_expr(Node *n, Compiler *c) {
