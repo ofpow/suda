@@ -31,12 +31,14 @@ int exponentiate(int base, int64_t power) {
 #define current_loc(_node) ((Location){ _node->file, _node->line })
 #define append_code(_code, _loc) append(c->func.code, _code); append(c->func.locs, _loc)
 #define make_loc(_loc) (Location){_loc}
-#define get_loc vm->func->locs.data[i].file, vm->func->locs.data[i].line
+#define get_loc vm->func->locs.data[pc].file, vm->func->locs.data[pc].line
 
 
 #define ops \
     X(OP_CONSTANT)\
+    X(OP_ARRAY)\
     X(OP_PRINTLN)\
+    X(OP_PRINT)\
     X(OP_DEFINE_GLOBAL)\
     X(OP_SET_GLOBAL)\
     X(OP_GET_GLOBAL)\
@@ -46,6 +48,14 @@ int exponentiate(int base, int64_t power) {
     X(OP_SUBTRACT)\
     X(OP_MULTIPLY)\
     X(OP_DIVIDE)\
+    X(OP_MODULO)\
+    X(OP_BIT_AND)\
+    X(OP_BIT_OR)\
+    X(OP_BIT_XOR)\
+    X(OP_BIT_NOT)\
+    X(OP_LSHIFT)\
+    X(OP_RSHIFT)\
+    X(OP_POWER)\
     X(OP_LESS)\
     X(OP_LESS_EQUAL)\
     X(OP_GREATER)\
@@ -56,35 +66,25 @@ int exponentiate(int base, int64_t power) {
     X(OP_NOT)\
     X(OP_NOT_EQUAL)\
     X(OP_JUMP_IF_FALSE)\
+    X(OP_START_IF)\
     X(OP_JUMP)\
     X(OP_GET_ELEMENT)\
     X(OP_SET_ELEMENT_GLOBAL)\
     X(OP_SET_ELEMENT_LOCAL)\
-    X(OP_START_IF)\
+    X(OP_APPEND_GLOBAL)\
+    X(OP_APPEND_LOCAL)\
     X(OP_POP)\
     X(OP_CAST_STR)\
     X(OP_CAST_NUM)\
     X(OP_CALL)\
+    X(OP_CALL_NATIVE)\
     X(OP_RETURN)\
-    X(OP_PRINT)\
-    X(OP_MODULO)\
-    X(OP_BIT_AND)\
-    X(OP_BIT_OR)\
-    X(OP_BIT_XOR)\
-    X(OP_BIT_NOT)\
-    X(OP_LSHIFT)\
-    X(OP_RSHIFT)\
-    X(OP_POWER)\
     X(OP_RETURN_NOTHING)\
-    X(OP_APPEND_GLOBAL)\
-    X(OP_APPEND_LOCAL)\
     X(OP_BREAK)\
     X(OP_CONTINUE)\
     X(OP_FOR)\
-    X(OP_EXIT)\
-    X(OP_ARRAY)\
-    X(OP_CALL_NATIVE)\
     X(OP_ENUMERATE)\
+    X(OP_EXIT)\
 
 #ifdef PROFILE
 #define X(x) 0,

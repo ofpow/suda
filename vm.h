@@ -2,7 +2,7 @@
 
 char chars[] = {' ', 0, '!', 0, '"', 0, '#', 0, '$', 0, '%', 0, '&', 0, '\'', 0, '(', 0, ')', 0, '*', 0, '+', 0, ',', 0, '-', 0, '.', 0, '/', 0, '0', 0, '1', 0, '2', 0, '3', 0, '4', 0, '5', 0, '6', 0, '7', 0, '8', 0, '9', 0, ':', 0, ';', 0, '<', 0, '=', 0, '>', 0, '?', 0, '@', 0, 'A', 0, 'B', 0, 'C', 0, 'D', 0, 'E', 0, 'F', 0, 'G', 0, 'H', 0, 'I', 0, 'J', 0, 'K', 0, 'L', 0, 'M', 0, 'N', 0, 'O', 0, 'P', 0, 'Q', 0, 'R', 0, 'S', 0, 'T', 0, 'U', 0, 'V', 0, 'W', 0, 'X', 0, 'Y', 0, 'Z', 0, '[', 0, '\\', 0, ']', 0, '^', 0, '_', 0, '`', 0, 'a', 0, 'b', 0, 'c', 0, 'd', 0, 'e', 0, 'f', 0, 'g', 0, 'h', 0, 'i', 0, 'j', 0, 'k', 0, 'l', 0, 'm', 0, 'n', 0, 'o', 0, 'p', 0, 'q', 0, 'r', 0, 's', 0, 't', 0, 'u', 0, 'v', 0, 'w', 0, 'x', 0, 'y', 0, 'z', 0, '{', 0, '|', 0, '}', 0, '~'};
 
-#define read_index (COMBYTE(vm->func->code.data[i + 1], vm->func->code.data[i + 2]))
+#define read_index (COMBYTE(vm->func->code.data[pc + 1], vm->func->code.data[pc + 2]))
 #define stack_pop (*--vm->stack_top)
 #define stack_push(_val) do { \
     *vm->stack_top = (_val);  \
@@ -25,7 +25,7 @@ char chars[] = {' ', 0, '!', 0, '"', 0, '#', 0, '$', 0, '%', 0, '&', 0, '\'', 0,
         }));                                                                        \
     } else ERR(msg, get_loc, find_value_type(op1.type), find_value_type(op2.type))  \
 } while (0);                                                                        \
-break                                                                               \
+dispatch()                                                                          \
 
 #define unary_op(op, msg) do {                          \
     Value op1 = stack_pop;                              \
@@ -38,7 +38,7 @@ break                                                                           
         }));                                            \
     } else ERR(msg, get_loc, find_value_type(op1.type)) \
 } while (0);                                            \
-break                                                   \
+dispatch()                                              \
 
 typedef struct Call_Frame {
     Function *func;
@@ -158,6 +158,28 @@ void print_value(Value val) {
             break;
         default: ERR("cant print type %s\n", find_value_type(val.type))
     }
+}
+
+void print_state(Value *stack_top, Value *stack) {
+    printf("{");
+    for (Value *val = stack_top; val > stack; val--) {
+        switch (val->type) {
+            case Value_Number:
+                printf("%ld, ", val->val.num);
+                break;
+            case Value_String:
+                printf("\"%.*s\", ", Print(val->val.str));
+                break;
+            case Value_Identifier:
+                printf("%.*s, ", Print(val->val.str));
+                break;
+            case Value_Array:
+                printf("array, ");
+                break;
+            default: ERR("cant print type %s\n", find_value_type(val->type))
+        }
+    }
+    printf("}\n");
 }
 
 void disassemble(VM *vm) {
@@ -355,7 +377,7 @@ void disassemble(VM *vm) {
                     i += 6;
                     break;
                 default:
-                    ERR("ERROR in %s on line %ld: cant disassemble op type %s\n", get_loc, find_op_code(func.code.data[i]));
+                    ERR("ERROR cant disassemble op type %s\n", find_op_code(func.code.data[i]));
             }
         free(line_str);
         line_str = NULL;
@@ -369,714 +391,719 @@ void run(VM *vm) {
     struct timespec tend=(struct timespec){0,0};
     clock_gettime(CLOCK_MONOTONIC, &tstart);
 #endif
-
-    for (int i = 0; i < vm->func->code.index; i++) {
-        Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
+    
+    static void* dispatch_table[] = {
+#define X(x) &&x,
+        ops
+#undef X
+    };
+    Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
 #ifdef PROFILE
-        instr_profiler[frame->index]++;
-        op_profiler[vm->func->code.data[i]]++;
+    instr_profiler[frame->index]++;
+    op_profiler[vm->func->code.data[pc]]++;
 #endif
-        debug("%-6d %s\n", i, find_op_code(vm->func->code.data[i]));
-        switch (vm->func->code.data[i]) {
-            case OP_CONSTANT:{
-                u_int16_t index = read_index;
-                stack_push(vm->func->constants.data[index]);
-                i += 2;
-                break;}
-            case OP_PRINTLN:;
-                Value print = stack_pop;
-                if (print.type == Value_Number) {
-                    printf("%ld\n", print.val.num);
-                } else if (print.type == Value_String) {
-                    printf("%.*s\n", Print(print.val.str));
-                    if (print.mutable == true) free(print.val.str.chars);
-                } else if (print.type == Value_Array) {
-                    print_array(&print, true);
-                    if (print.mutable == true) free_value_array(print.val.array);
-                } else
-                    ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
-                break;
-            case OP_PRINT:{
-                Value print = stack_pop;
-                if (print.type == Value_Number) {
-                    printf("%ld", print.val.num);
-                } else if (print.type == Value_String) {
-                    printf("%.*s", Print(print.val.str));
-                    if (print.mutable == true) free(print.val.str.chars);
-                } else if (print.type == Value_Array) {
-                    print_array(&print, false);
-                    if (print.mutable == true) free_value_array(print.val.array);
-                } else
-                    ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
-                break;}
-            case OP_DEFINE_GLOBAL:;
-                Value name = vm->func->constants.data[read_index];
-                Value value = stack_pop;
+    
+    int pc = -1; 
+#define dispatch() pc++; debug("%-6d %s\n", pc, find_op_code(vm->func->code.data[pc])); goto *dispatch_table[vm->func->code.data[pc]]
+    dispatch();
+    while (1) {
+        OP_CONSTANT:{
+            u_int16_t index = read_index;
+            stack_push(vm->func->constants.data[index]);
+            pc += 2;
+            dispatch();}
+        OP_ARRAY:
+            stack_push(((Value){
+                Value_Array,
+                .val.array=dup_array(vm->func->constants.data[read_index].val.array),
+                true,
+                0
+            }));
+            pc += 2;
+            dispatch();
+        OP_PRINTLN:{
+            Value print = stack_pop;
+            if (print.type == Value_Number) {
+                printf("%ld\n", print.val.num);
+            } else if (print.type == Value_String) {
+                printf("%.*s\n", Print(print.val.str));
+                if (print.mutable == true) free(print.val.str.chars);
+            } else if (print.type == Value_Array) {
+                print_array(&print, true);
+                if (print.mutable == true) free_value_array(print.val.array);
+            } else
+                ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
+            dispatch();}
+        OP_PRINT:{
+            Value print = stack_pop;
+            if (print.type == Value_Number) {
+                printf("%ld", print.val.num);
+            } else if (print.type == Value_String) {
+                printf("%.*s", Print(print.val.str));
+                if (print.mutable == true) free(print.val.str.chars);
+            } else if (print.type == Value_Array) {
+                print_array(&print, false);
+                if (print.mutable == true) free_value_array(print.val.array);
+            } else
+                ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
+            dispatch();}
+        OP_DEFINE_GLOBAL:;
+            Value name = vm->func->constants.data[read_index];
+            Value value = stack_pop;
 
-                Variable *var = calloc(1, sizeof(Variable));
-                var->name = name.val.str.chars;
+            Variable *var = calloc(1, sizeof(Variable));
+            var->name = name.val.str.chars;
 
-                if (value.type == Value_Array && value.mutable == false) {
-                    value.val.array = dup_array(value.val.array);
-                    value.mutable = true;
-                }
-                var->value = value;
+            if (value.type == Value_Array && value.mutable == false) {
+                value.val.array = dup_array(value.val.array);
+                value.mutable = true;
+            }
+            var->value = value;
 
-                bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
-                if (!valid) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str.chars)
+            bool valid = insert_entry(vm->vars, name.hash, Entry_Variable, var);
+            if (!valid) ERR("ERROR in %s on line %ld: cant assign `%s` multiple times\n", get_loc, name.val.str.chars)
 
-                i += 2;
-                break;
-            case OP_ADD:;
-                Value op2 = stack_pop;
-                Value op1 = stack_pop;
+            pc += 2;
+            dispatch();
+        OP_SET_GLOBAL:{
+            Value name = vm->func->constants.data[read_index];
+            Value value = stack_pop;
 
-                if (op1.type == Value_Number && op2.type == Value_Number) {
-                    stack_push(((Value) {
-                        Value_Number,
-                        .val.num=(op1.val.num + op2.val.num),
-                        false,
-                        0
-                    }));
-                } else if (op1.type == Value_Array && op2.type == Value_Array) {
-                    u_int32_t arr1_len = ARRAY_LEN(op1.val.array[0].val.num);
-                    u_int32_t arr2_len = ARRAY_LEN(op2.val.array[0].val.num);
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
+            if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
+            else if (var->value.type == Value_Array && var->value.mutable) {
+                free_value_array(var->value.val.array);
+            } else if (var->value.type == Value_String && var->value.mutable) {
+                free(var->value.val.str.chars);
+            }
 
-                    u_int32_t len = arr1_len + arr2_len - 1;
-                    u_int32_t size = next_power_of_two(len);
+            if (value.type == Value_Array && !value.mutable) {
+                value.val.array = dup_array(value.val.array);
+                value.mutable = true;
+            }
+            var->value = value;
+            pc += 2;
+            dispatch();}
+        OP_GET_GLOBAL:{
+            Value var_name = vm->func->constants.data[read_index];
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+            if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
+            if (var->value.mutable) stack_push(((Value) {
+                var->value.type, 
+                .val.str=var->value.val.str,
+                false,
+                0
+            }));
+            else stack_push(var->value);
+            pc += 2;
+            dispatch();}
+        OP_SET_LOCAL: {
+            pc++;
+            if (frame->slots[vm->func->code.data[pc]].type == Value_String && frame->slots[vm->func->code.data[pc]].mutable) free(frame->slots[vm->func->code.data[pc]].val.str.chars);
+            else if (frame->slots[vm->func->code.data[pc]].type == Value_Array && frame->slots[vm->func->code.data[pc]].mutable) free_value_array(frame->slots[vm->func->code.data[pc]].val.array);
 
-                    Value *array = calloc(size, sizeof(Value));
+            Value val = stack_pop;
+            if (val.type == Value_Array && val.mutable == false) {
+                val.val.array = dup_array(val.val.array);
+                val.mutable = true;
+            }
+            frame->slots[vm->func->code.data[pc]] = val;
+            dispatch();}
+        OP_GET_LOCAL:{
+            pc++;
+            Value val = frame->slots[vm->func->code.data[pc]];
+            if (val.mutable) stack_push(((Value) {
+                val.type, 
+                .val.str=val.val.str,
+                false,
+                0
+            }));
+            else stack_push(val);
+            dispatch();}
+        OP_ADD:{
+            Value op2 = stack_pop;
+            Value op1 = stack_pop;
 
-                    for (u_int32_t i = 1; i < arr1_len; i++) {
-                        array[i] = dup_value(op1.val.array[i]);
-                    }
-
-                    for (u_int32_t i = 1; i < arr2_len; i++) {
-                        array[i + arr1_len - 1] = dup_value(op2.val.array[i]);
-                    }
-
-                    array[0].type = Value_Array;
-                    array[0].val.num = MAKE_ARRAY_INFO(size, len);
-
-                    stack_push(((Value){
-                        Value_Array,
-                        .val.array=array,
-                        true,
-                        0
-                    }));
-                    if (op1.mutable) free_value_array(op1.val.array);
-                    if (op2.mutable) free_value_array(op2.val.array);
-                } else {
-                    char *str1;
-                    char *str2;
-                    int64_t op1_len = 0;
-                    int64_t op2_len = 0;
-                    bool free1 = false;
-                    bool free2 = false;
-
-                    if (op1.type == Value_String) {
-                        op1_len = op1.val.str.len;
-                        str1 = op1.val.str.chars;
-                        if (op1.mutable) free1 = true;
-                    } else if (op1.type == Value_Number) {
-                        op1_len = num_len(op1.val.num);
-                        str1 = format_str(op1_len + 1, "%ld", op1.val.num);
-                        free1 = true;
-                    }
-                    if (op2.type == Value_String) {
-                        op2_len = op2.val.str.len;
-                        str2 = op2.val.str.chars;
-                        if (op2.mutable) free2 = true;
-                    } else if (op2.type == Value_Number) {
-                        op2_len = num_len(op2.val.num);
-                        str2 = format_str(op2_len + 1, "%ld", op2.val.num);
-                        free2 = true;
-                    }
-
-                    stack_push(((Value){
-                        Value_String,
-                        .val.str={format_str(op1_len + op2_len + 1, "%s%s", str1, str2), op1_len + op2_len},
-                        true,
-                        0
-                    }));
-
-                    if (free1) free(str1);
-                    if (free2) free(str2);
-                }
-                break;
-            case OP_SUBTRACT:
-                binary_op(-, "ERROR in %s on line %ld: cant subtract type %s and %s\n");
-            case OP_MULTIPLY:
-                binary_op(*, "ERROR in %s on line %ld: cant multiply type %s and %s\n");
-            case OP_DIVIDE:
-                binary_op(/, "ERROR in %s on line %ld: cant divide type %s and %s\n");
-            case OP_LESS:
-                binary_op(<, "ERROR in %s on line %ld: cant less than type %s and %s\n");
-            case OP_LESS_EQUAL:
-                binary_op(<=, "ERROR in %s on line %ld: cant less equal than type %s and %s\n");
-            case OP_GREATER:
-                binary_op(>, "ERROR in %s on line %ld: cant greater than type %s and %s\n");
-            case OP_GREATER_EQUAL:
-                binary_op(>=, "ERROR in %s on line %ld: cant greater equal than type %s and %s\n");
-            case OP_AND:
-                binary_op(&&, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
-            case OP_OR:
-                binary_op(||, "ERROR in %s on line %ld: cant logical or type %s and %s\n");
-            case OP_MODULO:
-                binary_op(%, "ERROR in %s on line %ld: cant modulo type %s and %s\n");
-            case OP_BIT_AND:
-                binary_op(&, "ERROR in %s on line %ld: cant bitwise and type %s and %s\n");
-            case OP_BIT_OR:
-                binary_op(|, "ERROR in %s on line %ld: cant bitwise or type %s and %s\n");
-            case OP_BIT_XOR:
-                binary_op(^, "ERROR in %s on line %ld: cant bitwise xor type %s and %s\n");
-            case OP_LSHIFT:
-                binary_op(<<, "ERROR in %s on line %ld: cant lshift type %s and %s\n");
-            case OP_RSHIFT:
-                binary_op(>>, "ERROR in %s on line %ld: cant rshift type %s and %s\n");
-            case OP_POWER:{
-                Value op2 = stack_pop;
-                Value op1 = stack_pop;
-                ASSERT((op1.type == Value_Number) && (op2.type == Value_Number), "cant exponentiate type %s and type %s\n", find_value_type(op1.type), find_value_type(op2.type))
+            if (op1.type == Value_Number && op2.type == Value_Number) {
                 stack_push(((Value) {
                     Value_Number,
-                    .val.num=(exponentiate(op1.val.num, op2.val.num)),
-                    false,
-                    0 
-                }));
-                break;}
-            case OP_BIT_NOT:
-                unary_op(~, "ERROR in %s on line %ld: cant bitwise not type %s\n");
-            case OP_NOT:;
-                unary_op(!, "ERROR in %s on line %ld: cant logical not type %s\n");
-            case OP_NOT_EQUAL:{
-                Value op2 = stack_pop;
-                Value op1 = stack_pop;
-
-                if (op1.type == Value_Number && op2.type == Value_Number) {
-                    stack_push(((Value) {
-                        Value_Number,
-                        .val.num=(op1.val.num != op2.val.num),
-                        false,
-                        0
-                    }));
-                } else if (op1.type == Value_String && op2.type == Value_String) {
-                    stack_push(((Value){
-                        Value_Number,
-                        .val.num=!!strcmp(op1.val.str.chars, op2.val.str.chars),
-                        false,
-                        0
-                    }));
-                } else stack_push(((Value){
-                        Value_Number,
-                        .val.num=0,
-                        false,
-                        0
-                    }));
-                if (op1.type == Value_String && op1.mutable) free(op1.val.str.chars);
-                if (op2.type == Value_String && op2.mutable) free(op2.val.str.chars);
-                break;}
-            case OP_IS_EQUAL: {
-                Value op2 = stack_pop;
-                Value op1 = stack_pop;
-
-                if (op1.type == Value_Number && op2.type == Value_Number) {
-                    stack_push(((Value) {
-                        Value_Number,
-                        .val.num=(op1.val.num == op2.val.num),
-                        false,
-                        0
-                    }));
-                } else if (op1.type == Value_String && op2.type == Value_String) {
-                    if (op1.val.str.len != op2.val.str.len) {
-                        stack_push(((Value){
-                            Value_Number,
-                            .val.num=0,
-                            false,
-                            0
-                        }));
-                    } else {
-                        stack_push(((Value){
-                            Value_Number,
-                            .val.num=!strcmp(op1.val.str.chars, op2.val.str.chars),
-                            false,
-                            0
-                        }));
-                    }
-                } else stack_push(((Value){
-                        Value_Number,
-                        .val.num=0,
-                        false,
-                        0
-                    }));
-                if (op1.type == Value_String && op1.mutable) free(op1.val.str.chars);
-                if (op2.type == Value_String && op2.mutable) free(op2.val.str.chars);
-                break;}
-            case OP_SET_GLOBAL:{
-                Value name = vm->func->constants.data[read_index];
-                Value value = stack_pop;
-
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to set nonexistent global %.*s\n", get_loc, Print(name.val.str))
-                else if (var->value.type == Value_Array && var->value.mutable) {
-                    free_value_array(var->value.val.array);
-                } else if (var->value.type == Value_String && var->value.mutable) {
-                    free(var->value.val.str.chars);
-                }
-
-                if (value.type == Value_Array && !value.mutable) {
-                    value.val.array = dup_array(value.val.array);
-                    value.mutable = true;
-                }
-                var->value = value;
-                i += 2;
-                break;}
-            case OP_START_IF:
-            case OP_JUMP_IF_FALSE:{
-                Value val = stack_pop;
-                if (!val.val.num) {
-                    i += read_index - 1;
-                } else {
-                    i += 2;
-                }
-                break;}
-            case OP_JUMP:
-                i = read_index - 1;
-                break;
-            case OP_GET_ELEMENT:{
-                Value array = stack_pop;
-                Value index = stack_pop;
-
-                if (array.type == Value_Array) {
-                    if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %d\n", get_loc, index.val.num, ARRAY_LEN(array.val.array[0].val.num) - 1)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
-
-                    if (array.val.array[index.val.num].type == Value_Identifier) {
-                        stack_push(array);
-                    } else if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) stack_push(((Value) {
-                        Value_String, 
-                        .val.str=array.val.array[index.val.num].val.str,
-                        false,
-                        0
-                    }));
-                    else stack_push(array.val.array[index.val.num]);
-                } else if (array.type == Value_String) {
-                    if (index.val.num > (int64_t)array.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array.val.str))
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array.val.str))
-
-                    stack_push(((Value) {
-                        Value_String,
-                        .val.str={&chars[(array.val.str.chars[index.val.num - 1] - 32) * 2], 1},
-                        false,
-                        0
-                    }));                  
-                } else ERR("ERROR in %s on line %ld: cant get element of type %s\n", get_loc, find_value_type(array.type))
-
-                break;}
-            case OP_SET_ELEMENT_GLOBAL:{
-                Value new_val = stack_pop;
-                Value index = stack_pop;
-
-                Value var_name = vm->func->constants.data[read_index];
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
-                if (!var) ERR("ERROR in %s on line %ld: tried to set element of nonexistent array %.*s\n", get_loc, Print(var_name.val.str))
-
-                Value *array = &var->value;
-                if (!array->mutable && array->type == Value_Array) {
-                    array->val.array = dup_array(array->val.array);
-                    array->mutable = true;
-                }
-
-                if (array->type == Value_String) {
-                    if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
-
-                    array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
-                } else if (array->type == Value_Array) {
-                    if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
-
-                    if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
-                    array->val.array[index.val.num] = new_val;
-                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
-
-                i += 2;
-                break;}
-            case OP_SET_ELEMENT_LOCAL:{
-                Value new_val = stack_pop;
-                Value index = stack_pop;
-
-                Value *array = &frame->slots[vm->func->code.data[i + 1]];
-                if (!array->mutable && array->type == Value_Array) {
-                    array->val.array = dup_array(array->val.array);
-                    array->mutable = true;
-                }
-
-                if (array->type == Value_String) {
-                    if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
-
-                    array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
-                } else if (array->type == Value_Array) {
-                    if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
-                    else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
-
-                    if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
-                    array->val.array[index.val.num] = new_val;
-                } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
-                
-                i++;
-                break;}
-            case OP_GET_GLOBAL:{
-                Value var_name = vm->func->constants.data[read_index];
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
-                if (var->value.mutable) stack_push(((Value) {
-                    var->value.type, 
-                    .val.str=var->value.val.str,
+                    .val.num=(op1.val.num + op2.val.num),
                     false,
                     0
                 }));
-                else stack_push(var->value);
-                i += 2;
-                break;}
-            case OP_GET_LOCAL: {
-                i++;
-                Value val = frame->slots[vm->func->code.data[i]];
-                if (val.mutable) stack_push(((Value) {
-                    val.type, 
-                    .val.str=val.val.str,
-                    false,
-                    0
-                }));
-                else stack_push(val);
-                break;}
-            case OP_SET_LOCAL: {
-                i++;
-                if (frame->slots[vm->func->code.data[i]].type == Value_String && frame->slots[vm->func->code.data[i]].mutable) free(frame->slots[vm->func->code.data[i]].val.str.chars);
-                else if (frame->slots[vm->func->code.data[i]].type == Value_Array && frame->slots[vm->func->code.data[i]].mutable) free_value_array(frame->slots[vm->func->code.data[i]].val.array);
+            } else if (op1.type == Value_Array && op2.type == Value_Array) {
+                u_int32_t arr1_len = ARRAY_LEN(op1.val.array[0].val.num);
+                u_int32_t arr2_len = ARRAY_LEN(op2.val.array[0].val.num);
 
-                Value val = stack_pop;
-                if (val.type == Value_Array && val.mutable == false) {
-                    val.val.array = dup_array(val.val.array);
-                    val.mutable = true;
-                }
-                frame->slots[vm->func->code.data[i]] = val;
-                break;}
-            case OP_POP:
-                for (Value *val = vm->stack_top; val > frame->slots; val--) 
-                    if (val->type == Value_Array) {
-                        Value *array = val->val.array;
-                        u_int32_t len = ARRAY_LEN(array[0].val.num);
-                        for (u_int32_t j = 1; j < len; j++) {
-                            if (array[j].type == Value_String && array[j].mutable)
-                                free(array[j].val.str.chars);
-                        }
-                        free(array);
-                        val->mutable = false;
-                    }
+                u_int32_t len = arr1_len + arr2_len - 1;
+                u_int32_t size = next_power_of_two(len);
 
-                i += 2;
-                break;
-            case OP_CAST_STR:{
-                Value val = stack_pop;
-                if (val.type == Value_String) stack_push(val);
-                else if (val.type == Value_Number) {
-                    int len = num_len(val.val.num);
-                    stack_push(((Value) {
-                        Value_String, 
-                        .val.str={format_str(len + 1, "%ld", val.val.num), len},
-                        true,
-                        0
-                    }));
-                } else ERR("ERROR in %s on line %ld: cant cast type %s as string\n", get_loc, find_value_type(val.type))
-                break;}
-            case OP_CAST_NUM:{
-                Value val = stack_pop;
-                if (val.type == Value_Number) stack_push(val);
-                else if (val.type == Value_String) {
-                    stack_push(((Value) {
-                        Value_Number,
-                        .val.num=strtoint(val.val.str.chars, val.val.str.len),
-                        false,
-                        0
-                    }));
-                    if (val.mutable) free(val.val.str.chars);
-                } else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
-                break;}
-            case OP_CALL:{
-                vm->call_stack[vm->call_stack_count - 1].return_index = i + 2;
-                if (vm->call_stack_count >= CALL_STACK_SIZE) ERR("ERROR in %s on line %ld: call stack overflow\n", get_loc)
-                Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
-                frame->func = &vm->funcs.data[read_index];
-                frame->slots = vm->stack_top - frame->func->arity;
-                frame->loc = vm->func->locs.data[i];
-                #ifdef PROFILE
-                clock_gettime(CLOCK_MONOTONIC, &tend);
-                time_profiler[vm->call_stack[vm->call_stack_count - 2].index]
-                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-                clock_gettime(CLOCK_MONOTONIC, &tstart);
+                Value *array = calloc(size, sizeof(Value));
 
-                frame->index = read_index;
-                #endif
-                vm->func = &vm->funcs.data[read_index];
-                i = -1;
-                break;}
-            case OP_RETURN:{
-                #ifdef PROFILE
-                clock_gettime(CLOCK_MONOTONIC, &tend);
-                time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
-                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-                clock_gettime(CLOCK_MONOTONIC, &tstart);
-                #endif
-
-                Value result = stack_pop;
-                if ((result.type == Value_Array) && !result.mutable) {
-                    result.val.array = dup_array(result.val.array);
-                    result.mutable = true;
-                } else if (result.type == Value_String && !result.mutable) {
-                    result.val.str.chars = strdup(result.val.str.chars);
-                    result.mutable = true;
+                for (u_int32_t i = 1; i < arr1_len; pc++) {
+                    array[pc] = dup_value(op1.val.array[pc]);
                 }
 
-                for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if (val->mutable) {
-                        val->mutable = false;
-                        if (val->type == Value_Array)
-                            free_value_array(val->val.array);
-                        else if (val->type == Value_String)
-                            free(val->val.str.chars);
-                        else
-                            ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
-                    }
+                for (u_int32_t i = 1; i < arr2_len; pc++) {
+                    array[i + arr1_len - 1] = dup_value(op2.val.array[pc]);
                 }
 
-                vm->call_stack_count--;
-                vm->stack_top = frame->slots;
-                frame = &vm->call_stack[vm->call_stack_count - 1];
-                vm->func = frame->func;
-                i = frame->return_index;
+                array[0].type = Value_Array;
+                array[0].val.num = MAKE_ARRAY_INFO(size, len);
 
-                stack_push(result);
-                break;}
-            case OP_RETURN_NOTHING:{
-                #ifdef PROFILE
-                clock_gettime(CLOCK_MONOTONIC, &tend);
-                time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
-                    += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
-                       ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-                clock_gettime(CLOCK_MONOTONIC, &tstart);
-                #endif
-
-                for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
-                    if (val->mutable) {
-                        val->mutable = false;
-                        if (val->type == Value_Array)
-                            free_value_array(val->val.array);
-                        else if (val->type == Value_String)
-                            free(val->val.str.chars);
-                        else
-                            ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
-                    }
-                }
-
-                vm->call_stack_count--;
-                vm->stack_top = frame->slots;
-                frame = &vm->call_stack[vm->call_stack_count - 1];
-                vm->func = frame->func;
-                i = frame->return_index;
-                break;}
-            case OP_APPEND_GLOBAL:{
-                Value val = stack_pop;
-                Value appendee = stack_pop;
-
-                Value *array = appendee.val.array;
-
-                u_int32_t len = ARRAY_LEN(array[0].val.num);
-                u_int32_t size = ARRAY_SIZE(array[0].val.num);
-
-                if (len >= size) {
-                    size *= 2;
-                    array = realloc(array, size * sizeof(Value));
-                }
-
-                array[len] = val;
-
-                array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
-
-                appendee.val.array = array;
-                appendee.mutable = true;
-
-                Value name = vm->func->constants.data[read_index];
-
-                Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
-                if (var == NULL) ERR("ERROR in %s on line %ld: tried to get append to nonexistent variable %.*s\n", get_loc, Print(name.val.str));
-
-                var->value = appendee;
-
-                i += 2;
-                break;}
-            case OP_APPEND_LOCAL:{
-                Value val = stack_pop;
-                Value appendee = stack_pop;
-
-                Value *array = appendee.val.array;
-
-                u_int32_t len = ARRAY_LEN(array[0].val.num);
-                u_int32_t size = ARRAY_SIZE(array[0].val.num);
-
-                if (len >= size) {
-                    size *= 2;
-                    array = realloc(array, size * sizeof(Value));
-                }
-
-                array[len] = val;
-
-                array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
-
-                appendee.val.array = array;
-                appendee.mutable = true;
-                
-                frame->slots[vm->func->code.data[++i]] = appendee;
-
-                break;}
-            case OP_BREAK:{
-                i += read_index - 1;
-                break;}
-            case OP_CONTINUE:{
-                i = read_index - 1;
-                break;}
-            case OP_FOR:{
-                Value array = stack_pop;
-                Value *index = &vm->func->constants.data[read_index];
-                i += 2;
-                Value *local = &frame->slots[vm->func->code.data[++i]];
-                if (array.type == Value_Array) {
-                    u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
-                    if (len < 2) {i -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
-                    if (index->val.num == 1) {
-                        stack_push(array.val.array[1]);
-                    } else if (index->val.num >= len) {
-                        index->val.num = 0;
-                        i = read_index + 3;
-                        vm->stack_top--;
-                    } else {
-                        *local = array.val.array[index->val.num];
-                    }
-                } else if (array.type == Value_String) {
-                    if (index->val.num == 1) {
-                        stack_push(((Value){
-                            Value_String,
-                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
-                            false,
-                            0
-                        }));
-                    } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
-                        index->val.num = 0;
-                        i = read_index + 3;
-                        vm->stack_top--;
-                    } else {
-                        *local = (Value){
-                            Value_String,
-                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
-                            false,
-                            0
-                        };
-                    }
-                } else {
-                    i -= 3;
-                    ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
-                } 
-                index->val.num++;
-                i += 2;
-                break;}
-            case OP_EXIT:{
-                Value val = stack_pop;
-                free_mem(val.val.num);
-                break;}
-            case OP_ARRAY:{
                 stack_push(((Value){
                     Value_Array,
-                    .val.array=dup_array(vm->func->constants.data[read_index].val.array),
+                    .val.array=array,
                     true,
                     0
                 }));
-                i += 2;
-                break;}
-            case OP_CALL_NATIVE:{
-                Native native = natives[read_index];
-                Value result = native(vm->stack_top - native_arities[read_index], make_loc(get_loc));
-                vm->stack_top -= native_arities[read_index];
-                stack_push(result);
-                i += 2;
-                break;}
-            case OP_ENUMERATE:{
-                Value array = stack_pop;
-                Value *index = &vm->func->constants.data[read_index];
-                i += 2;
-                Value *index_var = &frame->slots[vm->func->code.data[++i]];
-                Value *local = &frame->slots[vm->func->code.data[++i]];
-                
-                if (index->val.num > 1)
-                    if (index_var->val.num != (index->val.num - 1))
-                        index->val.num = index_var->val.num + 1;
+                if (op1.mutable) free_value_array(op1.val.array);
+                if (op2.mutable) free_value_array(op2.val.array);
+            } else {
+                char *str1;
+                char *str2;
+                int64_t op1_len = 0;
+                int64_t op2_len = 0;
+                bool free1 = false;
+                bool free2 = false;
 
-                if (array.type == Value_Array) {
-                    u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
-                    if (len < 2) {i -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
-                    if (index->val.num == 1) {
-                        stack_push(((Value){
-                            Value_Number,
-                            .val.num=1,
-                            false,
-                            0
-                        }));
-                        stack_push(array.val.array[1]);
-                    } else if (index->val.num >= len) {
-                        index->val.num = 0;
-                        i = read_index + 3;
-                        vm->stack_top -= 2;
-                    } else {
-                        index_var->val.num = index->val.num;
-                        *local = array.val.array[index->val.num];
-                    }
-                } else if (array.type == Value_String) {
-                    if (index->val.num == 1) {
-                        stack_push(((Value){
-                            Value_Number,
-                            .val.num=1,
-                            false,
-                            0
-                        }));
-                        stack_push(((Value){
-                            Value_String,
-                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
-                            false,
-                            0
-                        }));
-                    } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
-                        index->val.num = 0;
-                        i = read_index + 3;
-                        vm->stack_top -= 2;
-                    } else {
-                        index_var->val.num = index->val.num;
-                        *local = (Value){
-                            Value_String,
-                            .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
-                            false,
-                            0
-                        };
-                    }
+                if (op1.type == Value_String) {
+                    op1_len = op1.val.str.len;
+                    str1 = op1.val.str.chars;
+                    if (op1.mutable) free1 = true;
+                } else if (op1.type == Value_Number) {
+                    op1_len = num_len(op1.val.num);
+                    str1 = format_str(op1_len + 1, "%ld", op1.val.num);
+                    free1 = true;
+                }
+                if (op2.type == Value_String) {
+                    op2_len = op2.val.str.len;
+                    str2 = op2.val.str.chars;
+                    if (op2.mutable) free2 = true;
+                } else if (op2.type == Value_Number) {
+                    op2_len = num_len(op2.val.num);
+                    str2 = format_str(op2_len + 1, "%ld", op2.val.num);
+                    free2 = true;
+                }
+
+                stack_push(((Value){
+                    Value_String,
+                    .val.str={format_str(op1_len + op2_len + 1, "%s%s", str1, str2), op1_len + op2_len},
+                    true,
+                    0
+                }));
+
+                if (free1) free(str1);
+                if (free2) free(str2);
+            }
+            dispatch();}
+        OP_SUBTRACT:
+            binary_op(-, "ERROR in %s on line %ld: cant subtract type %s and %s\n");
+        OP_MULTIPLY:
+            binary_op(*, "ERROR in %s on line %ld: cant multiply type %s and %s\n");
+        OP_DIVIDE:
+            binary_op(/, "ERROR in %s on line %ld: cant divide type %s and %s\n");
+        OP_MODULO:
+            binary_op(%, "ERROR in %s on line %ld: cant modulo type %s and %s\n");
+        OP_BIT_AND:
+            binary_op(&, "ERROR in %s on line %ld: cant bitwise and type %s and %s\n");
+        OP_BIT_OR:
+            binary_op(|, "ERROR in %s on line %ld: cant bitwise or type %s and %s\n");
+        OP_BIT_XOR:
+            binary_op(^, "ERROR in %s on line %ld: cant bitwise xor type %s and %s\n");
+        OP_BIT_NOT:
+            unary_op(~, "ERROR in %s on line %ld: cant bitwise not type %s\n");
+        OP_LSHIFT:
+            binary_op(<<, "ERROR in %s on line %ld: cant lshift type %s and %s\n");
+        OP_RSHIFT:
+            binary_op(>>, "ERROR in %s on line %ld: cant rshift type %s and %s\n");
+        OP_POWER:{
+            Value op2 = stack_pop;
+            Value op1 = stack_pop;
+            ASSERT((op1.type == Value_Number) && (op2.type == Value_Number), "cant exponentiate type %s and type %s\n", find_value_type(op1.type), find_value_type(op2.type))
+            stack_push(((Value) {
+                Value_Number,
+                .val.num=(exponentiate(op1.val.num, op2.val.num)),
+                false,
+                0 
+            }));
+            dispatch();}
+        OP_LESS:
+            binary_op(<, "ERROR in %s on line %ld: cant less than type %s and %s\n");
+        OP_LESS_EQUAL:
+            binary_op(<=, "ERROR in %s on line %ld: cant less equal than type %s and %s\n");
+        OP_GREATER:
+            binary_op(>, "ERROR in %s on line %ld: cant greater than type %s and %s\n");
+        OP_GREATER_EQUAL:
+            binary_op(>=, "ERROR in %s on line %ld: cant greater equal than type %s and %s\n");
+        OP_IS_EQUAL: {
+            Value op2 = stack_pop;
+            Value op1 = stack_pop;
+
+            if (op1.type == Value_Number && op2.type == Value_Number) {
+                stack_push(((Value) {
+                    Value_Number,
+                    .val.num=(op1.val.num == op2.val.num),
+                    false,
+                    0
+                }));
+            } else if (op1.type == Value_String && op2.type == Value_String) {
+                if (op1.val.str.len != op2.val.str.len) {
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=0,
+                        false,
+                        0
+                    }));
                 } else {
-                    i -= 3;
-                    ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
-                } 
-                index->val.num++;
-                i += 2;
-                break;}
-            default: ERR("ERROR in %s on line %ld: cant do %s\n", get_loc, find_op_code(vm->func->code.data[i]))
-        }
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=!strcmp(op1.val.str.chars, op2.val.str.chars),
+                        false,
+                        0
+                    }));
+                }
+            } else stack_push(((Value){
+                    Value_Number,
+                    .val.num=0,
+                    false,
+                    0
+                }));
+            if (op1.type == Value_String && op1.mutable) free(op1.val.str.chars);
+            if (op2.type == Value_String && op2.mutable) free(op2.val.str.chars);
+            dispatch();}
+        OP_AND:
+            binary_op(&&, "ERROR in %s on line %ld: cant logical and type %s and %s\n");
+        OP_OR:
+            binary_op(||, "ERROR in %s on line %ld: cant logical or type %s and %s\n");
+        OP_NOT:;
+            unary_op(!, "ERROR in %s on line %ld: cant logical not type %s\n");
+        OP_NOT_EQUAL:{
+            Value op2 = stack_pop;
+            Value op1 = stack_pop;
+
+            if (op1.type == Value_Number && op2.type == Value_Number) {
+                stack_push(((Value) {
+                    Value_Number,
+                    .val.num=(op1.val.num != op2.val.num),
+                    false,
+                    0
+                }));
+            } else if (op1.type == Value_String && op2.type == Value_String) {
+                stack_push(((Value){
+                    Value_Number,
+                    .val.num=!!strcmp(op1.val.str.chars, op2.val.str.chars),
+                    false,
+                    0
+                }));
+            } else stack_push(((Value){
+                    Value_Number,
+                    .val.num=0,
+                    false,
+                    0
+                }));
+            if (op1.type == Value_String && op1.mutable) free(op1.val.str.chars);
+            if (op2.type == Value_String && op2.mutable) free(op2.val.str.chars);
+            dispatch();}
+        OP_JUMP_IF_FALSE:
+        OP_START_IF:{
+            Value val = stack_pop;
+            if (!val.val.num) {
+                pc += read_index - 1;
+            } else {
+                pc += 2;
+            }
+            dispatch();}
+        OP_JUMP:
+            pc = read_index - 1;
+            dispatch();
+        OP_GET_ELEMENT:{
+            Value array = stack_pop;
+            Value index = stack_pop;
+
+            if (array.type == Value_Array) {
+                if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %d\n", get_loc, index.val.num, ARRAY_LEN(array.val.array[0].val.num) - 1)
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+
+                if (array.val.array[index.val.num].type == Value_Identifier) {
+                    stack_push(array);
+                } else if (array.val.array[index.val.num].type == Value_String && array.val.array[index.val.num].mutable) stack_push(((Value) {
+                    Value_String, 
+                    .val.str=array.val.array[index.val.num].val.str,
+                    false,
+                    0
+                }));
+                else stack_push(array.val.array[index.val.num]);
+            } else if (array.type == Value_String) {
+                if (index.val.num > (int64_t)array.val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array.val.str))
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array.val.str))
+
+                stack_push(((Value) {
+                    Value_String,
+                    .val.str={&chars[(array.val.str.chars[index.val.num - 1] - 32) * 2], 1},
+                    false,
+                    0
+                }));                  
+            } else ERR("ERROR in %s on line %ld: cant get element of type %s\n", get_loc, find_value_type(array.type))
+
+            dispatch();}
+        OP_SET_ELEMENT_GLOBAL:{
+            Value new_val = stack_pop;
+            Value index = stack_pop;
+
+            Value var_name = vm->func->constants.data[read_index];
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+            if (!var) ERR("ERROR in %s on line %ld: tried to set element of nonexistent array %.*s\n", get_loc, Print(var_name.val.str))
+
+            Value *array = &var->value;
+            if (!array->mutable && array->type == Value_Array) {
+                array->val.array = dup_array(array->val.array);
+                array->mutable = true;
+            }
+
+            if (array->type == Value_String) {
+                if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
+
+                array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
+            } else if (array->type == Value_Array) {
+                if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+
+                if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
+                array->val.array[index.val.num] = new_val;
+            } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
+
+            pc += 2;
+            dispatch();}
+        OP_SET_ELEMENT_LOCAL:{
+            Value new_val = stack_pop;
+            Value index = stack_pop;
+
+            Value *array = &frame->slots[vm->func->code.data[pc + 1]];
+            if (!array->mutable && array->type == Value_Array) {
+                array->val.array = dup_array(array->val.array);
+                array->mutable = true;
+            }
+
+            if (array->type == Value_String) {
+                if (index.val.num > (int64_t)array->val.str.len) ERR("ERROR in %s on line %ld: index %ld out of bounds for `%.*s`\n", get_loc, index.val.num, Print(array->val.str))
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access `%.*s` at index less than 1\n", get_loc, Print(array->val.str))
+
+                array->val.str.chars[index.val.num - 1] = new_val.val.str.chars[0];
+            } else if (array->type == Value_Array) {
+                if (index.val.num >= ARRAY_LEN(array->val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds\n", get_loc, index.val.num)
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+
+                if (array->val.array[index.val.num].type == Value_String && array->val.array[index.val.num].mutable) free(array->val.array[index.val.num].val.str.chars);
+                array->val.array[index.val.num] = new_val;
+            } else ERR("ERROR in %s on line %ld: cant set element to type %s\n", get_loc, find_value_type(array->type))
+            
+            pc++;
+            dispatch();}
+        OP_APPEND_GLOBAL:{
+            Value val = stack_pop;
+            Value appendee = stack_pop;
+
+            Value *array = appendee.val.array;
+
+            u_int32_t len = ARRAY_LEN(array[0].val.num);
+            u_int32_t size = ARRAY_SIZE(array[0].val.num);
+
+            if (len >= size) {
+                size *= 2;
+                array = realloc(array, size * sizeof(Value));
+            }
+
+            array[len] = val;
+
+            array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
+
+            appendee.val.array = array;
+            appendee.mutable = true;
+
+            Value name = vm->func->constants.data[read_index];
+
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, name.hash)->value;
+            if (var == NULL) ERR("ERROR in %s on line %ld: tried to get append to nonexistent variable %.*s\n", get_loc, Print(name.val.str));
+
+            var->value = appendee;
+
+            pc += 2;
+            dispatch();}
+        OP_APPEND_LOCAL:{
+            Value val = stack_pop;
+            Value appendee = stack_pop;
+
+            Value *array = appendee.val.array;
+
+            u_int32_t len = ARRAY_LEN(array[0].val.num);
+            u_int32_t size = ARRAY_SIZE(array[0].val.num);
+
+            if (len >= size) {
+                size *= 2;
+                array = realloc(array, size * sizeof(Value));
+            }
+
+            array[len] = val;
+
+            array[0].val.num = MAKE_ARRAY_INFO(size, (len + 1));
+
+            appendee.val.array = array;
+            appendee.mutable = true;
+            
+            frame->slots[vm->func->code.data[++pc]] = appendee;
+
+            dispatch();}
+        OP_POP:
+            for (Value *val = vm->stack_top; val > frame->slots; val--) 
+                if (val->type == Value_Array) {
+                    Value *array = val->val.array;
+                    u_int32_t len = ARRAY_LEN(array[0].val.num);
+                    for (u_int32_t j = 1; j < len; j++) {
+                        if (array[j].type == Value_String && array[j].mutable)
+                            free(array[j].val.str.chars);
+                    }
+                    free(array);
+                    val->mutable = false;
+                }
+
+            pc += 2;
+            dispatch();
+        OP_CAST_STR:{
+            Value val = stack_pop;
+            if (val.type == Value_String) stack_push(val);
+            else if (val.type == Value_Number) {
+                int len = num_len(val.val.num);
+                stack_push(((Value) {
+                    Value_String, 
+                    .val.str={format_str(len + 1, "%ld", val.val.num), len},
+                    true,
+                    0
+                }));
+            } else ERR("ERROR in %s on line %ld: cant cast type %s as string\n", get_loc, find_value_type(val.type))
+            dispatch();}
+        OP_CAST_NUM:{
+            Value val = stack_pop;
+            if (val.type == Value_Number) stack_push(val);
+            else if (val.type == Value_String) {
+                stack_push(((Value) {
+                    Value_Number,
+                    .val.num=strtoint(val.val.str.chars, val.val.str.len),
+                    false,
+                    0
+                }));
+                if (val.mutable) free(val.val.str.chars);
+            } else ERR("ERROR in %s on line %ld: cant cast type %s as number\n", get_loc, find_value_type(val.type))
+            dispatch();}
+        OP_CALL:{
+            vm->call_stack[vm->call_stack_count - 1].return_index = pc + 2;
+            if (vm->call_stack_count >= CALL_STACK_SIZE) ERR("ERROR in %s on line %ld: call stack overflow\n", get_loc)
+            Call_Frame *frame = &vm->call_stack[vm->call_stack_count++];
+            frame->func = &vm->funcs.data[read_index];
+            frame->slots = vm->stack_top - frame->func->arity;
+            frame->loc = vm->func->locs.data[pc];
+            #ifdef PROFILE
+            clock_gettime(CLOCK_MONOTONIC, &tend);
+            time_profiler[vm->call_stack[vm->call_stack_count - 2].index]
+                += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                   ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+            clock_gettime(CLOCK_MONOTONIC, &tstart);
+
+            frame->index = read_index;
+            #endif
+            vm->func = &vm->funcs.data[read_index];
+            pc = -1;
+            dispatch();}
+        OP_CALL_NATIVE:{
+            Native native = natives[read_index];
+            Value result = native(vm->stack_top - native_arities[read_index], make_loc(get_loc));
+            vm->stack_top -= native_arities[read_index];
+            stack_push(result);
+            pc += 2;
+            dispatch();}
+        OP_RETURN:{
+            #ifdef PROFILE
+            clock_gettime(CLOCK_MONOTONIC, &tend);
+            time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
+                += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                   ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+            clock_gettime(CLOCK_MONOTONIC, &tstart);
+            #endif
+
+            Value result = stack_pop;
+            if ((result.type == Value_Array) && !result.mutable) {
+                result.val.array = dup_array(result.val.array);
+                result.mutable = true;
+            } else if (result.type == Value_String && !result.mutable) {
+                result.val.str.chars = strdup(result.val.str.chars);
+                result.mutable = true;
+            }
+
+            for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
+                if (val->mutable) {
+                    val->mutable = false;
+                    if (val->type == Value_Array)
+                        free_value_array(val->val.array);
+                    else if (val->type == Value_String)
+                        free(val->val.str.chars);
+                    else
+                        ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
+                }
+            }
+
+            vm->call_stack_count--;
+            vm->stack_top = frame->slots;
+            frame = &vm->call_stack[vm->call_stack_count - 1];
+            vm->func = frame->func;
+            pc = frame->return_index;
+
+            stack_push(result);
+            dispatch();}
+        OP_RETURN_NOTHING:{
+            #ifdef PROFILE
+            clock_gettime(CLOCK_MONOTONIC, &tend);
+            time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
+                += ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - 
+                   ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+            clock_gettime(CLOCK_MONOTONIC, &tstart);
+            #endif
+
+            for (Value *val = vm->stack_top - 1; val >= frame->slots; val--) {
+                if (val->mutable) {
+                    val->mutable = false;
+                    if (val->type == Value_Array)
+                        free_value_array(val->val.array);
+                    else if (val->type == Value_String)
+                        free(val->val.str.chars);
+                    else
+                        ERR("ERROR in %s on line %ld: cant handle mutable function arg type %s\n", get_loc, find_value_type(val->type));
+                }
+            }
+
+            vm->call_stack_count--;
+            vm->stack_top = frame->slots;
+            frame = &vm->call_stack[vm->call_stack_count - 1];
+            vm->func = frame->func;
+            pc = frame->return_index;
+            dispatch();}
+        OP_BREAK:{
+            pc += read_index - 1;
+            dispatch();}
+        OP_CONTINUE:{
+            pc = read_index - 1;
+            dispatch();}
+        OP_FOR:{
+            Value array = stack_pop;
+            Value *index = &vm->func->constants.data[read_index];
+            pc += 2;
+            Value *local = &frame->slots[vm->func->code.data[++pc]];
+            if (array.type == Value_Array) {
+                u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
+                if (len < 2) {pc -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
+                if (index->val.num == 1) {
+                    stack_push(array.val.array[1]);
+                } else if (index->val.num >= len) {
+                    index->val.num = 0;
+                    pc = read_index + 3;
+                    vm->stack_top--;
+                } else {
+                    *local = array.val.array[index->val.num];
+                }
+            } else if (array.type == Value_String) {
+                if (index->val.num == 1) {
+                    stack_push(((Value){
+                        Value_String,
+                        .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                        false,
+                        0
+                    }));
+                } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
+                    index->val.num = 0;
+                    pc = read_index + 3;
+                    vm->stack_top--;
+                } else {
+                    *local = (Value){
+                        Value_String,
+                        .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                        false,
+                        0
+                    };
+                }
+            } else {
+                pc -= 3;
+                ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
+            } 
+            index->val.num++;
+            pc += 2;
+            dispatch();}
+        OP_ENUMERATE:{
+            Value array = stack_pop;
+            Value *index = &vm->func->constants.data[read_index];
+            pc += 2;
+            Value *index_var = &frame->slots[vm->func->code.data[++pc]];
+            Value *local = &frame->slots[vm->func->code.data[++pc]];
+            
+            if (index->val.num > 1)
+                if (index_var->val.num != (index->val.num - 1))
+                    index->val.num = index_var->val.num + 1;
+
+            if (array.type == Value_Array) {
+                u_int32_t len = ARRAY_LEN(array.val.array[0].val.num);
+                if (len < 2) {pc -= 3; ERR("ERROR in %s on line %ld: tried to iterate through array with no elements\n", get_loc)}
+                if (index->val.num == 1) {
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=1,
+                        false,
+                        0
+                    }));
+                    stack_push(array.val.array[1]);
+                } else if (index->val.num >= len) {
+                    index->val.num = 0;
+                    pc = read_index + 3;
+                    vm->stack_top -= 2;
+                } else {
+                    index_var->val.num = index->val.num;
+                    *local = array.val.array[index->val.num];
+                }
+            } else if (array.type == Value_String) {
+                if (index->val.num == 1) {
+                    stack_push(((Value){
+                        Value_Number,
+                        .val.num=1,
+                        false,
+                        0
+                    }));
+                    stack_push(((Value){
+                        Value_String,
+                        .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                        false,
+                        0
+                    }));
+                } else if (index->val.num >= (int64_t)array.val.str.len + 1) {
+                    index->val.num = 0;
+                    pc = read_index + 3;
+                    vm->stack_top -= 2;
+                } else {
+                    index_var->val.num = index->val.num;
+                    *local = (Value){
+                        Value_String,
+                        .val.str={&chars[(array.val.str.chars[index->val.num - 1] - 32) * 2], 1},
+                        false,
+                        0
+                    };
+                }
+            } else {
+                pc -= 3;
+                ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
+            } 
+            index->val.num++;
+            pc += 2;
+            dispatch();}
+        OP_EXIT:{
+            Value val = stack_pop;
+            free_mem(val.val.num);
+            dispatch();}
     }
 }
