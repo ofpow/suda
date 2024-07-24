@@ -21,7 +21,6 @@
  * <terminal> : <literal>
  * <array access> : <array variable> "@" <expr>
  * <function call> : <function> "(" <expr> "," <expr> "," ... ")"
- * <len> : "len" <string or array variable>
  * <cast_num> : num <expr>
  * <cast_str> : str <expr>
  * 
