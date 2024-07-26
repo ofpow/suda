@@ -540,12 +540,12 @@ void run(VM *vm) {
 
                 Value *array = calloc(size, sizeof(Value));
 
-                for (u_int32_t i = 1; i < arr1_len; pc++) {
-                    array[pc] = dup_value(op1.val.array[pc]);
+                for (u_int32_t i = 1; i < arr1_len; i++) {
+                    array[i] = dup_value(op1.val.array[i]);
                 }
 
-                for (u_int32_t i = 1; i < arr2_len; pc++) {
-                    array[i + arr1_len - 1] = dup_value(op2.val.array[pc]);
+                for (u_int32_t i = 1; i < arr2_len; i++) {
+                    array[i + arr1_len - 1] = dup_value(op2.val.array[i]);
                 }
 
                 array[0].type = Value_Array;
