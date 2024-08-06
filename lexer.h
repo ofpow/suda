@@ -44,7 +44,6 @@ void shunt(char* dest, char* src) {
     X(Tok_Break)\
     X(Tok_Comment)\
     X(Tok_Is_Equal)\
-    X(Tok_Exit)\
     X(Tok_Modulo)\
     X(Tok_Elif)\
     X(Tok_Bit_And)\
@@ -211,8 +210,6 @@ static Token_Type id_type(Lexer *l) {
         case 'e':
             if (l->current - l->start > 1) {
                 switch (l->start[1]) {
-                    case 'x':
-                        return check_keyword(2, 2, "it", Tok_Exit, l);
                     case 'l':
                         if (l->current - l->start > 2) {
                             switch (l->start[2]) {
@@ -375,7 +372,7 @@ Token scan_token(Lexer *l) {
             ERR("ERROR: Unknown character on line %ld:   %c\n", l->line, c)
     }
     ERR("Unknown character on line %ld:   %c\n", l->line, c)
-    exit(1);
+    return (Token){0};
 }
 
 Token *lex_file(const char *file_path, String_Array *programs, String_Array *include_paths) {

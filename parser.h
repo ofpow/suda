@@ -62,7 +62,6 @@
     X(AST_Return)\
     X(AST_Fn_Call)\
     X(AST_Break)\
-    X(AST_Exit)\
     X(AST_Continue)\
     X(AST_And)\
     X(AST_Or)\
@@ -128,7 +127,6 @@ AST_Type tok_to_ast(Token_Type type, int64_t line, const char *file) {
         case Tok_If: return AST_If;
         case Tok_While: return AST_While;
         case Tok_Return: return AST_Return;
-        case Tok_Exit: return AST_Exit;
         case Tok_Break: return AST_Break;
         case Tok_Continue: return AST_Continue;
         case Tok_Semicolon: return AST_Semicolon;
@@ -516,7 +514,6 @@ Node *statement(Parser *p) {
         case Tok_If:
         case Tok_While:
         case Tok_Return:
-        case Tok_Exit:
         case Tok_Elif:
             n = new_node(tok_to_ast(CURRENT_TOK.type, CURRENT_TOK.line, CURRENT_TOK.file), NULL, -1, CURRENT_TOK.line, CURRENT_TOK.file);
             p->tok_index++;

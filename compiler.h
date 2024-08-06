@@ -84,7 +84,6 @@ int exponentiate(int base, int64_t power) {
     X(OP_CONTINUE)\
     X(OP_FOR)\
     X(OP_ENUMERATE)\
-    X(OP_EXIT)\
 
 #ifdef PROFILE
 #define X(x) 0,
@@ -692,10 +691,6 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 append_code(0, INVALID_LOC);
                 c->depth++;
                 break;}
-            case AST_Exit:
-                compile_expr(nodes[i]->left, c);
-                append_code(OP_EXIT, current_loc(nodes[i]));
-                break;
             default: ERR("ERROR in %s on line %ld: cant compile node type %s\n", nodes[i]->file, nodes[i]->line, find_ast_type(nodes[i]->type))
         }
     }

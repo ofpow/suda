@@ -363,9 +363,6 @@ void disassemble(VM *vm) {
                             COMBYTE(func.code.data[i + 4], func.code.data[i + 5]));
                     i += 5;
                     break;
-                case OP_EXIT:
-                    printf("%-6d %s OP_EXIT\n", i, line_str);
-                    break;
                 case OP_ARRAY:
                     printf("%-6d %s OP_ARRAY:             index %d\n", i, line_str, COMBYTE(func.code.data[i + 1], func.code.data[i + 2]));
                     i += 2;
@@ -1100,10 +1097,6 @@ void run(VM *vm) {
             } 
             index->val.num++;
             pc += 2;
-            dispatch();}
-        OP_EXIT:{
-            Value val = stack_pop;
-            free_mem(val.val.num);
             dispatch();}
     }
 }

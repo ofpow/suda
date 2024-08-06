@@ -62,6 +62,14 @@ Value len(Value *args, Location loc) {
     return (Value) {0};
 }
 
+Value exit_native(Value *args, Location loc) {
+    free_mem(args[0].val.num);
+
+    printf("%s:%ld\n", loc.file, loc.line);
+
+    return (Value) {0};
+}
+
 typedef Value (*Native)(Value*, Location);
 
 //    c function name     suda function name     number of arguments
@@ -70,6 +78,7 @@ typedef Value (*Native)(Value*, Location);
     X(input,        input, 0)\
     X(clock_native, clock, 0)\
     X(len,          len,   1)\
+    X(exit_native,  exit,  1)\
 
 #define X(func, name, arity) func,
 Native natives[] = {
