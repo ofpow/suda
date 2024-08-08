@@ -231,12 +231,7 @@ void free_node(Node *n) {
     }
     
     if (n->value != NULL) {
-        if (n->value->type == Value_Function_Args) {
-            int64_t len = NUM(n->value[0].value);
-            for (int i = 0; i < len; i++) {
-                if (n->value[i].value) free(n->value[i].value);
-            }
-        } else if (n->value->value != NULL) {
+        if (n->value->value != NULL) {
             free(n->value->value);
             n->value->value = NULL;
         }
@@ -304,11 +299,6 @@ AST_Value *parse_list(Parser *p) {
             case Tok_Right_Bracket:
                 p->tok_index++;
                 list[0].type = Value_Array;
-                list[0].value = dup_int(list_index);
-                return list;
-            case Tok_Right_Paren:
-                p->tok_index++;
-                list[0].type = Value_Function_Args;
                 list[0].value = dup_int(list_index);
                 return list;
             case Tok_Eof:

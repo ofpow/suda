@@ -27,7 +27,6 @@ typedef enum {
     Value_String,
     Value_Identifier,
     Value_Array,
-    Value_Function_Args,
     Value_Hash,
 } Value_Type;
 
@@ -37,7 +36,6 @@ char *find_value_type(Value_Type type) {
         case Value_String: return "Value_String";
         case Value_Identifier: return "Value_Identifier";
         case Value_Array: return "Value_Array";
-        case Value_Function_Args: return "Value_Function_Args";
         case Value_Hash: return "Value_Hash";
         default: ERR("unknown value type `%d`", type)
     }
