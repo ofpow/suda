@@ -441,14 +441,7 @@ int main(int argc, char *argv[]) {
     append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
     funcs.data[0].name = file_path;
 
-    append(funcs.data[0].constants, ((Value){Value_Number, .val.num=0, false, 0}));
-    append(funcs.data[0].code, OP_CONSTANT);
-    append(funcs.data[0].code, FIRST_BYTE(funcs.data[0].constants.index - 1));
-    append(funcs.data[0].code, SECOND_BYTE(funcs.data[0].constants.index - 1));
-    int index = is_native("exit");
-    append(funcs.data[0].code, OP_CALL_NATIVE);
-    append(funcs.data[0].code, FIRST_BYTE(index));
-    append(funcs.data[0].code, SECOND_BYTE(index));
+    append(funcs.data[0].code, OP_RETURN_NOTHING);
 
 
     for (int i = 0; i < p->funcs.index; i++) {

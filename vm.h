@@ -956,6 +956,7 @@ void run(VM *vm) {
             stack_push(result);
             dispatch();}
         OP_RETURN_NOTHING:{
+            if (vm->call_stack_count < 2) return;
             #ifdef PROFILE
             clock_gettime(CLOCK_MONOTONIC, &tend);
             time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
