@@ -394,12 +394,12 @@ void run(VM *vm) {
     };
     Call_Frame *frame = &vm->call_stack[vm->call_stack_count - 1];
 #ifdef PROFILE
-    instr_profiler[frame->index]++;
-    op_profiler[vm->func->code.data[pc]]++;
+#define dispatch() pc++; instr_profiler[frame->index]++; op_profiler[vm->func->code.data[pc]]++; debug("%-6d %s\n", pc, find_op_code(vm->func->code.data[pc])); goto *dispatch_table[vm->func->code.data[pc]]
+#else
+#define dispatch() pc++; debug("%-6d %s\n", pc, find_op_code(vm->func->code.data[pc])); goto *dispatch_table[vm->func->code.data[pc]]
 #endif
     
     int pc = -1; 
-#define dispatch() pc++; debug("%-6d %s\n", pc, find_op_code(vm->func->code.data[pc])); goto *dispatch_table[vm->func->code.data[pc]]
     dispatch();
     while (1) {
         OP_CONSTANT:{
