@@ -147,7 +147,7 @@ u_int32_t next_power_of_two(u_int32_t num) {
 
 define_array(Code, u_int8_t);
 define_array(Constants, Value);
-define_array(Arrays, Value*);
+define_array(Loop_Indices, Value);
 
 typedef struct Function {
     Code code;

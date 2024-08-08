@@ -53,8 +53,6 @@ typedef struct Call_Frame {
 typedef struct VM {
     Function *func;
 
-    Arrays arrays;
-
     Map *vars;
 
     Value stack[STACK_SIZE];
