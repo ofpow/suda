@@ -84,6 +84,8 @@ int exponentiate(int base, int64_t power) {
     X(OP_CONTINUE)\
     X(OP_FOR)\
     X(OP_ENUMERATE)\
+    X(OP_GET_GLOBAL_GET_CONSTANT)\
+    X(OP_GET_LOCAL_GET_CONSTANT)\
 
 #ifdef PROFILE
 #define X(x) 0,
@@ -292,9 +294,38 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Lshift:
         case AST_Rshift:
         case AST_Power:
-            compile_expr(n->left, c);
-            compile_expr(n->right, c);
-            append_code(ast_to_op_code(n->type), current_loc(n));
+            if (n->left->type == AST_Identifier && n->right->type == AST_Literal) {
+                //compile variable
+                if (is_local(n->left->value, c)) {
+                    append_code(OP_GET_LOCAL_GET_CONSTANT, current_loc(n));
+                    append_code(resolve_local(n->left->value, c), INVALID_LOC);
+                } else {
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={n->left->value->value, strlen(n->left->value->value)}, false, n->left->value->hash})); // name
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_GET_GLOBAL_GET_CONSTANT, current_loc(n));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                }
+
+                if (n->right->value->type == Value_Number)
+                    append(c->func.constants, ((Value){n->right->value->type, .val.num=NUM(n->right->value->value), false, 0}));
+                else if (n->right->value->type == Value_String)
+                    append(c->func.constants, ((Value){n->right->value->type, .val.str={n->right->value->value, strlen(n->right->value->value)}, false, 0}));
+                else if (n->right->value->type == Value_Identifier)
+                    append(c->func.constants, ((Value){n->right->value->type, .val.str={n->right->value->value, strlen(n->right->value->value)}, false, n->right->value->hash}));
+                else
+                    ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->right->value->type)
+
+                u_int16_t index = c->func.constants.index - 1;
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+
+                append_code(ast_to_op_code(n->type), current_loc(n));
+            } else {
+                compile_expr(n->left, c);
+                compile_expr(n->right, c);
+                append_code(ast_to_op_code(n->type), current_loc(n));
+            }
             break;
         case AST_Not:
             compile_expr(n->left, c);

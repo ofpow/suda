@@ -374,6 +374,14 @@ void disassemble(VM *vm) {
                             func.code.data[i + 4], COMBYTE(func.code.data[i + 5], func.code.data[i + 6]));
                     i += 6;
                     break;
+                case OP_GET_GLOBAL_GET_CONSTANT:
+                    printf("%-6d %s OP_GET_GLOBAL_GET_CONSTANT\n", i, line_str);
+                    i += 4;
+                    break;
+                case OP_GET_LOCAL_GET_CONSTANT:
+                    printf("%-6d %s OP_GET_LOCAL_GET_CONSTANT\n", i, line_str);
+                    i += 3;
+                    break;
                 default:
                     ERR("ERROR cant disassemble op type %s\n", find_op_code(func.code.data[i]));
             }
@@ -725,7 +733,7 @@ void run(VM *vm) {
 
             if (array.type == Value_Array) {
                 if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %d\n", get_loc, index.val.num, ARRAY_LEN(array.val.array[0].val.num) - 1)
-                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1: %ld\n", get_loc, index.val.num)
 
                 if (array.val.array[index.val.num].type == Value_Identifier) {
                     stack_push(array);
@@ -1102,6 +1110,36 @@ void run(VM *vm) {
                 ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
             } 
             index->val.num++;
+            pc += 2;
+            dispatch();}
+        OP_GET_GLOBAL_GET_CONSTANT:{
+            Value var_name = vm->func->constants.data[read_index];
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+            if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
+            if (var->value.mutable) stack_push(((Value) {
+                var->value.type, 
+                .val.str=var->value.val.str,
+                false,
+                0
+            }));
+            else stack_push(var->value);
+            pc += 2;
+            u_int16_t index = read_index;
+            stack_push(vm->func->constants.data[index]);
+            pc += 2;
+            dispatch();}
+        OP_GET_LOCAL_GET_CONSTANT:{
+            pc++;
+            Value val = frame->slots[vm->func->code.data[pc]];
+            if (val.mutable) stack_push(((Value) {
+                val.type, 
+                .val.str=val.val.str,
+                false,
+                0
+            }));
+            else stack_push(val);
+            u_int16_t index = read_index;
+            stack_push(vm->func->constants.data[index]);
             pc += 2;
             dispatch();}
     }
