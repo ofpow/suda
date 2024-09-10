@@ -307,16 +307,10 @@ void compile_expr(Node *n, Compiler *c) {
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                 }
 
-                if (n->right->value->type == Value_Number)
-                    append(c->func.constants, ((Value){n->right->value->type, .val.num=NUM(n->right->value->value), false, 0}));
-                else if (n->right->value->type == Value_String)
-                    append(c->func.constants, ((Value){n->right->value->type, .val.str={n->right->value->value, strlen(n->right->value->value)}, false, 0}));
-                else if (n->right->value->type == Value_Identifier)
-                    append(c->func.constants, ((Value){n->right->value->type, .val.str={n->right->value->value, strlen(n->right->value->value)}, false, n->right->value->hash}));
-                else
-                    ERR("ERROR in %s on line %ld: cant compile constant of type %d\n", n->file, n->line, n->right->value->type)
+                compile_constant(n->right, c);
 
-                u_int16_t index = c->func.constants.index - 1;
+                u_int16_t index = COMBYTE(c->func.code.data[c->func.code.index - 2], c->func.code.data[c->func.code.index - 1]);
+                c->func.code.index -= 3;
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
 
