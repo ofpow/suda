@@ -208,6 +208,18 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
+            case OP_GET_GLOBAL_GET_CONSTANT:
+                emit_op_comment(name, i, OP_GET_GLOBAL_GET_CONSTANT);
+                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                emit(8, "push %ld", constants.data[read_index].val.num);
+                i += 2;
+                break;
+            case OP_SET_GLOBAL:
+                emit_op_comment(name, i, OP_SET_GLOBAL);
+                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
                 break;
