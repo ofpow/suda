@@ -1,10 +1,8 @@
-if 1
-    println 1
-;
-if 1
-    println 2
-;
 if 0
-    println 3
+    println 1
+elif 1
+    println 2
+else
+    println 0
 ;
-println 0
+println 5

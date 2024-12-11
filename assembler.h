@@ -125,6 +125,18 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jz %s_label_%d", name, i + read_index);
                 i += 2;
                 break;
+            case OP_JUMP_IF_FALSE:
+                emit_op_comment(name, i, OP_JUMP_IF_FALSE);
+                emit(8, "pop rax");
+                emit(8, "cmp rax, 1");
+                emit(8, "jnz %s_label_%d", name, i + read_index);
+                i += 2;
+                break;
+            case OP_JUMP:
+                emit_op_comment(name, i, OP_JUMP);
+                emit(8, "jmp %s_label_%d", name, read_index);
+                i += 2;
+                break;
             case OP_DONE:
                 emit_op_comment(name, i, OP_DONE);
                 emit(8, "mov rax, 60");
