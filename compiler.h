@@ -84,6 +84,7 @@ int exponentiate(int base, int64_t power) {
     X(OP_CONTINUE)\
     X(OP_FOR)\
     X(OP_ENUMERATE)\
+    X(OP_DONE)\
 
 #ifdef PROFILE
 #define X(x) 0,

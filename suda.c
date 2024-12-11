@@ -446,7 +446,8 @@ int main(int argc, char *argv[]) {
     append(funcs, compile_func(&((AST_Function){NULL, p->nodes, 0, NULL, 0})));
     funcs.data[0].name = "MAIN";
 
-    append(funcs.data[0].code, OP_RETURN_NOTHING);
+    append(funcs.data[0].code, OP_DONE);
+    append(funcs.data[0].locs, ((Location){"DONE", 0}));
 
 
     for (int i = 0; i < p->funcs.index; i++) {

@@ -371,6 +371,9 @@ void disassemble(VM *vm) {
                             func.code.data[i + 4], COMBYTE(func.code.data[i + 5], func.code.data[i + 6]));
                     i += 6;
                     break;
+                case OP_DONE:
+                    printf("%-6d %s OP_DONE\n", i, line_str);
+                    break;
                 default:
                     ERR("ERROR cant disassemble op type %s\n", find_op_code(func.code.data[i]));
             }
@@ -956,7 +959,6 @@ void run(VM *vm) {
             stack_push(result);
             dispatch();}
         OP_RETURN_NOTHING:{
-            if (vm->call_stack_count < 2) return;
             #ifdef PROFILE
             clock_gettime(CLOCK_MONOTONIC, &tend);
             time_profiler[vm->call_stack[vm->call_stack_count - 1].index]
@@ -1097,6 +1099,8 @@ void run(VM *vm) {
             index->val.num++;
             pc += 2;
             dispatch();}
+        OP_DONE:
+            return;
     }
 }
 

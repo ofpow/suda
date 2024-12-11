@@ -125,9 +125,12 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jz %s_label_%d", name, i + read_index);
                 i += 2;
                 break;
-            case OP_RETURN_NOTHING:
-                emit_op_comment(name, i, OP_RETURN_NOTHING);
-                continue;
+            case OP_DONE:
+                emit_op_comment(name, i, OP_DONE);
+                emit(8, "mov rax, 60");
+                emit(8, "mov rdi, 0");
+                emit(8, "syscall");
+                break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
                 break;
@@ -136,9 +139,6 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
 }
 
 void emit_footer() {
-    fprintf(f, "        mov rax, 60\n");
-    fprintf(f, "        mov rdi, 0\n");
-    fprintf(f, "        syscall\n");
     fprintf(f, "println_int:\n");
     fprintf(f, "        sub     rsp, 40\n");
     fprintf(f, "        xor     r10d, r10d\n");
