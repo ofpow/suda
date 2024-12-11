@@ -1,8 +1,18 @@
 #pragma once
 
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
+#define emit_op_comment(_op) emit(0, "; " #_op " %s:%ld", locs.data[i].file, locs.data[i].line)
 
 FILE *f;
+
+void emit(int indent, char *fmt, ...) {
+    fprintf(f, "%*s", indent, "");
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(f, fmt, args);
+    va_end(args);
+    fprintf(f, "\n");
+}
 
 void emit_header() {
     fprintf(f, "format ELF64 executable 3\n");
@@ -60,17 +70,50 @@ void emit_header() {
 }
 
 void emit_func(char *name, Code code, Locations locs, Constants constants) {
+    emit(0, "; FUNC %s:", name);
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
             case OP_CONSTANT:
-                fprintf(f, "        push %ld\n", constants.data[read_index].val.num);
+                emit_op_comment(OP_CONSTANT);
+                emit(8, "push %ld", constants.data[read_index].val.num);
                 i += 2;
                 break;
             case OP_PRINTLN:
-                fprintf(f, "        pop rdi\n");
-                fprintf(f, "        call println_int\n");
+                emit_op_comment(OP_PRINTLN);
+                emit(8, "pop rdi");
+                emit(8, "call println_int");
+                break;
+            case OP_ADD:
+                emit_op_comment(OP_ADD);
+                emit(8, "pop rax");
+                emit(8, "pop rbx");
+                emit(8, "add rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_SUBTRACT:
+                emit_op_comment(OP_SUBTRACT);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "sub rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_MULTIPLY:
+                emit_op_comment(OP_MULTIPLY);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "imul rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_DIVIDE:
+                emit_op_comment(OP_DIVIDE);
+                emit(8, "mov rdx, 0");
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "idiv rbx");
+                emit(8, "push rax");
                 break;
             case OP_RETURN_NOTHING:
+                emit_op_comment(OP_RETURN_NOTHING);
                 continue;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))

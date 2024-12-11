@@ -1,2 +1,5 @@
 println 9
 println -42
+
+println((17 + 18) + (2 * 17))
+println (10 / 2)
