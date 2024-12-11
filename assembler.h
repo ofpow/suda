@@ -3,6 +3,61 @@
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
 #define emit_op_comment(_name, _index, _op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", _name, _index, locs.data[i].file, locs.data[i].line)
 
+int op_offsets[] = {
+    3, //OP_CONSTANT
+    3, //OP_ARRAY
+    1, //OP_PRINTLN
+    1, //OP_PRINT
+    3, //OP_DEFINE_GLOBAL
+    3, //OP_SET_GLOBAL
+    3, //OP_GET_GLOBAL
+    2, //OP_SET_LOCAL
+    2, //OP_GET_LOCAL
+    1, //OP_ADD
+    1, //OP_SUBTRACT
+    1, //OP_MULTIPLY
+    1, //OP_DIVIDE
+    1, //OP_MODULO
+    1, //OP_BIT_AND
+    1, //OP_BIT_OR
+    1, //OP_BIT_XOR
+    1, //OP_BIT_NOT
+    1, //OP_LSHIFT
+    1, //OP_RSHIFT
+    1, //OP_POWER
+    1, //OP_LESS
+    1, //OP_LESS_EQUAL
+    1, //OP_GREATER
+    1, //OP_GREATER_EQUAL
+    1, //OP_IS_EQUAL
+    1, //OP_AND
+    1, //OP_OR
+    1, //OP_NOT
+    1, //OP_NOT_EQUAL
+    3, //OP_JUMP_IF_FALSE
+    3, //OP_START_IF
+    3, //OP_JUMP
+    1, //OP_GET_ELEMENT
+    3, //OP_SET_ELEMENT_GLOBAL
+    3, //OP_SET_ELEMENT_LOCAL
+    3, //OP_APPEND_GLOBAL
+    2, //OP_APPEND_LOCAL
+    3, //OP_POP
+    1, //OP_CAST_STR
+    1, //OP_CAST_NUM
+    3, //OP_CALL
+    3, //OP_CALL_NATIVE
+    1, //OP_RETURN
+    1, //OP_RETURN_NOTHING
+    3, //OP_BREAK
+    3, //OP_CONTINUE
+    6, //OP_FOR
+    7, //OP_ENUMERATE
+    5, //OP_GET_GLOBAL_GET_CONSTANT
+    4, //OP_GET_LOCAL_GET_CONSTANT
+    1, //OP_DONE
+};
+
 FILE *f;
 
 void emit(int indent, char *fmt, ...) {
@@ -143,9 +198,28 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "mov rdi, 0");
                 emit(8, "syscall");
                 break;
+            case OP_DEFINE_GLOBAL:
+                emit_op_comment(name, i, OP_DEFINE_GLOBAL);
+                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
+            case OP_GET_GLOBAL:
+                emit_op_comment(name, i, OP_GET_GLOBAL);
+                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
                 break;
+        }
+    }
+}
+
+void emit_globals(Function *func) {
+    emit(0, "segment readable writeable");
+    for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
+        if (func->code.data[i] == OP_DEFINE_GLOBAL) {
+            emit(8, "%s: dq 0", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
         }
     }
 }
@@ -213,8 +287,10 @@ void emit_asm(VM *vm) {
             vm->funcs.data[i].locs,
             vm->funcs.data[i].constants
         );
-    
+
     emit_footer();
+
+    emit_globals(&vm->funcs.data[0]);
 
     fclose(f);
 

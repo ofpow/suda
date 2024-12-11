@@ -1,8 +1,2 @@
-if 0
-    println 1
-elif 1
-    println 2
-else
-    println 0
-;
-println 5
+let x = 1
+println x
