@@ -1,12 +1,10 @@
-println 9
-println -42
-
-println((17 + 18) + (2 * 17))
-println (10 / 2)
-
-println(34 > 35)
-println(420 >= 421)
-println(3 == 3)
-println(15 < 30)
-println(18 <= 18)
-println(3 != 3)
+if 1
+    println 1
+;
+if 1
+    println 2
+;
+if 0
+    println 3
+;
+println 0

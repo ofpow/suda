@@ -1,7 +1,7 @@
 #pragma once
 
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
-#define emit_op_comment(_op) emit(0, "; " #_op " %s:%ld", locs.data[i].file, locs.data[i].line)
+#define emit_op_comment(_name, _index, _op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", _name, _index, locs.data[i].file, locs.data[i].line)
 
 FILE *f;
 
@@ -17,6 +17,128 @@ void emit(int indent, char *fmt, ...) {
 void emit_header() {
     fprintf(f, "format ELF64 executable 3\n");
     fprintf(f, "segment readable executable\n");
+    fprintf(f, "entry start\n");
+    fprintf(f, "start:\n");
+}
+
+void emit_func(char *name, Code code, Locations locs, Constants constants) {
+    emit(0, "; FUNC %s:", name);
+    for (int i = 0; i < code.index; i++) {
+        switch (code.data[i]) {
+            case OP_CONSTANT:
+                emit_op_comment(name, i, OP_CONSTANT);
+                emit(8, "push %ld", constants.data[read_index].val.num);
+                i += 2;
+                break;
+            case OP_PRINTLN:
+                emit_op_comment(name, i, OP_PRINTLN);
+                emit(8, "pop rdi");
+                emit(8, "call println_int");
+                break;
+            case OP_ADD:
+                emit_op_comment(name, i, OP_ADD);
+                emit(8, "pop rax");
+                emit(8, "pop rbx");
+                emit(8, "add rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_SUBTRACT:
+                emit_op_comment(name, i, OP_SUBTRACT);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "sub rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_MULTIPLY:
+                emit_op_comment(name, i, OP_MULTIPLY);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "imul rax, rbx");
+                emit(8, "push rax");
+                break;
+            case OP_DIVIDE:
+                emit_op_comment(name, i, OP_DIVIDE);
+                emit(8, "mov rdx, 0");
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "idiv rbx");
+                emit(8, "push rax");
+                break;
+            case OP_GREATER:
+                emit_op_comment(name, i, OP_GREATER);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setg al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_GREATER_EQUAL:
+                emit_op_comment(name, i, OP_GREATER_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setge al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_LESS:
+                emit_op_comment(name, i, OP_LESS);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setl al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_LESS_EQUAL:
+                emit_op_comment(name, i, OP_LESS_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setle al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_IS_EQUAL:
+                emit_op_comment(name, i, OP_IS_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "sete al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_NOT_EQUAL:
+                emit_op_comment(name, i, OP_NOT_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setne al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_START_IF:
+                emit_op_comment(name, i, OP_START_IF);
+                emit(8, "pop rax");
+                emit(8, "cmp rax, 0");
+                emit(8, "jz %s_label_%d", name, i + read_index);
+                i += 2;
+                break;
+            case OP_RETURN_NOTHING:
+                emit_op_comment(name, i, OP_RETURN_NOTHING);
+                continue;
+            default:
+                ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
+                break;
+        }
+    }
+}
+
+void emit_footer() {
+    fprintf(f, "        mov rax, 60\n");
+    fprintf(f, "        mov rdi, 0\n");
+    fprintf(f, "        syscall\n");
     fprintf(f, "println_int:\n");
     fprintf(f, "        sub     rsp, 40\n");
     fprintf(f, "        xor     r10d, r10d\n");
@@ -65,121 +187,6 @@ void emit_header() {
     fprintf(f, "        syscall\n");
     fprintf(f, "        add     rsp, 40\n");
     fprintf(f, "        ret\n");
-    fprintf(f, "entry start\n");
-    fprintf(f, "start:\n");
-}
-
-void emit_func(char *name, Code code, Locations locs, Constants constants) {
-    emit(0, "; FUNC %s:", name);
-    for (int i = 0; i < code.index; i++) {
-        switch (code.data[i]) {
-            case OP_CONSTANT:
-                emit_op_comment(OP_CONSTANT);
-                emit(8, "push %ld", constants.data[read_index].val.num);
-                i += 2;
-                break;
-            case OP_PRINTLN:
-                emit_op_comment(OP_PRINTLN);
-                emit(8, "pop rdi");
-                emit(8, "call println_int");
-                break;
-            case OP_ADD:
-                emit_op_comment(OP_ADD);
-                emit(8, "pop rax");
-                emit(8, "pop rbx");
-                emit(8, "add rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_SUBTRACT:
-                emit_op_comment(OP_SUBTRACT);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "sub rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_MULTIPLY:
-                emit_op_comment(OP_MULTIPLY);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "imul rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_DIVIDE:
-                emit_op_comment(OP_DIVIDE);
-                emit(8, "mov rdx, 0");
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "idiv rbx");
-                emit(8, "push rax");
-                break;
-            case OP_GREATER:
-                emit_op_comment(OP_GREATER);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setg al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_GREATER_EQUAL:
-                emit_op_comment(OP_GREATER_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setge al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_LESS:
-                emit_op_comment(OP_LESS);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setl al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_LESS_EQUAL:
-                emit_op_comment(OP_LESS_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setle al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_IS_EQUAL:
-                emit_op_comment(OP_IS_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "sete al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_NOT_EQUAL:
-                emit_op_comment(OP_NOT_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setne al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_RETURN_NOTHING:
-                emit_op_comment(OP_RETURN_NOTHING);
-                continue;
-            default:
-                ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
-                break;
-        }
-    }
-}
-
-void emit_footer() {
-    fprintf(f, "        mov rax, 60\n");
-    fprintf(f, "        mov rdi, 0\n");
-    fprintf(f, "        syscall\n");
 }
 
 void emit_asm(VM *vm) {
