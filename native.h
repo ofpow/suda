@@ -70,6 +70,15 @@ Value exit_native(Value *args, Location loc) {
     return (Value) {0};
 }
 
+Value rand_native() {
+    return (Value){
+        Value_Number,
+        .val.num=rand(),
+        false,
+        0
+    };
+}
+
 typedef Value (*Native)(Value*, Location);
 
 //    c function name     suda function name     number of arguments
@@ -79,6 +88,7 @@ typedef Value (*Native)(Value*, Location);
     X(clock_native, clock, 0)\
     X(len,          len,   1)\
     X(exit_native,  exit,  1)\
+    X(rand_native,  rand,  0)\
 
 #define X(func, name, arity) func,
 Native natives[] = {

@@ -98,9 +98,9 @@ void free_value_array(Value *array) {
     free(array);
 }
 
-void print_array(Value *val, bool new_line) {
+char *format_array(Value *val) {
     Value *array = val->val.array;
-    if (ARRAY_LEN(array[0].val.num) < 2) {printf("[]\n"); return;}
+    if (ARRAY_LEN(array[0].val.num) < 2) return strdup("[]");
 
     int64_t str_len = 2;
     char *str = format_str(str_len, "[");
@@ -129,15 +129,18 @@ void print_array(Value *val, bool new_line) {
             strcat(str, x);
             strcat(str, ", ");
             free(x);
+        } else if (array[i].type == Value_Array) {
+            char *x = format_array(&array[i]);
+            str_len += strlen(x) + 2;
+            str = realloc(str, str_len);
+            strcat(str, x);
+            strcat(str, ", ");
+            free(x);
         } else ERR("cant print %s as part of array\n", find_value_type(array[i].type))
     }
     str[str_len - 3] = ']';
     str[str_len - 2] = 0;
-    if (new_line)
-        printf("%s\n", str);
-    else
-        printf("%s", str);
-    free(str);
+    return str;
 }
 
 void print_value(Value val) {
@@ -371,6 +374,14 @@ void disassemble(VM *vm) {
                             func.code.data[i + 4], COMBYTE(func.code.data[i + 5], func.code.data[i + 6]));
                     i += 6;
                     break;
+                case OP_GET_GLOBAL_GET_CONSTANT:
+                    printf("%-6d %s OP_GET_GLOBAL_GET_CONSTANT\n", i, line_str);
+                    i += 4;
+                    break;
+                case OP_GET_LOCAL_GET_CONSTANT:
+                    printf("%-6d %s OP_GET_LOCAL_GET_CONSTANT\n", i, line_str);
+                    i += 3;
+                    break;
                 case OP_DONE:
                     printf("%-6d %s OP_DONE\n", i, line_str);
                     break;
@@ -427,7 +438,9 @@ void run(VM *vm) {
                 printf("%.*s\n", Print(print.val.str));
                 if (print.mutable == true) free(print.val.str.chars);
             } else if (print.type == Value_Array) {
-                print_array(&print, true);
+                char *s = format_array(&print);
+                printf("%s\n", s);
+                free(s);
                 if (print.mutable == true) free_value_array(print.val.array);
             } else
                 ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
@@ -440,7 +453,9 @@ void run(VM *vm) {
                 printf("%.*s", Print(print.val.str));
                 if (print.mutable == true) free(print.val.str.chars);
             } else if (print.type == Value_Array) {
-                print_array(&print, false);
+                char *s = format_array(&print);
+                printf("%s", s);
+                free(s);
                 if (print.mutable == true) free_value_array(print.val.array);
             } else
                 ERR("ERROR in %s on line %ld: cant print type %s\n", get_loc, find_value_type(print.type))
@@ -721,7 +736,7 @@ void run(VM *vm) {
 
             if (array.type == Value_Array) {
                 if (index.val.num >= ARRAY_LEN(array.val.array[0].val.num)) ERR("ERROR in %s on line %ld: index %ld out of bounds, greater than %d\n", get_loc, index.val.num, ARRAY_LEN(array.val.array[0].val.num) - 1)
-                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1\n", get_loc)
+                else if (index.val.num < 1) ERR("ERROR in %s on line %ld: tried to access at index less than 1: %ld\n", get_loc, index.val.num)
 
                 if (array.val.array[index.val.num].type == Value_Identifier) {
                     stack_push(array);
@@ -1097,6 +1112,36 @@ void run(VM *vm) {
                 ERR("ERROR in %s on line %ld: cant loop through type %s\n", get_loc, find_value_type(array.type))
             } 
             index->val.num++;
+            pc += 2;
+            dispatch();}
+        OP_GET_GLOBAL_GET_CONSTANT:{
+            Value var_name = vm->func->constants.data[read_index];
+            Variable *var = get_entry(vm->vars->entries, vm->vars->capacity, var_name.hash)->value;
+            if (var == NULL) ERR("ERROR in %s on line %ld: tried to get nonexistent var %s\n", get_loc, var_name.val.str.chars);
+            if (var->value.mutable) stack_push(((Value) {
+                var->value.type, 
+                .val.str=var->value.val.str,
+                false,
+                0
+            }));
+            else stack_push(var->value);
+            pc += 2;
+            u_int16_t index = read_index;
+            stack_push(vm->func->constants.data[index]);
+            pc += 2;
+            dispatch();}
+        OP_GET_LOCAL_GET_CONSTANT:{
+            pc++;
+            Value val = frame->slots[vm->func->code.data[pc]];
+            if (val.mutable) stack_push(((Value) {
+                val.type, 
+                .val.str=val.val.str,
+                false,
+                0
+            }));
+            else stack_push(val);
+            u_int16_t index = read_index;
+            stack_push(vm->func->constants.data[index]);
             pc += 2;
             dispatch();}
         OP_DONE:

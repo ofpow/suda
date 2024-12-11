@@ -84,6 +84,8 @@ int exponentiate(int base, int64_t power) {
     X(OP_CONTINUE)\
     X(OP_FOR)\
     X(OP_ENUMERATE)\
+    X(OP_GET_GLOBAL_GET_CONSTANT)\
+    X(OP_GET_LOCAL_GET_CONSTANT)\
     X(OP_DONE)\
 
 #ifdef PROFILE
@@ -293,9 +295,32 @@ void compile_expr(Node *n, Compiler *c) {
         case AST_Lshift:
         case AST_Rshift:
         case AST_Power:
-            compile_expr(n->left, c);
-            compile_expr(n->right, c);
-            append_code(ast_to_op_code(n->type), current_loc(n));
+            if (n->left->type == AST_Identifier && n->right->type == AST_Literal) {
+                //compile variable
+                if (is_local(n->left->value, c)) {
+                    append_code(OP_GET_LOCAL_GET_CONSTANT, current_loc(n));
+                    append_code(resolve_local(n->left->value, c), INVALID_LOC);
+                } else {
+                    append(c->func.constants, ((Value){Value_Identifier, .val.str={n->left->value->value, strlen(n->left->value->value)}, false, n->left->value->hash})); // name
+                    u_int16_t index = c->func.constants.index - 1;
+                    append_code(OP_GET_GLOBAL_GET_CONSTANT, current_loc(n));
+                    append_code(FIRST_BYTE(index), INVALID_LOC);
+                    append_code(SECOND_BYTE(index), INVALID_LOC);
+                }
+
+                compile_constant(n->right, c);
+
+                u_int16_t index = COMBYTE(c->func.code.data[c->func.code.index - 2], c->func.code.data[c->func.code.index - 1]);
+                c->func.code.index -= 3;
+                append_code(FIRST_BYTE(index), INVALID_LOC);
+                append_code(SECOND_BYTE(index), INVALID_LOC);
+
+                append_code(ast_to_op_code(n->type), current_loc(n));
+            } else {
+                compile_expr(n->left, c);
+                compile_expr(n->right, c);
+                append_code(ast_to_op_code(n->type), current_loc(n));
+            }
             break;
         case AST_Not:
             compile_expr(n->left, c);

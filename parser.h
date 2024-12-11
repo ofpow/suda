@@ -433,8 +433,8 @@ Node *expr(Parser *p, Node *child, bool is_index) {
                     return new_node(AST_Literal, new_ast_value(Value_Number, val, 1, 0), -1, CURRENT_TOK.line, CURRENT_TOK.file);
                 } else {
                     n = new_node(AST_Mult, NULL, -1, NEXT_TOK.line, NEXT_TOK.file);
-                    n->right = expr(p, NULL, is_index);
-                    n->left = new_node(AST_Literal, new_ast_value(Value_Number, dup_int(-1), 1, 0), -1, NEXT_TOK.line, NEXT_TOK.file);
+                    n->left = expr(p, NULL, is_index);
+                    n->right = new_node(AST_Literal, new_ast_value(Value_Number, dup_int(-1), 1, 0), -1, NEXT_TOK.line, NEXT_TOK.file);
                     return n;
                 }
             } else {

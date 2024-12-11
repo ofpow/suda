@@ -205,6 +205,9 @@ void free_mem(int exit_val) {
 }
 
 int main(int argc, char *argv[]) {
+
+    srand(time(NULL));
+
     //read input file
     if (argc < 2) {
         fprintf(stderr, "ERROR: invalid arguments\nUsage: suda <args> [script]\n");
@@ -541,7 +544,7 @@ int main(int argc, char *argv[]) {
     }
     if (instructions) { 
         printf("\nOPS:\n");
-#define X(x) if (op_profiler[x]) printf("%-20s: %-15ld: %9.6f%%\n", find_op_code(x), op_profiler[x], ((double)op_profiler[x] / instr_total) * 100);
+#define X(x) if (op_profiler[x]) printf("%-26s: %-15ld: %9.6f%%\n", find_op_code(x), op_profiler[x], ((double)op_profiler[x] / instr_total) * 100);
         ops
 #undef X
     }
