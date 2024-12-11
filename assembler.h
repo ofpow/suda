@@ -112,6 +112,60 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "idiv rbx");
                 emit(8, "push rax");
                 break;
+            case OP_GREATER:
+                emit_op_comment(OP_GREATER);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setg al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_GREATER_EQUAL:
+                emit_op_comment(OP_GREATER_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setge al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_LESS:
+                emit_op_comment(OP_LESS);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setl al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_LESS_EQUAL:
+                emit_op_comment(OP_LESS_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setle al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_IS_EQUAL:
+                emit_op_comment(OP_IS_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "sete al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
+            case OP_NOT_EQUAL:
+                emit_op_comment(OP_NOT_EQUAL);
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "cmp rax, rbx");
+                emit(8, "setne al");
+                emit(8, "movzx rax, al");
+                emit(8, "push rax");
+                break;
             case OP_RETURN_NOTHING:
                 emit_op_comment(OP_RETURN_NOTHING);
                 continue;
