@@ -1099,3 +1099,5 @@ void run(VM *vm) {
             dispatch();}
     }
 }
+
+#undef read_index

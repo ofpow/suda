@@ -1,13 +1,2 @@
-fn foo(a)
-    println a
-;
-fn bar(a, b)
-    println (a + b)
-;
-fn baz(a, b, c)
-    println (a + b + c)
-;
-
-foo(5)
-bar(5, 5)
-baz(5, 5, 5)
+println 9
+println -42
