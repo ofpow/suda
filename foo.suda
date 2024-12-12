@@ -1,3 +1,8 @@
-let i = 1
-i = (i + 1)
-println i
+if 1
+    let y = 10
+    let x = 1
+    println x
+    x = 58
+    println x
+    println y
+;

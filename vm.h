@@ -226,6 +226,9 @@ void disassemble(VM *vm) {
                     printf("%-6d %s OP_DEFINE_GLOBAL:     var %s\n", i, line_str, func.constants.data[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])].val.str.chars);
                     i += 2;
                     break;
+                case OP_DEFINE_LOCAL:
+                    printf("%-6d %s OP_DEFINE_LOCAL\n", i, line_str);
+                    break;
                 case OP_ADD:
                     printf("%-6d %s OP_ADD\n", i, line_str);
                     break;
@@ -478,6 +481,7 @@ void run(VM *vm) {
 
             pc += 2;
             dispatch();
+        OP_DEFINE_LOCAL: pc++; dispatch();
         OP_SET_GLOBAL:{
             Value name = vm->func->constants.data[read_index];
             Value value = stack_pop;

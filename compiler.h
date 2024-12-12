@@ -40,6 +40,7 @@ int exponentiate(int base, int64_t power) {
     X(OP_PRINTLN)\
     X(OP_PRINT)\
     X(OP_DEFINE_GLOBAL)\
+    X(OP_DEFINE_LOCAL)\
     X(OP_SET_GLOBAL)\
     X(OP_GET_GLOBAL)\
     X(OP_SET_LOCAL)\
@@ -441,6 +442,8 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
                 
                 if (c->depth > 0) {
                     add_local(nodes[i], c);
+                    append_code(OP_DEFINE_LOCAL, current_loc(nodes[i]));
+                    append_code(resolve_local(nodes[i]->value, c), INVALID_LOC);
                 } else {
                     append(c->func.constants, ((Value){Value_Identifier, .val.str={nodes[i]->value->value, strlen(nodes[i]->value->value)}, false, nodes[i]->value->hash})); // name
                     u_int16_t index = c->func.constants.index - 1;

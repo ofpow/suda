@@ -9,6 +9,7 @@ int op_offsets[] = {
     1, //OP_PRINTLN
     1, //OP_PRINT
     3, //OP_DEFINE_GLOBAL
+    2, //OP_DEFINE_LOCAL
     3, //OP_SET_GLOBAL
     3, //OP_GET_GLOBAL
     2, //OP_SET_LOCAL
@@ -219,6 +220,25 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit_op_comment(OP_SET_GLOBAL);
                 emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
+                break;
+            case OP_DEFINE_LOCAL:
+                emit_op_comment(OP_DEFINE_LOCAL);
+                emit(8, "pop rax");
+                emit(8, "sub rsp, 8");
+                emit(8, "mov qword [rsp + %ld], rax", 8 * (code.data[++i] + 1));
+                break;
+            case OP_GET_LOCAL:
+                emit_op_comment(OP_GET_LOCAL);
+                emit(8, "push qword [rsp + %ld]", 8 * (code.data[++i] + 1));
+                break;
+            case OP_POP:
+                emit_op_comment(OP_POP);
+                emit(8, "add rsp, %ld", 8 * read_index);
+                i += 2;
+                break;
+            case OP_SET_LOCAL:
+                emit_op_comment(OP_SET_LOCAL);
+                emit(8, "pop qword [rsp + %ld]", 8 * (code.data[++i] + 1));
                 break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
