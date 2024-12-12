@@ -1,7 +1,7 @@
 #pragma once
 
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
-#define emit_op_comment(_name, _index, _op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", _name, _index, locs.data[i].file, locs.data[i].line)
+#define emit_op_comment(_op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", name, i, locs.data[i].file, locs.data[i].line)
 
 int op_offsets[] = {
     3, //OP_CONSTANT
@@ -81,38 +81,38 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
             case OP_CONSTANT:
-                emit_op_comment(name, i, OP_CONSTANT);
+                emit_op_comment(OP_CONSTANT);
                 emit(8, "push %ld", constants.data[read_index].val.num);
                 i += 2;
                 break;
             case OP_PRINTLN:
-                emit_op_comment(name, i, OP_PRINTLN);
+                emit_op_comment(OP_PRINTLN);
                 emit(8, "pop rdi");
                 emit(8, "call println_int");
                 break;
             case OP_ADD:
-                emit_op_comment(name, i, OP_ADD);
+                emit_op_comment(OP_ADD);
                 emit(8, "pop rax");
                 emit(8, "pop rbx");
                 emit(8, "add rax, rbx");
                 emit(8, "push rax");
                 break;
             case OP_SUBTRACT:
-                emit_op_comment(name, i, OP_SUBTRACT);
+                emit_op_comment(OP_SUBTRACT);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "sub rax, rbx");
                 emit(8, "push rax");
                 break;
             case OP_MULTIPLY:
-                emit_op_comment(name, i, OP_MULTIPLY);
+                emit_op_comment(OP_MULTIPLY);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "imul rax, rbx");
                 emit(8, "push rax");
                 break;
             case OP_DIVIDE:
-                emit_op_comment(name, i, OP_DIVIDE);
+                emit_op_comment(OP_DIVIDE);
                 emit(8, "mov rdx, 0");
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
@@ -120,7 +120,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_GREATER:
-                emit_op_comment(name, i, OP_GREATER);
+                emit_op_comment(OP_GREATER);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -129,7 +129,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_GREATER_EQUAL:
-                emit_op_comment(name, i, OP_GREATER_EQUAL);
+                emit_op_comment(OP_GREATER_EQUAL);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -138,7 +138,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_LESS:
-                emit_op_comment(name, i, OP_LESS);
+                emit_op_comment(OP_LESS);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -147,7 +147,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_LESS_EQUAL:
-                emit_op_comment(name, i, OP_LESS_EQUAL);
+                emit_op_comment(OP_LESS_EQUAL);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -156,7 +156,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_IS_EQUAL:
-                emit_op_comment(name, i, OP_IS_EQUAL);
+                emit_op_comment(OP_IS_EQUAL);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -165,7 +165,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_NOT_EQUAL:
-                emit_op_comment(name, i, OP_NOT_EQUAL);
+                emit_op_comment(OP_NOT_EQUAL);
                 emit(8, "pop rbx");
                 emit(8, "pop rax");
                 emit(8, "cmp rax, rbx");
@@ -174,49 +174,49 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push rax");
                 break;
             case OP_START_IF:
-                emit_op_comment(name, i, OP_START_IF);
+                emit_op_comment(OP_START_IF);
                 emit(8, "pop rax");
                 emit(8, "cmp rax, 0");
                 emit(8, "jz %s_label_%d", name, i + read_index);
                 i += 2;
                 break;
             case OP_JUMP_IF_FALSE:
-                emit_op_comment(name, i, OP_JUMP_IF_FALSE);
+                emit_op_comment(OP_JUMP_IF_FALSE);
                 emit(8, "pop rax");
                 emit(8, "cmp rax, 1");
                 emit(8, "jnz %s_label_%d", name, i + read_index);
                 i += 2;
                 break;
             case OP_JUMP:
-                emit_op_comment(name, i, OP_JUMP);
+                emit_op_comment(OP_JUMP);
                 emit(8, "jmp %s_label_%d", name, read_index);
                 i += 2;
                 break;
             case OP_DONE:
-                emit_op_comment(name, i, OP_DONE);
+                emit_op_comment(OP_DONE);
                 emit(8, "mov rax, 60");
                 emit(8, "mov rdi, 0");
                 emit(8, "syscall");
                 break;
             case OP_DEFINE_GLOBAL:
-                emit_op_comment(name, i, OP_DEFINE_GLOBAL);
+                emit_op_comment(OP_DEFINE_GLOBAL);
                 emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
             case OP_GET_GLOBAL:
-                emit_op_comment(name, i, OP_GET_GLOBAL);
+                emit_op_comment(OP_GET_GLOBAL);
                 emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
             case OP_GET_GLOBAL_GET_CONSTANT:
-                emit_op_comment(name, i, OP_GET_GLOBAL_GET_CONSTANT);
+                emit_op_comment(OP_GET_GLOBAL_GET_CONSTANT);
                 emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 emit(8, "push %ld", constants.data[read_index].val.num);
                 i += 2;
                 break;
             case OP_SET_GLOBAL:
-                emit_op_comment(name, i, OP_SET_GLOBAL);
+                emit_op_comment(OP_SET_GLOBAL);
                 emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
