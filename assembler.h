@@ -71,10 +71,10 @@ void emit(int indent, char *fmt, ...) {
 }
 
 void emit_header() {
-    fprintf(f, "format ELF64 executable 3\n");
-    fprintf(f, "segment readable executable\n");
-    fprintf(f, "entry start\n");
-    fprintf(f, "start:\n");
+    emit(0, "format ELF64 executable 3");
+    emit(0, "segment readable executable");
+    emit(0, "entry start");
+    emit(0, "start:");
 }
 
 void emit_func(char *name, Code code, Locations locs, Constants constants) {
@@ -257,54 +257,54 @@ void emit_globals(Function *func) {
 }
 
 void emit_footer() {
-    fprintf(f, "println_int:\n");
-    fprintf(f, "        sub     rsp, 40\n");
-    fprintf(f, "        xor     r10d, r10d\n");
-    fprintf(f, "        test    rdi, rdi\n");
-    fprintf(f, "        jns     .L2\n");
-    fprintf(f, "        neg     rdi\n");
-    fprintf(f, "        mov     r10d, 1\n");
-    fprintf(f, ".L2:\n");
-    fprintf(f, "        mov     QWORD [rsp+24], 0\n");
-    fprintf(f, "        mov     ecx, 1\n");
-    fprintf(f, "        mov     r9, 7378697629483820647\n");
-    fprintf(f, "        mov     QWORD [rsp+8], 0\n");
-    fprintf(f, "        mov     QWORD [rsp+16], 0\n");
-    fprintf(f, "        mov     BYTE [rsp+31], 10\n");
-    fprintf(f, ".L3:\n");
-    fprintf(f, "        mov     rax, rdi\n");
-    fprintf(f, "        mov     rsi, rcx\n");
-    fprintf(f, "        add     rcx, 1\n");
-    fprintf(f, "        imul    r9\n");
-    fprintf(f, "        mov     rax, rdi\n");
-    fprintf(f, "        mov     r8, rsi\n");
-    fprintf(f, "        sar     rax, 63\n");
-    fprintf(f, "        not     r8\n");
-    fprintf(f, "        sar     rdx, 2\n");
-    fprintf(f, "        sub     rdx, rax\n");
-    fprintf(f, "        lea     rax, [rdx+rdx*4]\n");
-    fprintf(f, "        add     rax, rax\n");
-    fprintf(f, "        sub     rdi, rax\n");
-    fprintf(f, "        add     edi, 48\n");
-    fprintf(f, "        mov     BYTE [rsp+32+r8], dil\n");
-    fprintf(f, "        mov     rdi, rdx\n");
-    fprintf(f, "        test    rdx, rdx\n");
-    fprintf(f, "        jne     .L3\n");
-    fprintf(f, "        test    r10d, r10d\n");
-    fprintf(f, "        je      .L4\n");
-    fprintf(f, "        not     rcx\n");
-    fprintf(f, "        mov     BYTE [rsp+32+rcx], 45\n");
-    fprintf(f, "        lea     rcx, [rsi+2]\n");
-    fprintf(f, ".L4:\n");
-    fprintf(f, "        mov     eax, 24\n");
-    fprintf(f, "        mov     rdx, rcx\n");
-    fprintf(f, "        mov     edi, 1\n");
-    fprintf(f, "        sub     rax, rcx\n");
-    fprintf(f, "        lea     rsi, [rsp+8+rax]\n");
-    fprintf(f, "        mov     rax, 1\n");
-    fprintf(f, "        syscall\n");
-    fprintf(f, "        add     rsp, 40\n");
-    fprintf(f, "        ret\n");
+    emit(0, "println_int:\n");
+    emit(8, "sub     rsp, 40\n");
+    emit(8, "xor     r10d, r10d\n");
+    emit(8, "test    rdi, rdi\n");
+    emit(8, "jns     .L2\n");
+    emit(8, "neg     rdi\n");
+    emit(8, "mov     r10d, 1\n");
+    emit(0, ".L2:\n");
+    emit(8, "mov     QWORD [rsp+24], 0\n");
+    emit(8, "mov     ecx, 1\n");
+    emit(8, "mov     r9, 7378697629483820647\n");
+    emit(8, "mov     QWORD [rsp+8], 0\n");
+    emit(8, "mov     QWORD [rsp+16], 0\n");
+    emit(8, "mov     BYTE [rsp+31], 10\n");
+    emit(0, ".L3:\n");
+    emit(8, "mov     rax, rdi\n");
+    emit(8, "mov     rsi, rcx\n");
+    emit(8, "add     rcx, 1\n");
+    emit(8, "imul    r9\n");
+    emit(8, "mov     rax, rdi\n");
+    emit(8, "mov     r8, rsi\n");
+    emit(8, "sar     rax, 63\n");
+    emit(8, "not     r8\n");
+    emit(8, "sar     rdx, 2\n");
+    emit(8, "sub     rdx, rax\n");
+    emit(8, "lea     rax, [rdx+rdx*4]\n");
+    emit(8, "add     rax, rax\n");
+    emit(8, "sub     rdi, rax\n");
+    emit(8, "add     edi, 48\n");
+    emit(8, "mov     BYTE [rsp+32+r8], dil\n");
+    emit(8, "mov     rdi, rdx\n");
+    emit(8, "test    rdx, rdx\n");
+    emit(8, "jne     .L3\n");
+    emit(8, "test    r10d, r10d\n");
+    emit(8, "je      .L4\n");
+    emit(8, "not     rcx\n");
+    emit(8, "mov     BYTE [rsp+32+rcx], 45\n");
+    emit(8, "lea     rcx, [rsi+2]\n");
+    emit(0, ".L4:\n");
+    emit(8, "mov     eax, 24\n");
+    emit(8, "mov     rdx, rcx\n");
+    emit(8, "mov     edi, 1\n");
+    emit(8, "sub     rax, rcx\n");
+    emit(8, "lea     rsi, [rsp+8+rax]\n");
+    emit(8, "mov     rax, 1\n");
+    emit(8, "syscall\n");
+    emit(8, "add     rsp, 40\n");
+    emit(8, "ret\n");
 }
 
 void emit_asm(VM *vm) {
