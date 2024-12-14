@@ -3,6 +3,8 @@
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
 #define emit_op_comment(_op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", name, i, locs.data[i].file, locs.data[i].line)
 
+Functions funcs;
+
 int op_offsets[] = {
     3, //OP_CONSTANT
     3, //OP_ARRAY
@@ -75,10 +77,17 @@ void emit_header() {
     emit(0, "segment readable executable");
     emit(0, "entry start");
     emit(0, "start:");
+    emit(8, "mov rbp, rsp");
+    emit(8, "lea r15, [call_stack + 64*16]");
 }
 
 void emit_func(char *name, Code code, Locations locs, Constants constants) {
     emit(0, "; FUNC %s:", name);
+    if (strcmp(name, "MAIN")) {
+        emit(0, "fn_%s:", name);
+        emit(8, "sub r15, 8");
+        emit(8, "pop qword [r15]");
+    }
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
             case OP_CONSTANT:
@@ -225,11 +234,11 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit_op_comment(OP_DEFINE_LOCAL);
                 emit(8, "pop rax");
                 emit(8, "sub rsp, 8");
-                emit(8, "mov qword [rbp + %ld], rax", 8 * (code.data[++i] + 1));
+                emit(8, "mov qword [rbp + %ld], rax", 8 * code.data[++i]);
                 break;
             case OP_GET_LOCAL:
                 emit_op_comment(OP_GET_LOCAL);
-                emit(8, "push qword [rbp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "push qword [rbp + %ld]", 8 * code.data[++i]);
                 break;
             case OP_POP:
                 emit_op_comment(OP_POP);
@@ -238,13 +247,32 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_SET_LOCAL:
                 emit_op_comment(OP_SET_LOCAL);
-                emit(8, "pop qword [rbp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "pop qword [rbp + %ld]", 8 * code.data[++i]);
                 break;
             case OP_GET_LOCAL_GET_CONSTANT:
                 emit_op_comment(OP_GET_LOCAL_GET_CONSTANT);
-                emit(8, "push qword [rbp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "push qword [rbp + %ld]", 8 * code.data[++i]);
                 emit(8, "push %ld", constants.data[read_index].val.num);
                 i += 2;
+                break;
+            case OP_CALL:
+                emit_op_comment(OP_CALL);
+                emit(8, "sub r15, 8");
+                emit(8, "mov [r15], rbp");
+                emit(8, "lea rbp, [rsp + %ld]", 8 * (funcs.data[read_index].arity - 1));
+                emit(8, "call fn_%s", funcs.data[read_index].name);
+                emit(8, "mov rbp, [r15]");
+                emit(8, "add r15, 8");
+                emit(8, "add rsp, %ld", funcs.data[read_index].arity * 8);
+                emit(8, "push rax");
+                i += 2;
+                break;
+            case OP_RETURN:
+                emit_op_comment(OP_RETURN);
+                emit(8, "pop rax");
+                emit(8, "push qword [r15]");
+                emit(8, "add r15, 8");
+                emit(8, "ret");
                 break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
@@ -255,6 +283,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
 
 void emit_globals(Function *func) {
     emit(0, "segment readable writeable");
+    emit(8, "call_stack: rb 64*16");
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
         if (func->code.data[i] == OP_DEFINE_GLOBAL) {
             emit(8, "%s: dq 0", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
@@ -314,7 +343,9 @@ void emit_footer() {
 }
 
 void emit_asm(VM *vm) {
-    f = fopen("out.asm", "w"),
+    f = fopen("out.asm", "w");
+
+    funcs = vm->funcs;
 
     emit_header();
 

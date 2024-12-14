@@ -1,8 +1,6 @@
-if 1
-    let y = 10
-    let x = 1
-    println x
-    x = 58
-    println x
-    println y
+fn fib(n)
+    if (n < 2) return 1;
+    return fib(n - 2) + fib(n - 1)
 ;
+
+println fib(40)
