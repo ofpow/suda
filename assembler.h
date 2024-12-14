@@ -225,11 +225,11 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit_op_comment(OP_DEFINE_LOCAL);
                 emit(8, "pop rax");
                 emit(8, "sub rsp, 8");
-                emit(8, "mov qword [rsp + %ld], rax", 8 * (code.data[++i] + 1));
+                emit(8, "mov qword [rbp + %ld], rax", 8 * (code.data[++i] + 1));
                 break;
             case OP_GET_LOCAL:
                 emit_op_comment(OP_GET_LOCAL);
-                emit(8, "push qword [rsp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "push qword [rbp + %ld]", 8 * (code.data[++i] + 1));
                 break;
             case OP_POP:
                 emit_op_comment(OP_POP);
@@ -238,7 +238,13 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_SET_LOCAL:
                 emit_op_comment(OP_SET_LOCAL);
-                emit(8, "pop qword [rsp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "pop qword [rbp + %ld]", 8 * (code.data[++i] + 1));
+                break;
+            case OP_GET_LOCAL_GET_CONSTANT:
+                emit_op_comment(OP_GET_LOCAL_GET_CONSTANT);
+                emit(8, "push qword [rbp + %ld]", 8 * (code.data[++i] + 1));
+                emit(8, "push %ld", constants.data[read_index].val.num);
+                i += 2;
                 break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
