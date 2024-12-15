@@ -1,4 +1,0 @@
-println (50 + str(1))
-println (50 + num("5"))
-println (50 + num(1))
-println (50 + str("5"))

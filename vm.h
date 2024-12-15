@@ -576,43 +576,17 @@ void run(VM *vm) {
                 }));
                 if (op1.mutable) free_value_array(op1.val.array);
                 if (op2.mutable) free_value_array(op2.val.array);
-            } else {
-                char *str1;
-                char *str2;
-                int64_t op1_len = 0;
-                int64_t op2_len = 0;
-                bool free1 = false;
-                bool free2 = false;
-
-                if (op1.type == Value_String) {
-                    op1_len = op1.val.str.len;
-                    str1 = op1.val.str.chars;
-                    if (op1.mutable) free1 = true;
-                } else if (op1.type == Value_Number) {
-                    op1_len = num_len(op1.val.num);
-                    str1 = format_str(op1_len + 1, "%ld", op1.val.num);
-                    free1 = true;
-                }
-                if (op2.type == Value_String) {
-                    op2_len = op2.val.str.len;
-                    str2 = op2.val.str.chars;
-                    if (op2.mutable) free2 = true;
-                } else if (op2.type == Value_Number) {
-                    op2_len = num_len(op2.val.num);
-                    str2 = format_str(op2_len + 1, "%ld", op2.val.num);
-                    free2 = true;
-                }
-
+            } else if (op1.type == Value_String && op2.type == Value_String) {
                 stack_push(((Value){
                     Value_String,
-                    .val.str={format_str(op1_len + op2_len + 1, "%s%s", str1, str2), op1_len + op2_len},
+                    .val.str={format_str(op1.val.str.len + op2.val.str.len + 1, "%s%s", op1.val.str.chars, op2.val.str.chars), op1.val.str.len + op2.val.str.len},
                     true,
                     0
                 }));
 
-                if (free1) free(str1);
-                if (free2) free(str2);
-            }
+                if (op1.mutable) free(op1.val.str.chars);
+                if (op2.mutable) free(op2.val.str.chars);
+            } else ERR("ERROR in %s on line %ld: cant subtract type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
             dispatch();}
         OP_SUBTRACT:
             binary_op(-, "ERROR in %s on line %ld: cant subtract type %s and %s\n");
