@@ -2,6 +2,9 @@
 
 #define read_index (COMBYTE(code.data[i + 1], code.data[i + 2]))
 #define emit_op_comment(_op) emit(0, "%s_label_%d: ; " #_op " %s:%ld", name, i, locs.data[i].file, locs.data[i].line)
+#define VALUE_NUMBER 0
+#define VALUE_STRING 1
+#define VALUE_ARRAY 2
 
 Functions funcs;
 
@@ -73,6 +76,9 @@ void emit(int indent, char *fmt, ...) {
 }
 
 void emit_header() {
+    emit(0, "VALUE_NUMBER equ 0", 0);
+    emit(0, "VALUE_STRING equ 1", 1);
+    emit(0, "VALUE_ARRAY equ 2");
     emit(0, "format ELF64 executable 3");
     emit(0, "segment readable executable");
     emit(0, "entry start");
@@ -81,198 +87,74 @@ void emit_header() {
     emit(8, "lea r15, [call_stack + 64*16]");
 }
 
-void emit_func(char *name, Code code, Locations locs, Constants constants) {
-    emit(0, "; FUNC %s:", name);
-    if (strcmp(name, "MAIN")) {
-        emit(0, "fn_%s:", name);
-        emit(8, "sub r15, 8");
-        emit(8, "pop qword [r15]");
+int64_t serialize_constant(Value val) {
+    switch (val.type) {
+        case Value_Number:
+            return 0;
+        case Value_String:
+            int info = val.val.str.len;
+            info = (info << 4);
+            info = (info | VALUE_STRING);
+            return info;
+        default: ERR("cant serialize value type %s\n", find_value_type(val.type))
     }
+    return 0;
+}
+
+void emit_func(char *name, Code code, Locations locs, Constants constants) {
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
             case OP_CONSTANT:
                 emit_op_comment(OP_CONSTANT);
-                emit(8, "push %ld", constants.data[read_index].val.num);
+                Value val = constants.data[read_index];
+                emit(8, "push %ld", serialize_constant(val));
+                switch (val.type) {
+                    case Value_Number:
+                        emit(8, "push %ld", val.val.num);
+                        break;
+                    case Value_String:
+                        emit(8, "push STR_%s_%ld", name, read_index);
+                        break;
+                    default:
+                        ERR("ERROR in %s on line %ld: cant emit asm for value type %s\n", locs.data[i].file, locs.data[i].line, find_value_type(val.type))
+                }
                 i += 2;
                 break;
             case OP_PRINTLN:
                 emit_op_comment(OP_PRINTLN);
-                emit(8, "pop rdi");
-                emit(8, "call println_int");
-                break;
-            case OP_ADD:
-                emit_op_comment(OP_ADD);
-                emit(8, "pop rax");
-                emit(8, "pop rbx");
-                emit(8, "add rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_SUBTRACT:
-                emit_op_comment(OP_SUBTRACT);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "sub rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_MULTIPLY:
-                emit_op_comment(OP_MULTIPLY);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "imul rax, rbx");
-                emit(8, "push rax");
-                break;
-            case OP_DIVIDE:
-                emit_op_comment(OP_DIVIDE);
-                emit(8, "mov rdx, 0");
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "idiv rbx");
-                emit(8, "push rax");
-                break;
-            case OP_GREATER:
-                emit_op_comment(OP_GREATER);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setg al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_GREATER_EQUAL:
-                emit_op_comment(OP_GREATER_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setge al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_LESS:
-                emit_op_comment(OP_LESS);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setl al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_LESS_EQUAL:
-                emit_op_comment(OP_LESS_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setle al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_IS_EQUAL:
-                emit_op_comment(OP_IS_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "sete al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_NOT_EQUAL:
-                emit_op_comment(OP_NOT_EQUAL);
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "cmp rax, rbx");
-                emit(8, "setne al");
-                emit(8, "movzx rax, al");
-                emit(8, "push rax");
-                break;
-            case OP_START_IF:
-                emit_op_comment(OP_START_IF);
-                emit(8, "pop rax");
-                emit(8, "cmp rax, 0");
-                emit(8, "jz %s_label_%d", name, i + read_index);
-                i += 2;
-                break;
-            case OP_JUMP_IF_FALSE:
-                emit_op_comment(OP_JUMP_IF_FALSE);
-                emit(8, "pop rax");
-                emit(8, "cmp rax, 1");
-                emit(8, "jnz %s_label_%d", name, i + read_index);
-                i += 2;
-                break;
-            case OP_JUMP:
-                emit_op_comment(OP_JUMP);
-                emit(8, "jmp %s_label_%d", name, read_index);
-                i += 2;
+                emit(8, "pop rax"); // value
+                emit(8, "pop rbx"); // metadata
+                emit(8, "mov rcx, rbx");
+                emit(8, "and rcx, 3");
+                emit(8, "cmp rcx, VALUE_NUMBER");
+                emit(8, "je %s_%d_println_num", name, i);
+                emit(8, "cmp rcx, VALUE_STRING");
+                emit(8, "je %s_%d_println_str", name, i);
+
+
+                emit(0, "%s_%d_println_num:", name, i);
+                emit(8, "mov rdi, rax");
+                emit(8, "call println_num");
+                emit(8, "jmp %s_%d_done", name, i);
+
+                emit(0, "%s_%d_println_str:", name, i);
+                emit(8, "shr rbx, 4");
+                emit(8, "mov rdx, rbx");
+                emit(8, "mov rsi, rax");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+                emit(8, "mov rsi, STR_NEWLINE");
+                emit(8, "mov rdx, 1");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+
+                emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
                 emit(8, "mov rax, 60");
                 emit(8, "mov rdi, 0");
                 emit(8, "syscall");
-                break;
-            case OP_DEFINE_GLOBAL:
-                emit_op_comment(OP_DEFINE_GLOBAL);
-                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
-                i += 2;
-                break;
-            case OP_GET_GLOBAL:
-                emit_op_comment(OP_GET_GLOBAL);
-                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
-                i += 2;
-                break;
-            case OP_GET_GLOBAL_GET_CONSTANT:
-                emit_op_comment(OP_GET_GLOBAL_GET_CONSTANT);
-                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
-                i += 2;
-                emit(8, "push %ld", constants.data[read_index].val.num);
-                i += 2;
-                break;
-            case OP_SET_GLOBAL:
-                emit_op_comment(OP_SET_GLOBAL);
-                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
-                i += 2;
-                break;
-            case OP_DEFINE_LOCAL:
-                emit_op_comment(OP_DEFINE_LOCAL);
-                emit(8, "pop rax");
-                emit(8, "sub rsp, 8");
-                emit(8, "mov qword [rbp + %ld], rax", 8 * code.data[++i]);
-                break;
-            case OP_GET_LOCAL:
-                emit_op_comment(OP_GET_LOCAL);
-                emit(8, "push qword [rbp + %ld]", 8 * code.data[++i]);
-                break;
-            case OP_POP:
-                emit_op_comment(OP_POP);
-                emit(8, "add rsp, %ld", 8 * read_index);
-                i += 2;
-                break;
-            case OP_SET_LOCAL:
-                emit_op_comment(OP_SET_LOCAL);
-                emit(8, "pop qword [rbp + %ld]", 8 * code.data[++i]);
-                break;
-            case OP_GET_LOCAL_GET_CONSTANT:
-                emit_op_comment(OP_GET_LOCAL_GET_CONSTANT);
-                emit(8, "push qword [rbp + %ld]", 8 * code.data[++i]);
-                emit(8, "push %ld", constants.data[read_index].val.num);
-                i += 2;
-                break;
-            case OP_CALL:
-                emit_op_comment(OP_CALL);
-                emit(8, "sub r15, 8");
-                emit(8, "mov [r15], rbp");
-                emit(8, "lea rbp, [rsp + %ld]", 8 * (funcs.data[read_index].arity - 1));
-                emit(8, "call fn_%s", funcs.data[read_index].name);
-                emit(8, "mov rbp, [r15]");
-                emit(8, "add r15, 8");
-                emit(8, "add rsp, %ld", funcs.data[read_index].arity * 8);
-                emit(8, "push rax");
-                i += 2;
-                break;
-            case OP_RETURN:
-                emit_op_comment(OP_RETURN);
-                emit(8, "pop rax");
-                emit(8, "push qword [r15]");
-                emit(8, "add r15, 8");
-                emit(8, "ret");
                 break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
@@ -281,18 +163,38 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
     }
 }
 
-void emit_globals(Function *func) {
+void emit_footer(Function *func) {
     emit(0, "segment readable writeable");
-    emit(8, "call_stack: rb 64*16");
+    emit(0, "call_stack: rb 64*16");
+    emit(0, "STR_NEWLINE: db 10, 0");
+
+    //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
         if (func->code.data[i] == OP_DEFINE_GLOBAL) {
-            emit(8, "%s: dq 0", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
+            emit(0, "%s: dq 0", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
+        }
+    }
+
+    //string constants
+    for (int i = 0; i < funcs.index; i++) {
+        Function *func = &funcs.data[i];
+        for (int j = 0; j < func->constants.index; j++) {
+            if (func->constants.data[j].type == Value_String) {
+
+                fprintf(f, "STR_%s_%d: db ", func->name, j);
+                string s = func->constants.data[j].val.str;
+
+                for (size_t k = 0; k < s.len; k++)
+                    fprintf(f, "%d, ", s.chars[k]);
+
+                fprintf(f, "0\n");
+            }
         }
     }
 }
 
-void emit_footer() {
-    emit(0, "println_int:");
+void emit_helpers() {
+    emit(0, "println_num:");
     emit(8, "sub     rsp, 40");
     emit(8, "xor     r10d, r10d");
     emit(8, "test    rdi, rdi");
@@ -357,9 +259,9 @@ void emit_asm(VM *vm) {
             vm->funcs.data[i].constants
         );
 
-    emit_footer();
+    emit_helpers();
 
-    emit_globals(&vm->funcs.data[0]);
+    emit_footer(&vm->funcs.data[0]);
 
     fclose(f);
 
