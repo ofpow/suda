@@ -586,7 +586,7 @@ void run(VM *vm) {
 
                 if (op1.mutable) free(op1.val.str.chars);
                 if (op2.mutable) free(op2.val.str.chars);
-            } else ERR("ERROR in %s on line %ld: cant subtract type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
+            } else ERR("ERROR in %s on line %ld: cant add type %s and %s\n", get_loc, find_value_type(op1.type), find_value_type(op2.type))
             dispatch();}
         OP_SUBTRACT:
             binary_op(-, "ERROR in %s on line %ld: cant subtract type %s and %s\n");
