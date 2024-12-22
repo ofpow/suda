@@ -246,6 +246,170 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit_op_comment(OP_DIVIDE);
                 emit_binary_op(div);
                 break;
+            case OP_IS_EQUAL:
+                emit_op_comment(OP_IS_EQUAL);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                
+                // make sure ops are same type
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "xor rax, rbx");
+                emit(8, "cmp rax, 0");
+                emit(8, "jnz %s_%d_false", name, i);
+                
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "je %s_%d_is_equal_num", name, i);
+                emit(8, "cmp rax, VALUE_STRING");
+                emit(8, "je %s_%d_is_equal_str", name, i);
+
+                emit(0, "%s_%d_is_equal_num:", name, i);
+                emit(8, "cmp op1_value, op2_value");
+                emit(8, "je %s_%d_true", name, i);
+                emit(8, "jmp %s_%d_false", name, i);
+
+                emit(0, "%s_%d_is_equal_str:", name, i);
+                emit(8, "jmp %s_%d_error", name, i);
+
+                emit(0, "%s_%d_false:", name, i);
+                emit(8, "push 0");
+                emit(8, "push 0");
+                emit(8, "jmp %s_%d_done", name, i);
+                emit(0, "%s_%d_true:", name, i);
+                emit(8, "push 0");
+                emit(8, "push 1");
+                emit(8, "jmp %s_%d_done", name, i);
+
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_LESS:
+                emit_op_comment(OP_LESS);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+                emit(8, "cmp rbx, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+
+                emit(8, "cmp op1_value, op2_value");
+                emit(8, "setl al");
+                emit(8, "movzx rax, al");
+                emit(8, "push 0");
+                emit(8, "push rax");
+                emit(8, "jmp %s_%d_done", name, i);
+                
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_LESS_EQUAL:
+                emit_op_comment(OP_LESS_EQUAL);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+                emit(8, "cmp rbx, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+
+                emit(8, "cmp op1_value, op2_value");
+                emit(8, "setle al");
+                emit(8, "movzx rax, al");
+                emit(8, "push 0");
+                emit(8, "push rax");
+                emit(8, "jmp %s_%d_done", name, i);
+                
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_GREATER:
+                emit_op_comment(OP_GREATER);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+                emit(8, "cmp rbx, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+
+                emit(8, "cmp op1_value, op2_value");
+                emit(8, "setg al");
+                emit(8, "movzx rax, al");
+                emit(8, "push 0");
+                emit(8, "push rax");
+                emit(8, "jmp %s_%d_done", name, i);
+                
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_GREATER_EQUAL:
+                emit_op_comment(OP_GREATER_EQUAL);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+                emit(8, "cmp rbx, VALUE_NUMBER");
+                emit(8, "jne %s_%d_error", name, i);
+
+                emit(8, "cmp op1_value, op2_value");
+                emit(8, "setge al");
+                emit(8, "movzx rax, al");
+                emit(8, "push 0");
+                emit(8, "push rax");
+                emit(8, "jmp %s_%d_done", name, i);
+                
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_DEFINE_GLOBAL:
+                emit_op_comment(OP_DEFINE_GLOBAL);
+                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
+                emit(8, "pop qword [%s + 8]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
+            case OP_GET_GLOBAL:
+                emit_op_comment(OP_GET_GLOBAL);
+                emit(8, "push qword [%s + 8]", constants.data[read_index].val.str.chars);
+                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
                 emit(8, "mov rax, 60");
@@ -268,7 +432,7 @@ void emit_footer(Function *func) {
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
         if (func->code.data[i] == OP_DEFINE_GLOBAL) {
-            emit(0, "%s: dq 0", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
+            emit(0, "%s: rb 16", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
         }
     }
 
