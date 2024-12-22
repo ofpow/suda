@@ -410,6 +410,27 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
+            case OP_START_IF:
+                emit_op_comment(OP_START_IF);
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                emit(8, "cmp op1_value, 0");
+                emit(8, "jz %s_label_%d", name, i + read_index);
+                i += 2;
+                break;
+            case OP_JUMP_IF_FALSE:
+                emit_op_comment(OP_JUMP_IF_FALSE);
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                emit(8, "cmp op1_value, 1");
+                emit(8, "jnz %s_label_%d", name, i + read_index);
+                i += 2;
+                break;
+            case OP_JUMP:
+                emit_op_comment(OP_JUMP);
+                emit(8, "jmp %s_label_%d", name, i + read_index);
+                i += 2;
+                break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
                 emit(8, "mov rax, 60");
