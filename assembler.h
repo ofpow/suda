@@ -66,6 +66,7 @@ int op_offsets[] = {
 
 FILE *f;
 
+__attribute__((format(printf, 2, 3)))
 void emit(int indent, char *fmt, ...) {
     fprintf(f, "%*s", indent, "");
     va_list args;
@@ -76,8 +77,8 @@ void emit(int indent, char *fmt, ...) {
 }
 
 void emit_header() {
-    emit(0, "VALUE_NUMBER equ 0", 0);
-    emit(0, "VALUE_STRING equ 1", 1);
+    emit(0, "VALUE_NUMBER equ 0");
+    emit(0, "VALUE_STRING equ 1");
     emit(0, "VALUE_ARRAY equ 2");
     emit(0, "format ELF64 executable 3");
     emit(0, "segment readable executable");
@@ -113,7 +114,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                         emit(8, "push %ld", val.val.num);
                         break;
                     case Value_String:
-                        emit(8, "push STR_%s_%ld", name, read_index);
+                        emit(8, "push STR_%s_%d", name, read_index);
                         break;
                     default:
                         ERR("ERROR in %s on line %ld: cant emit asm for value type %s\n", locs.data[i].file, locs.data[i].line, find_value_type(val.type))
