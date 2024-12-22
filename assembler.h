@@ -6,6 +6,33 @@
 #define VALUE_STRING 1
 #define VALUE_ARRAY 2
 
+#define emit_binary_op(_op)              \
+    emit(8, "pop op2_value");            \
+    emit(8, "pop op2_metadata");         \
+    emit(8, "pop op1_value");            \
+    emit(8, "pop op1_metadata");         \
+                                         \
+    emit(8, "mov rax, op1_metadata");    \
+    emit(8, "mov rbx, op2_metadata");    \
+    emit(8, "and rax, 3");               \
+    emit(8, "and rbx, 3");               \
+    emit(8, "xor rax, rbx");             \
+    emit(8, "cmp rax, 0");               \
+    emit(8, "jnz %s_%d_error", name, i); \
+                                         \
+    emit(8, "cmp rax, VALUE_NUMBER");    \
+    emit(8, "jne %s_%d_error", name, i); \
+                                         \
+    emit(8, "mov rax, op1_value");       \
+    emit(8, #_op " rax, op2_value");     \
+    emit(8, "push 0");                   \
+    emit(8, "push rax");                 \
+    emit(8, "jmp %s_%d_done", name, i);  \
+                                         \
+    emit(0, "%s_%d_error:", name, i);    \
+    emit(8, "ERROR");                    \
+    emit(0, "%s_%d_done:", name, i);     \
+
 Functions funcs;
 
 int op_offsets[] = {
@@ -206,6 +233,18 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(0, "%s_%d_error:", name, i);
                 emit(8, "ERROR");
                 emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_SUBTRACT:
+                emit_op_comment(OP_SUBTRACT);
+                emit_binary_op(sub);
+                break;
+            case OP_MULTIPLY:
+                emit_op_comment(OP_MULTIPLY);
+                emit_binary_op(mult);
+                break;
+            case OP_DIVIDE:
+                emit_op_comment(OP_DIVIDE);
+                emit_binary_op(div);
                 break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
