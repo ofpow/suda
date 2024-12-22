@@ -80,6 +80,26 @@ void emit_header() {
     emit(0, "VALUE_NUMBER equ 0");
     emit(0, "VALUE_STRING equ 1");
     emit(0, "VALUE_ARRAY equ 2");
+    emit(0, "op1_value equ r8");
+    emit(0, "op1_metadata equ r9");
+    emit(0, "op2_value equ r10");
+    emit(0, "op2_metadata equ r11");
+    
+    emit(0, "macro ERROR {");
+    emit(8, "mov rdx, 5");
+    emit(8, "mov rsi, STR_ERROR");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
+    emit(8, "mov rsi, STR_NEWLINE");
+    emit(8, "mov rdx, 1");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
+    emit(8, "mov rax, 60");
+    emit(8, "mov rdi, 1");
+    emit(8, "syscall");
+    emit(0, "}");
+
+
     emit(0, "format ELF64 executable 3");
     emit(0, "segment readable executable");
     emit(0, "entry start");
@@ -123,9 +143,9 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_PRINTLN:
                 emit_op_comment(OP_PRINTLN);
-                emit(8, "pop rax"); // value
-                emit(8, "pop rbx"); // metadata
-                emit(8, "mov rcx, rbx");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata"); 
+                emit(8, "mov rcx, op1_metadata");
                 emit(8, "and rcx, 3");
                 emit(8, "cmp rcx, VALUE_NUMBER");
                 emit(8, "je %s_%d_println_num", name, i);
@@ -134,14 +154,14 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
 
 
                 emit(0, "%s_%d_println_num:", name, i);
-                emit(8, "mov rdi, rax");
+                emit(8, "mov rdi, op1_value");
                 emit(8, "call println_num");
                 emit(8, "jmp %s_%d_done", name, i);
 
                 emit(0, "%s_%d_println_str:", name, i);
-                emit(8, "shr rbx, 4");
-                emit(8, "mov rdx, rbx");
-                emit(8, "mov rsi, rax");
+                emit(8, "shr op1_metadata, 4");
+                emit(8, "mov rdx, op1_metadata");
+                emit(8, "mov rsi, op1_value");
                 emit(8, "mov rax, 1");
                 emit(8, "syscall");
                 emit(8, "mov rsi, STR_NEWLINE");
@@ -149,6 +169,42 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "mov rax, 1");
                 emit(8, "syscall");
 
+                emit(0, "%s_%d_done:", name, i);
+                break;
+            case OP_ADD:
+                emit_op_comment(OP_ADD);
+                emit(8, "pop op2_value");
+                emit(8, "pop op2_metadata");
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "mov rbx, op2_metadata");
+                emit(8, "and rax, 3");
+                emit(8, "and rbx, 3");
+                emit(8, "xor rax, rbx");
+                emit(8, "cmp rax, 0");
+                emit(8, "jnz %s_%d_error", name, i);
+                
+                emit(8, "cmp rax, VALUE_NUMBER");
+                emit(8, "je %s_%d_add_num", name, i);
+                emit(8, "cmp rax, VALUE_STRING");
+                emit(8, "je %s_%d_add_str", name, i);
+                emit(8, "cmp rax, VALUE_ARRAY");
+                emit(8, "je %s_%d_add_array", name, i);
+
+                emit(0, "%s_%d_add_num:", name, i);
+                emit(8, "add rax, op1_value");
+                emit(8, "add rax, op2_value");
+                emit(8, "push 0");
+                emit(8, "push rax");
+                emit(8, "jmp %s_%d_done", name, i);
+
+                emit(0, "%s_%d_add_str:", name, i);
+                emit(0, "%s_%d_add_array:", name, i);
+
+                emit(0, "%s_%d_error:", name, i);
+                emit(8, "ERROR");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_DONE:
@@ -168,6 +224,7 @@ void emit_footer(Function *func) {
     emit(0, "segment readable writeable");
     emit(0, "call_stack: rb 64*16");
     emit(0, "STR_NEWLINE: db 10, 0");
+    emit(0, "STR_ERROR: db 69,82,82,79,82, 0");
 
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {

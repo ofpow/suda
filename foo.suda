@@ -1,6 +1,2 @@
-println "hello world"
-println 60
-println "hello world"
-println "hello world"
-println 60
-println 60
+println 1 + "1"
+#println 1 + 1
