@@ -150,6 +150,13 @@ int64_t serialize_constant(Value val) {
 }
 
 void emit_func(char *name, Code code, Locations locs, Constants constants) {
+    
+    if (strcmp(name, "MAIN")) {
+        emit(0, "fn_%s:", name);
+        emit(8, "sub r15, 8");
+        emit(8, "pop qword [r15]");
+    }
+
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
             case OP_CONSTANT:
@@ -212,6 +219,9 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "xor rax, rbx");
                 emit(8, "cmp rax, 0");
                 emit(8, "jnz %s_%d_error", name, i);
+
+                emit(8, "mov rax, op1_metadata");
+                emit(8, "and rax, 3");
                 
                 emit(8, "cmp rax, VALUE_NUMBER");
                 emit(8, "je %s_%d_add_num", name, i);
@@ -410,6 +420,12 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
                 i += 2;
                 break;
+            case OP_SET_GLOBAL:
+                emit_op_comment(OP_SET_GLOBAL);
+                emit(8, "pop qword [%s]", constants.data[read_index].val.str.chars);
+                emit(8, "pop qword [%s + 8]", constants.data[read_index].val.str.chars);
+                i += 2;
+                break;
             case OP_START_IF:
                 emit_op_comment(OP_START_IF);
                 emit(8, "pop op1_value");
@@ -428,8 +444,84 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_JUMP:
                 emit_op_comment(OP_JUMP);
-                emit(8, "jmp %s_label_%d", name, i + read_index);
+                emit(8, "jmp %s_label_%d", name, read_index);
                 i += 2;
+                break;
+            case OP_DEFINE_LOCAL:
+                emit_op_comment(OP_DEFINE_LOCAL);
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                emit(8, "sub rsp, 16");
+                emit(8, "mov qword [rbp + %d], op1_value", 16 * code.data[i + 1]);
+                emit(8, "mov qword [rbp + %d], op1_metadata", 16 * code.data[++i] + 8);
+                break;
+            case OP_GET_LOCAL:
+                emit_op_comment(OP_GET_LOCAL);
+                emit(8, "push qword [rbp + %d]", 16 * code.data[i + 1] + 8);
+                emit(8, "push qword [rbp + %d]", 16 * code.data[++i]);
+                break;
+            case OP_POP:
+                emit_op_comment(OP_POP);
+                emit(8, "add rsp, %d", 16 * read_index);
+                i += 2;
+                break;
+            case OP_GET_GLOBAL_GET_CONSTANT:{
+                emit_op_comment(OP_GET_GLOBAL_GET_CONSTANT);
+                emit(8, "push qword [%s + 8]", constants.data[read_index].val.str.chars);
+                emit(8, "push qword [%s]", constants.data[read_index].val.str.chars);
+                i += 2;
+                Value val = constants.data[read_index];
+                emit(8, "push %ld", serialize_constant(val));
+                switch (val.type) {
+                    case Value_Number:
+                        emit(8, "push %ld", val.val.num);
+                        break;
+                    case Value_String:
+                        emit(8, "push STR_%s_%d", name, read_index);
+                        break;
+                    default:
+                        ERR("ERROR in %s on line %ld: cant emit asm for value type %s\n", locs.data[i].file, locs.data[i].line, find_value_type(val.type))
+                }
+                i += 2;
+                break;}
+            case OP_GET_LOCAL_GET_CONSTANT: {
+                emit_op_comment(OP_GET_LOCAL_GET_CONSTANT);
+                emit(8, "push qword [rbp + %d]", 16 * code.data[i + 1] + 8);
+                emit(8, "push qword [rbp + %d]", 16 * code.data[++i]);
+                Value val = constants.data[read_index];
+                emit(8, "push %ld", serialize_constant(val));
+                switch (val.type) {
+                    case Value_Number:
+                        emit(8, "push %ld", val.val.num);
+                        break;
+                    case Value_String:
+                        emit(8, "push STR_%s_%d", name, read_index);
+                        break;
+                    default:
+                        ERR("ERROR in %s on line %ld: cant emit asm for value type %s\n", locs.data[i].file, locs.data[i].line, find_value_type(val.type))
+                }
+                i += 2;
+                break;}
+            case OP_CALL:
+                emit_op_comment(OP_CALL);
+                emit(8, "sub r15, 8");
+                emit(8, "mov [r15], rbp");
+                emit(8, "lea rbp, [rsp + %d]", 16 * (funcs.data[read_index].arity - 1));
+                emit(8, "call fn_%s", funcs.data[read_index].name);
+                emit(8, "mov rbp, [r15]");
+                emit(8, "add r15, 8");
+                emit(8, "add rsp, %d", funcs.data[read_index].arity * 16);
+                emit(8, "push op1_metadata");
+                emit(8, "push op1_value");
+                i += 2;
+                break;
+            case OP_RETURN:
+                emit_op_comment(OP_RETURN);
+                emit(8, "pop op1_value");
+                emit(8, "pop op1_metadata");
+                emit(8, "push qword [r15]");
+                emit(8, "add r15, 8");
+                emit(8, "ret");
                 break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
