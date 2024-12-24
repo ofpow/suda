@@ -181,6 +181,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "pop op1_metadata"); 
                 emit(8, "mov rcx, op1_metadata");
                 emit(8, "and rcx, 3");
+
                 emit(8, "cmp rcx, VALUE_NUMBER");
                 emit(8, "je %s_%d_println_num", name, i);
                 emit(8, "cmp rcx, VALUE_STRING");
@@ -189,7 +190,11 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
 
                 emit(0, "%s_%d_println_num:", name, i);
                 emit(8, "mov rdi, op1_value");
-                emit(8, "call println_num");
+                emit(8, "call print_num");
+                emit(8, "mov rsi, STR_NEWLINE");
+                emit(8, "mov rdx, 1");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
                 emit(8, "jmp %s_%d_done", name, i);
 
                 emit(0, "%s_%d_println_str:", name, i);
@@ -568,7 +573,7 @@ void emit_footer(Function *func) {
 }
 
 void emit_helpers() {
-    emit(0, "println_num:");
+    emit(0, "print_num:");
     emit(8, "sub     rsp, 40");
     emit(8, "xor     r10d, r10d");
     emit(8, "test    rdi, rdi");
@@ -576,12 +581,11 @@ void emit_helpers() {
     emit(8, "neg     rdi");
     emit(8, "mov     r10d, 1");
     emit(0, ".L2:");
-    emit(8, "mov     QWORD [rsp+24], 0");
+    emit(8, "mov     QWORD [rsp+8], 0");
     emit(8, "mov     ecx, 1");
     emit(8, "mov     r9, 7378697629483820647");
-    emit(8, "mov     QWORD [rsp+8], 0");
     emit(8, "mov     QWORD [rsp+16], 0");
-    emit(8, "mov     BYTE [rsp+31], 10");
+    emit(8, "mov     QWORD [rsp+24], 0");
     emit(0, ".L3:");
     emit(8, "mov     rax, rdi");
     emit(8, "mov     rsi, rcx");
