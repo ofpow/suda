@@ -467,10 +467,8 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_SET_LOCAL:
                 emit_op_comment(OP_SET_LOCAL);
-                emit(8, "pop op1_value");
-                emit(8, "pop op1_metadata");
-                emit(8, "mov qword [rbp + %d], op1_value", 16 * code.data[i + 1]);
-                emit(8, "mov qword [rbp + %d], op1_metadata", 16 * code.data[++i] + 8);
+                emit(8, "pop qword [rbp + %d]", 16 * code.data[i + 1]);
+                emit(8, "pop qword [rbp + %d]", 16 * code.data[++i] + 8);
                 break;
             case OP_POP:
                 emit_op_comment(OP_POP);
