@@ -510,8 +510,14 @@ int main(int argc, char *argv[]) {
     vm.func = &vm.funcs.data[0];
 
     if (disassemble_bytecode) disassemble(&vm);
-    else if (assemble) emit_asm(&vm);
-    else run(&vm);
+    else if (assemble) {
+        emit_asm(&vm);
+        report_time("CODEGEN      time: %f seconds\n");
+    }
+    else {
+        run(&vm);
+        report_time("RUNNING      time: %f seconds\n");
+    }
 
 #ifdef PROFILE
     printf("FUNCTION NAME         INSTR COUNT    %% OF TOTAL      TIME     %% OF TOTAL\n");
@@ -553,7 +559,6 @@ int main(int argc, char *argv[]) {
     free(time_profiler);
 #endif
 
-    report_time("RUNNING      time: %f seconds\n");
 
     if (time) {
         printf("OVERALL      time: %f seconds\n",
