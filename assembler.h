@@ -126,6 +126,22 @@ void emit_header() {
     emit(8, "syscall");
     emit(0, "}");
 
+    emit(0, "macro println_num num {");
+    emit(8, "push rdi");
+    emit(8, "push rsi");
+    emit(8, "push rdx");
+    emit(8, "push rax");
+    emit(8, "mov rdi, num");
+    emit(8, "call print_num");
+    emit(8, "mov rsi, STR_NEWLINE");
+    emit(8, "mov rdx, 1");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
+    emit(8, "pop rax");
+    emit(8, "pop rdx");
+    emit(8, "pop rsi");
+    emit(8, "pop rdi");
+    emit(0, "}");
 
     emit(0, "format ELF64 executable 3");
     emit(0, "segment readable executable");
@@ -135,14 +151,21 @@ void emit_header() {
     emit(8, "lea r15, [call_stack + 64*16]");
 }
 
-int64_t serialize_constant(Value val) {
+u_int64_t serialize_constant(Value val) {
+    u_int64_t info = 0;
     switch (val.type) {
         case Value_Number:
-            return 0;
+            return info;
         case Value_String:
-            int info = val.val.str.len;
+            info = val.val.str.len;
             info = (info << 4);
             info = (info | VALUE_STRING);
+            return info;
+        case Value_Array:
+            info = ARRAY_LEN(val.val.num) - 1;
+            info = (info << 36);
+            info = (info | (ARRAY_SIZE(val.val.num) << 4));
+            info = (info | VALUE_ARRAY);
             return info;
         default: ERR("cant serialize value type %s\n", find_value_type(val.type))
     }
@@ -175,6 +198,13 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 }
                 i += 2;
                 break;
+            case OP_ARRAY:
+                emit_op_comment(OP_ARRAY);
+                emit(8, "mov rax, %ld", serialize_constant(constants.data[read_index].val.array[0]));
+                emit(8, "push rax");
+                emit(8, "push ARR_%s_%d", name, read_index);
+                i += 2;
+                break;
             case OP_PRINTLN:
                 emit_op_comment(OP_PRINTLN);
                 emit(8, "pop op1_value");
@@ -186,21 +216,66 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "je %s_%d_println_num", name, i);
                 emit(8, "cmp rcx, VALUE_STRING");
                 emit(8, "je %s_%d_println_str", name, i);
+                emit(8, "cmp rcx, VALUE_ARRAY");
+                emit(8, "je %s_%d_println_arr", name, i);
 
 
                 emit(0, "%s_%d_println_num:", name, i);
-                emit(8, "mov rdi, op1_value");
-                emit(8, "call print_num");
-                emit(8, "mov rsi, STR_NEWLINE");
-                emit(8, "mov rdx, 1");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
+                emit(8, "println_num op1_value");
                 emit(8, "jmp %s_%d_done", name, i);
 
                 emit(0, "%s_%d_println_str:", name, i);
                 emit(8, "shr op1_metadata, 4");
                 emit(8, "mov rdx, op1_metadata");
                 emit(8, "mov rsi, op1_value");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+                emit(8, "mov rsi, STR_NEWLINE");
+                emit(8, "mov rdx, 1");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+                emit(8, "jmp %s_%d_done", name, i);
+                
+                emit(0, "%s_%d_println_arr:", name, i);
+                emit(8, "mov rdx, 1");
+                emit(8, "mov rsi, STR_ARRAY_START");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+                emit(8, "mov rax, op1_value");
+                emit(8, "mov rbx, op1_metadata");
+                emit(8, "shr rbx, 36");
+                emit(8, "sub rbx, 1");
+                emit(8, "imul rbx, 16");
+                emit(8, "mov rcx, rax");
+                emit(8, "add rcx, rbx");
+
+                emit(0, "%s_%d_start:", name, i);
+                emit(8, "cmp rax, rcx");
+                emit(8, "jge %s_%d_arr_done", name, i);
+                emit(8, "mov op2_metadata, [rax]");
+                emit(8, "mov op2_value, [rax + 8]");
+                emit(8, "push rax");
+                emit(8, "push rbx");
+                emit(8, "push rcx");
+                emit(8, "mov rdi, op2_value");
+                emit(8, "call print_num");
+                emit(8, "mov rdx, 2");
+                emit(8, "mov rsi, STR_ARRAY_SEP");
+                emit(8, "mov rax, 1");
+                emit(8, "syscall");
+                emit(8, "pop rcx");
+                emit(8, "pop rbx");
+                emit(8, "pop rax");
+                emit(8, "add rax, 16");
+                emit(8, "jmp %s_%d_start", name, i);
+
+                emit(0, "%s_%d_arr_done:", name, i);
+                emit(8, "mov op2_metadata, [rax]");
+                emit(8, "mov op2_value, [rax + 8]");
+                emit(8, "mov rdi, op2_value");
+                emit(8, "call print_num");
+                emit(8, "mov rdx, 1");
+                emit(8, "mov rsi, STR_ARRAY_END");
                 emit(8, "mov rax, 1");
                 emit(8, "syscall");
                 emit(8, "mov rsi, STR_NEWLINE");
@@ -533,6 +608,12 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "add r15, 8");
                 emit(8, "ret");
                 break;
+            case OP_RETURN_NOTHING:
+                emit_op_comment(OP_RETURN_NOTHING);
+                emit(8, "push qword [r15]");
+                emit(8, "add r15, 8");
+                emit(8, "ret");
+                break;
             case OP_DONE:
                 emit_op_comment(OP_DONE);
                 emit(8, "mov rax, 60");
@@ -550,7 +631,10 @@ void emit_footer(Function *func) {
     emit(0, "segment readable writeable");
     emit(0, "call_stack: rb 64*16");
     emit(0, "STR_NEWLINE: db 10, 0");
-    emit(0, "STR_ERROR: db 69,82,82,79,82, 0");
+    emit(0, "STR_ERROR: db 69, 82, 82, 79, 82, 0");
+    emit(0, "STR_ARRAY_START: db 91, 0");
+    emit(0, "STR_ARRAY_SEP: db 44, 32, 0");
+    emit(0, "STR_ARRAY_END: db 93, 0");
 
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
@@ -559,7 +643,7 @@ void emit_footer(Function *func) {
         }
     }
 
-    //string constants
+    //string and array constants
     for (int i = 0; i < funcs.index; i++) {
         Function *func = &funcs.data[i];
         for (int j = 0; j < func->constants.index; j++) {
@@ -571,6 +655,13 @@ void emit_footer(Function *func) {
                 for (size_t k = 0; k < s.len; k++)
                     fprintf(f, "%d, ", s.chars[k]);
 
+                fprintf(f, "0\n");
+            } else if (func->constants.data[j].type == Value_Array) {
+                Value *arr = &func->constants.data[j].val.array[0];
+                fprintf(f, "ARR_%s_%d: dq ", func->name, j);
+                for (u_int32_t k = 1; k < ARRAY_LEN(arr[0].val.num); k++) {
+                    fprintf(f, "%ld, %ld, ", serialize_constant(arr[k]), arr[k].val.num);
+                }
                 fprintf(f, "0\n");
             }
         }
