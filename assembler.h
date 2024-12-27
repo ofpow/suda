@@ -126,13 +126,13 @@ void emit_header() {
     emit(8, "syscall");
     emit(0, "}");
 
-    emit(0, "macro println_num num {");
+    emit(0, "macro PRINTLN_NUM _num {");
     emit(8, "push rdi");
     emit(8, "push rsi");
     emit(8, "push rdx");
     emit(8, "push rax");
-    emit(8, "mov rdi, num");
-    emit(8, "call print_num");
+    emit(8, "mov rdi, _num");
+    emit(8, "call write_num");
     emit(8, "mov rsi, STR_NEWLINE");
     emit(8, "mov rdx, 1");
     emit(8, "mov rax, 1");
@@ -141,6 +141,19 @@ void emit_header() {
     emit(8, "pop rdx");
     emit(8, "pop rsi");
     emit(8, "pop rdi");
+    emit(0, "}");
+
+    emit(0, "macro WRITE _val, _len {");
+    emit(8, "push rsi");
+    emit(8, "push rdx");
+    emit(8, "push rax");
+    emit(8, "mov rsi, _val");
+    emit(8, "mov rdx, _len");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
+    emit(8, "pop rax");
+    emit(8, "pop rdx");
+    emit(8, "pop rsi");
     emit(0, "}");
 
     emit(0, "format ELF64 executable 3");
@@ -209,81 +222,9 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit_op_comment(OP_PRINTLN);
                 emit(8, "pop op1_value");
                 emit(8, "pop op1_metadata"); 
-                emit(8, "mov rcx, op1_metadata");
-                emit(8, "and rcx, 3");
-
-                emit(8, "cmp rcx, VALUE_NUMBER");
-                emit(8, "je %s_%d_println_num", name, i);
-                emit(8, "cmp rcx, VALUE_STRING");
-                emit(8, "je %s_%d_println_str", name, i);
-                emit(8, "cmp rcx, VALUE_ARRAY");
-                emit(8, "je %s_%d_println_arr", name, i);
-
-
-                emit(0, "%s_%d_println_num:", name, i);
-                emit(8, "println_num op1_value");
-                emit(8, "jmp %s_%d_done", name, i);
-
-                emit(0, "%s_%d_println_str:", name, i);
-                emit(8, "shr op1_metadata, 4");
-                emit(8, "mov rdx, op1_metadata");
-                emit(8, "mov rsi, op1_value");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-                emit(8, "mov rsi, STR_NEWLINE");
-                emit(8, "mov rdx, 1");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-                emit(8, "jmp %s_%d_done", name, i);
-                
-                emit(0, "%s_%d_println_arr:", name, i);
-                emit(8, "mov rdx, 1");
-                emit(8, "mov rsi, STR_ARRAY_START");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-                emit(8, "mov rax, op1_value");
-                emit(8, "mov rbx, op1_metadata");
-                emit(8, "shr rbx, 36");
-                emit(8, "sub rbx, 1");
-                emit(8, "imul rbx, 16");
-                emit(8, "mov rcx, rax");
-                emit(8, "add rcx, rbx");
-
-                emit(0, "%s_%d_start:", name, i);
-                emit(8, "cmp rax, rcx");
-                emit(8, "jge %s_%d_arr_done", name, i);
-                emit(8, "mov op2_metadata, [rax]");
-                emit(8, "mov op2_value, [rax + 8]");
-                emit(8, "push rax");
-                emit(8, "push rbx");
-                emit(8, "push rcx");
-                emit(8, "mov rdi, op2_value");
-                emit(8, "call print_num");
-                emit(8, "mov rdx, 2");
-                emit(8, "mov rsi, STR_ARRAY_SEP");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-                emit(8, "pop rcx");
-                emit(8, "pop rbx");
-                emit(8, "pop rax");
-                emit(8, "add rax, 16");
-                emit(8, "jmp %s_%d_start", name, i);
-
-                emit(0, "%s_%d_arr_done:", name, i);
-                emit(8, "mov op2_metadata, [rax]");
-                emit(8, "mov op2_value, [rax + 8]");
-                emit(8, "mov rdi, op2_value");
-                emit(8, "call print_num");
-                emit(8, "mov rdx, 1");
-                emit(8, "mov rsi, STR_ARRAY_END");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-                emit(8, "mov rsi, STR_NEWLINE");
-                emit(8, "mov rdx, 1");
-                emit(8, "mov rax, 1");
-                emit(8, "syscall");
-
-                emit(0, "%s_%d_done:", name, i);
+                emit(8, "mov rdi, 1");
+                emit(8, "call print_value");
+                emit(8, "WRITE STR_NEWLINE, 1");
                 break;
             case OP_ADD:
                 emit_op_comment(OP_ADD);
@@ -635,6 +576,7 @@ void emit_footer(Function *func) {
     emit(0, "STR_ARRAY_START: db 91, 0");
     emit(0, "STR_ARRAY_SEP: db 44, 32, 0");
     emit(0, "STR_ARRAY_END: db 93, 0");
+    emit(0, "STR_QUOTE: db 34, 0");
 
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
@@ -660,16 +602,36 @@ void emit_footer(Function *func) {
                 Value *arr = &func->constants.data[j].val.array[0];
                 fprintf(f, "ARR_%s_%d: dq ", func->name, j);
                 for (u_int32_t k = 1; k < ARRAY_LEN(arr[0].val.num); k++) {
-                    fprintf(f, "%ld, %ld, ", serialize_constant(arr[k]), arr[k].val.num);
+                    switch (arr[k].type) {
+                        case Value_Number:
+                            fprintf(f, "%ld, %ld, ", serialize_constant(arr[k]), arr[k].val.num);
+                            break;
+                        case Value_String:
+                            fprintf(f, "%ld, ARR_STR_%s_%d_%d, ", serialize_constant(arr[k]), func->name, j, k);
+                            break;
+                        default:
+                            ERR("ERROR cant serialize type %s as part of array", find_value_type(arr[k].type))
+                    }
                 }
                 fprintf(f, "0\n");
+                for (u_int32_t k = 1; k < ARRAY_LEN(arr[0].val.num); k++) {
+                    if (arr[k].type == Value_String) {
+                        fprintf(f, "ARR_STR_%s_%d_%d: db ", func->name, j, k);
+                        string s = arr[k].val.str;
+
+                        for (size_t l = 0; l < s.len; l++)
+                            fprintf(f, "%d, ", s.chars[l]);
+
+                        fprintf(f, "0\n");
+                    }
+                }
             }
         }
     }
 }
 
 void emit_helpers() {
-    emit(0, "print_num:");
+    emit(0, "write_num:");
     emit(8, "sub     rsp, 40");
     emit(8, "xor     r10d, r10d");
     emit(8, "test    rdi, rdi");
@@ -715,6 +677,82 @@ void emit_helpers() {
     emit(8, "mov     rax, 1");
     emit(8, "syscall");
     emit(8, "add     rsp, 40");
+    emit(8, "ret");
+
+    emit(0, "print_value:");
+    emit(8, "mov rcx, op1_metadata");
+    emit(8, "and rcx, 3");
+
+    emit(8, "cmp rcx, VALUE_NUMBER");
+    emit(8, "je print_num");
+    emit(8, "cmp rcx, VALUE_STRING");
+    emit(8, "je print_str");
+    emit(8, "cmp rcx, VALUE_ARRAY");
+    emit(8, "je print_arr");
+
+    emit(0, "print_num:");
+    emit(8, "mov rdi, op1_value");
+    emit(8, "call write_num");
+    emit(8, "jmp print_done");
+
+    emit(0, "print_str:");
+    emit(8, "shr op1_metadata, 4");
+    emit(8, "test rdi, rdi");
+    emit(8, "jz write_quotes");
+    emit(8, "WRITE op1_value, op1_metadata");
+    emit(8, "jmp print_done");
+    emit(0, "write_quotes:");
+    emit(8, "WRITE STR_QUOTE, 1");
+    emit(8, "WRITE op1_value, op1_metadata");
+    emit(8, "WRITE STR_QUOTE, 1");
+    emit(8, "jmp print_done");
+
+    emit(0, "print_arr:");
+    emit(8, "WRITE STR_ARRAY_START, 1");
+    emit(8, "mov rax, op1_value");
+    emit(8, "mov rbx, op1_metadata");
+    emit(8, "shr rbx, 36");
+    emit(8, "sub rbx, 1");
+    emit(8, "imul rbx, 16");
+    emit(8, "mov rcx, rax");
+    emit(8, "add rcx, rbx");
+
+    emit(0, "arr_start:");
+    emit(8, "cmp rax, rcx");
+    emit(8, "jge arr_done");
+    emit(8, "mov op2_metadata, [rax]");
+    emit(8, "mov op2_value, [rax + 8]");
+
+    emit(8, "push rax");
+    emit(8, "push rbx");
+    emit(8, "push rcx");
+    emit(8, "push op1_value");
+    emit(8, "push op1_metadata");
+    emit(8, "mov op1_value, op2_value");
+    emit(8, "mov op1_metadata, op2_metadata");
+    emit(8, "mov rdi, op1_metadata");
+    emit(8, "and rdi, 3");
+    emit(8, "xor rdi, VALUE_STRING");
+    emit(8, "call print_value");
+    emit(8, "WRITE STR_ARRAY_SEP, 2");
+    emit(8, "pop op1_metadata");
+    emit(8, "pop op1_value");
+    emit(8, "pop rcx");
+    emit(8, "pop rbx");
+    emit(8, "pop rax");
+    emit(8, "add rax, 16");
+    emit(8, "jmp arr_start");
+
+    emit(0, "arr_done:");
+    emit(8, "mov op1_metadata, [rax]");
+    emit(8, "mov op1_value, [rax + 8]");
+    emit(8, "mov rdi, op1_metadata");
+    emit(8, "and rdi, 3");
+    emit(8, "xor rdi, VALUE_STRING");
+    emit(8, "call print_value");
+    emit(8, "WRITE STR_ARRAY_END, 1");
+
+    emit(0, "print_done:");
     emit(8, "ret");
 }
 
