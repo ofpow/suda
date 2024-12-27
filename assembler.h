@@ -271,7 +271,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;
             case OP_MULTIPLY:
                 emit_op_comment(OP_MULTIPLY);
-                emit_binary_op(mult);
+                emit_binary_op(imul);
                 break;
             case OP_DIVIDE:
                 emit_op_comment(OP_DIVIDE);
@@ -776,6 +776,4 @@ void emit_asm(VM *vm) {
     emit_footer(&vm->funcs.data[0]);
 
     fclose(f);
-
-    system("fasm out.asm out > /dev/null");
 }

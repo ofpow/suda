@@ -513,6 +513,8 @@ int main(int argc, char *argv[]) {
     else if (assemble) {
         emit_asm(&vm);
         report_time("CODEGEN      time: %f seconds\n");
+        system("fasm out.asm out > /dev/null");
+        report_time("FASM         time: %f seconds\n");
     }
     else {
         run(&vm);
