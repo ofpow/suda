@@ -1,2 +1,2 @@
-println "hello"
-println [1, 2, "helo"]
+println "hi"
+println [1, 2, "hello"]

@@ -572,10 +572,10 @@ void emit_footer(Function *func) {
     emit(0, "segment readable writeable");
     emit(0, "call_stack: rb 64*16");
     emit(0, "STR_NEWLINE: db 10, 0");
-    emit(0, "STR_ERROR: db 69, 82, 82, 79, 82, 0");
-    emit(0, "STR_ARRAY_START: db 91, 0");
-    emit(0, "STR_ARRAY_SEP: db 44, 32, 0");
-    emit(0, "STR_ARRAY_END: db 93, 0");
+    emit(0, "STR_ERROR: db \"ERROR\", 0");
+    emit(0, "STR_ARRAY_START: db \"[\", 0");
+    emit(0, "STR_ARRAY_SEP: db \", \", 0");
+    emit(0, "STR_ARRAY_END: db \"]\", 0");
     emit(0, "STR_QUOTE: db 34, 0");
 
     //globals
@@ -593,11 +593,9 @@ void emit_footer(Function *func) {
 
                 fprintf(f, "STR_%s_%d: db ", func->name, j);
                 string s = func->constants.data[j].val.str;
+                
+                fprintf(f, "\"%.*s\", 0\n", (int)s.len, s.chars);
 
-                for (size_t k = 0; k < s.len; k++)
-                    fprintf(f, "%d, ", s.chars[k]);
-
-                fprintf(f, "0\n");
             } else if (func->constants.data[j].type == Value_Array) {
                 Value *arr = &func->constants.data[j].val.array[0];
                 fprintf(f, "ARR_%s_%d: dq ", func->name, j);
@@ -619,10 +617,7 @@ void emit_footer(Function *func) {
                         fprintf(f, "ARR_STR_%s_%d_%d: db ", func->name, j, k);
                         string s = arr[k].val.str;
 
-                        for (size_t l = 0; l < s.len; l++)
-                            fprintf(f, "%d, ", s.chars[l]);
-
-                        fprintf(f, "0\n");
+                        fprintf(f, "\"%.*s\", 0\n", (int)s.len, s.chars);
                     }
                 }
             }
