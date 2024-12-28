@@ -154,6 +154,7 @@ int call_stack_capacity;
 #include "native.h"
 #include "compiler.h"
 #include "vm.h"
+#include "helpers.h"
 #include "assembler.h"
 
 //global variables for access to freeing from anywhere

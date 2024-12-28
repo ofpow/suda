@@ -36,74 +36,6 @@
 
 Functions funcs;
 
-int op_offsets[] = {
-    3, //OP_CONSTANT
-    3, //OP_ARRAY
-    1, //OP_PRINTLN
-    1, //OP_PRINT
-    3, //OP_DEFINE_GLOBAL
-    2, //OP_DEFINE_LOCAL
-    3, //OP_SET_GLOBAL
-    3, //OP_GET_GLOBAL
-    2, //OP_SET_LOCAL
-    2, //OP_GET_LOCAL
-    1, //OP_ADD
-    1, //OP_SUBTRACT
-    1, //OP_MULTIPLY
-    1, //OP_DIVIDE
-    1, //OP_MODULO
-    1, //OP_BIT_AND
-    1, //OP_BIT_OR
-    1, //OP_BIT_XOR
-    1, //OP_BIT_NOT
-    1, //OP_LSHIFT
-    1, //OP_RSHIFT
-    1, //OP_POWER
-    1, //OP_LESS
-    1, //OP_LESS_EQUAL
-    1, //OP_GREATER
-    1, //OP_GREATER_EQUAL
-    1, //OP_IS_EQUAL
-    1, //OP_AND
-    1, //OP_OR
-    1, //OP_NOT
-    1, //OP_NOT_EQUAL
-    3, //OP_JUMP_IF_FALSE
-    3, //OP_START_IF
-    3, //OP_JUMP
-    1, //OP_GET_ELEMENT
-    3, //OP_SET_ELEMENT_GLOBAL
-    3, //OP_SET_ELEMENT_LOCAL
-    3, //OP_APPEND_GLOBAL
-    2, //OP_APPEND_LOCAL
-    3, //OP_POP
-    1, //OP_CAST_STR
-    1, //OP_CAST_NUM
-    3, //OP_CALL
-    3, //OP_CALL_NATIVE
-    1, //OP_RETURN
-    1, //OP_RETURN_NOTHING
-    3, //OP_BREAK
-    3, //OP_CONTINUE
-    6, //OP_FOR
-    7, //OP_ENUMERATE
-    5, //OP_GET_GLOBAL_GET_CONSTANT
-    4, //OP_GET_LOCAL_GET_CONSTANT
-    1, //OP_DONE
-};
-
-FILE *f;
-
-__attribute__((format(printf, 2, 3)))
-void emit(int indent, char *fmt, ...) {
-    fprintf(f, "%*s", indent, "");
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(f, fmt, args);
-    va_end(args);
-    fprintf(f, "\n");
-}
-
 void emit_header() {
     emit(0, "VALUE_NUMBER equ 0");
     emit(0, "VALUE_STRING equ 1");
@@ -164,7 +96,13 @@ void emit_header() {
     emit(8, "mov rax, 9");
     emit(8, "syscall");
     emit(8, "mov [HEAP_2], rax");
-    emit(8, "mov r14, [HEAP_1]");
+    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "mov [HEAP_START], rax");
+    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "mov [ALLOC_PTR], rax");
+    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "add rax, HEAP_SIZE");
+    emit(8, "mov [HEAP_END], rax");
 }
 
 u_int64_t serialize_constant(Value val) {
@@ -617,6 +555,9 @@ void emit_footer(Function *func) {
     emit(0, "STR_QUOTE: db 34, 0");
     emit(0, "HEAP_1: dq 0");
     emit(0, "HEAP_2: dq 0");
+    emit(0, "HEAP_START: rb 8");
+    emit(0, "HEAP_END: rb 8");
+    emit(0, "ALLOC_PTR: rb 8");
 
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
@@ -663,158 +604,6 @@ void emit_footer(Function *func) {
             }
         }
     }
-}
-
-void emit_helpers() {
-    // num rdi
-    emit(0, "write_num:");
-    emit(8, "sub     rsp, 40");
-    emit(8, "xor     r10d, r10d");
-    emit(8, "test    rdi, rdi");
-    emit(8, "jns     .L2");
-    emit(8, "neg     rdi");
-    emit(8, "mov     r10d, 1");
-    emit(0, ".L2:");
-    emit(8, "mov     QWORD [rsp+8], 0");
-    emit(8, "mov     ecx, 1");
-    emit(8, "mov     r9, 7378697629483820647");
-    emit(8, "mov     QWORD [rsp+16], 0");
-    emit(8, "mov     QWORD [rsp+24], 0");
-    emit(0, ".L3:");
-    emit(8, "mov     rax, rdi");
-    emit(8, "mov     rsi, rcx");
-    emit(8, "add     rcx, 1");
-    emit(8, "imul    r9");
-    emit(8, "mov     rax, rdi");
-    emit(8, "mov     r8, rsi");
-    emit(8, "sar     rax, 63");
-    emit(8, "not     r8");
-    emit(8, "sar     rdx, 2");
-    emit(8, "sub     rdx, rax");
-    emit(8, "lea     rax, [rdx+rdx*4]");
-    emit(8, "add     rax, rax");
-    emit(8, "sub     rdi, rax");
-    emit(8, "add     edi, 48");
-    emit(8, "mov     BYTE [rsp+32+r8], dil");
-    emit(8, "mov     rdi, rdx");
-    emit(8, "test    rdx, rdx");
-    emit(8, "jne     .L3");
-    emit(8, "test    r10d, r10d");
-    emit(8, "je      .L4");
-    emit(8, "not     rcx");
-    emit(8, "mov     BYTE [rsp+32+rcx], 45");
-    emit(8, "lea     rcx, [rsi+2]");
-    emit(0, ".L4:");
-    emit(8, "mov     eax, 24");
-    emit(8, "mov     rdx, rcx");
-    emit(8, "mov     edi, 1");
-    emit(8, "sub     rax, rcx");
-    emit(8, "lea     rsi, [rsp+8+rax]");
-    emit(8, "mov     rax, 1");
-    emit(8, "syscall");
-    emit(8, "add     rsp, 40");
-    emit(8, "ret");
-    
-    // op1_metadata, op1_value
-    emit(0, "print_value:");
-    emit(8, "mov rcx, op1_metadata");
-    emit(8, "and rcx, 3");
-
-    emit(8, "cmp rcx, VALUE_NUMBER");
-    emit(8, "je print_num");
-    emit(8, "cmp rcx, VALUE_STRING");
-    emit(8, "je print_str");
-    emit(8, "cmp rcx, VALUE_ARRAY");
-    emit(8, "je print_arr");
-
-    emit(0, "print_num:");
-    emit(8, "mov rdi, op1_value");
-    emit(8, "call write_num");
-    emit(8, "jmp print_done");
-
-    emit(0, "print_str:");
-    emit(8, "shr op1_metadata, 4");
-    emit(8, "test rdi, rdi");
-    emit(8, "jz write_quotes");
-    emit(8, "WRITE op1_value, op1_metadata");
-    emit(8, "jmp print_done");
-    emit(0, "write_quotes:");
-    emit(8, "WRITE STR_QUOTE, 1");
-    emit(8, "WRITE op1_value, op1_metadata");
-    emit(8, "WRITE STR_QUOTE, 1");
-    emit(8, "jmp print_done");
-
-    emit(0, "print_arr:");
-    emit(8, "WRITE STR_ARRAY_START, 1");
-    emit(8, "mov rax, op1_value");
-    emit(8, "mov rbx, op1_metadata");
-    emit(8, "shr rbx, 36");
-    emit(8, "sub rbx, 1");
-    emit(8, "imul rbx, 16");
-    emit(8, "mov rcx, rax");
-    emit(8, "add rcx, rbx");
-
-    emit(0, "arr_start:");
-    emit(8, "cmp rax, rcx");
-    emit(8, "jge arr_done");
-    emit(8, "mov op2_metadata, [rax]");
-    emit(8, "mov op2_value, [rax + 8]");
-
-    emit(8, "push rax");
-    emit(8, "push rbx");
-    emit(8, "push rcx");
-    emit(8, "push op1_value");
-    emit(8, "push op1_metadata");
-    emit(8, "mov op1_value, op2_value");
-    emit(8, "mov op1_metadata, op2_metadata");
-    emit(8, "mov rdi, op1_metadata");
-    emit(8, "and rdi, 3");
-    emit(8, "xor rdi, VALUE_STRING");
-    emit(8, "call print_value");
-    emit(8, "WRITE STR_ARRAY_SEP, 2");
-    emit(8, "pop op1_metadata");
-    emit(8, "pop op1_value");
-    emit(8, "pop rcx");
-    emit(8, "pop rbx");
-    emit(8, "pop rax");
-    emit(8, "add rax, 16");
-    emit(8, "jmp arr_start");
-
-    emit(0, "arr_done:");
-    emit(8, "mov op1_metadata, [rax]");
-    emit(8, "mov op1_value, [rax + 8]");
-    emit(8, "mov rdi, op1_metadata");
-    emit(8, "and rdi, 3");
-    emit(8, "xor rdi, VALUE_STRING");
-    emit(8, "call print_value");
-    emit(8, "WRITE STR_ARRAY_END, 1");
-
-    emit(0, "print_done:");
-    emit(8, "ret");
-   
-    // size rdi
-    emit(0, "alloc:");
-    emit(8, "mov rbx, r14");
-    emit(8, "add r14, rdi");
-    emit(8, "add rbx, HEAP_SIZE");
-    emit(8, "cmp r14, rbx");
-    emit(8, "jge collect");
-    emit(8, "mov rax, r14");
-    emit(8, "sub rax, rdi");
-    emit(8, "ret");
-    emit(0, "collect:");
-    emit(8, "ERROR");
-    
-    //src rdi, dest rsi, len rdx
-    emit(0, "memcpy:");
-    emit(8, "mov rax, 0");
-    emit(0, "memcpy_start:");
-    emit(8, "mov cl, [rdi + rax]");
-    emit(8, "mov [rsi + rax], cl");
-    emit(8, "add rax, 1");
-    emit(8, "cmp rax, rdx");
-    emit(8, "jl memcpy_start");
-    emit(8, "ret");
 }
 
 void emit_asm(VM *vm) {
