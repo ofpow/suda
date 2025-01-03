@@ -44,19 +44,25 @@ void emit_header() {
     emit(0, "op1_metadata equ r9");
     emit(0, "op2_value equ r10");
     emit(0, "op2_metadata equ r11");
+    emit(0, "suda_sp equ r15");
+    emit(0, "suda_bp equ r14");
     emit(0, "HEAP_SIZE equ %d", HEAP_SIZE);
 
     emit(0, "macro suda_push _value, _metadata {");
-    emit(8, "mov qword [r15], _metadata");
-    emit(8, "add r15, 8");
-    emit(8, "mov qword [r15], _value");
-    emit(8, "add r15, 8");
+    emit(8, "mov rax, _metadata");
+    emit(8, "mov [suda_sp], rax");
+    emit(8, "add suda_sp, 8");
+    emit(8, "mov rax, _value");
+    emit(8, "mov [suda_sp], rax");
+    emit(8, "add suda_sp, 8");
     emit(0, "}");
-    emit(0, "macro suda_pop _value_reg, _metadata_reg {");
-    emit(8, "sub r15, 8");
-    emit(8, "mov qword _value_reg, [r15]");
-    emit(8, "sub r15, 8");
-    emit(8, "mov qword _metadata_reg, [r15]");
+    emit(0, "macro suda_pop _value, _metadata {");
+    emit(8, "sub suda_sp, 8");
+    emit(8, "mov rax, [suda_sp]");
+    emit(8, "mov _value, rax");
+    emit(8, "sub suda_sp, 8");
+    emit(8, "mov rax, [suda_sp]");
+    emit(8, "mov _metadata, rax");
     emit(0, "}");
     
     emit(0, "macro ERROR {");
@@ -96,8 +102,8 @@ void emit_header() {
     emit(0, "entry start");
     emit(0, "start:");
     emit(8, "mov rbp, rsp");
-    emit(8, "lea r15, [SUDA_STACK]");
-    emit(8, "mov rdi, 0");
+    emit(8, "mov suda_sp, SUDA_STACK");
+    emit(8, "mov suda_bp, SUDA_STACK");
     emit(8, "mov rsi, HEAP_SIZE");
     emit(8, "mov rdx, 3");
     emit(8, "mov r10, 0x22");
@@ -140,12 +146,6 @@ u_int64_t serialize_constant(Value val) {
 }
 
 void emit_func(char *name, Code code, Locations locs, Constants constants) {
-    
-    if (strcmp(name, "MAIN")) {
-        emit(0, "fn_%s:", name);
-        emit(8, "sub r15, 8");
-        emit(8, "pop qword [r15]");
-    }
 
     for (int i = 0; i < code.index; i++) {
         switch (code.data[i]) {
@@ -429,27 +429,19 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_label_%d", name, read_index);
                 i += 2;
                 break;
-            case OP_DEFINE_LOCAL:
-                emit_op_comment(OP_DEFINE_LOCAL);
-                emit(8, "pop op1_value");
-                emit(8, "pop op1_metadata");
-                emit(8, "sub rsp, 16");
-                emit(8, "mov qword [rbp + %d], op1_value", 16 * code.data[i + 1]);
-                emit(8, "mov qword [rbp + %d], op1_metadata", 16 * code.data[++i] + 8);
-                break;
             case OP_GET_LOCAL:
                 emit_op_comment(OP_GET_LOCAL);
-                emit(8, "push qword [rbp + %d]", 16 * code.data[i + 1] + 8);
-                emit(8, "push qword [rbp + %d]", 16 * code.data[++i]);
+                i++;
+                emit(8, "suda_push [suda_bp + %d], [suda_bp + %d]", 16 * code.data[i] + 8, 16 * code.data[i]);
                 break;
             case OP_SET_LOCAL:
                 emit_op_comment(OP_SET_LOCAL);
-                emit(8, "pop qword [rbp + %d]", 16 * code.data[i + 1]);
-                emit(8, "pop qword [rbp + %d]", 16 * code.data[++i] + 8);
+                i++;
+                emit(8, "suda_pop [suda_bp + %d], [suda_bp + %d]", 16 * code.data[i] + 8, 16 * code.data[i]);
                 break;
             case OP_POP:
                 emit_op_comment(OP_POP);
-                emit(8, "add rsp, %d", 16 * read_index);
+                emit(8, "sub suda_sp, %d", 16 * read_index);
                 i += 2;
                 break;
             case OP_GET_GLOBAL_GET_CONSTANT:{
@@ -488,27 +480,25 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;}
             case OP_CALL:
                 emit_op_comment(OP_CALL);
-                emit(8, "sub r15, 8");
-                emit(8, "mov [r15], rbp");
-                emit(8, "lea rbp, [rsp + %d]", 16 * (funcs.data[read_index].arity - 1));
-                emit(8, "call fn_%s", funcs.data[read_index].name);
-                emit(8, "mov rbp, [r15]");
-                emit(8, "add r15, 8");
-                emit(8, "add rsp, %d", funcs.data[read_index].arity * 16);
+                emit(8, "push suda_bp");
+                emit(8, "mov suda_bp, suda_sp");
+                emit(8, "sub suda_bp, %d", funcs.data[read_index].arity * 16);
+                emit(8, "call %s_label_0", funcs.data[read_index].name);
+                emit(8, "pop suda_bp");
+                emit(8, "cmp rax, 1");
+                emit(8, "je %s_%d_no_return_value", name, i);
                 emit(8, "suda_push op1_value, op1_metadata");
+                emit(0, "%s_%d_no_return_value:", name, i);
                 i += 2;
                 break;
             case OP_RETURN:
                 emit_op_comment(OP_RETURN);
                 emit(8, "suda_pop op1_value, op1_metadata");
-                emit(8, "push qword [r15]");
-                emit(8, "add r15, 8");
                 emit(8, "ret");
                 break;
             case OP_RETURN_NOTHING:
                 emit_op_comment(OP_RETURN_NOTHING);
-                emit(8, "push qword [r15]");
-                emit(8, "add r15, 8");
+                emit(8, "mov rax, 1");
                 emit(8, "ret");
                 break;
             case OP_DONE:
@@ -585,7 +575,7 @@ void emit_footer(Function *func) {
         }
     }
 
-    emit(8, "SUDA_STACK: rb %d*16", STACK_SIZE);
+    emit(0, "SUDA_STACK: rb %d*16", STACK_SIZE);
 }
 
 void emit_asm(VM *vm) {
