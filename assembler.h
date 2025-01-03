@@ -49,20 +49,20 @@ void emit_header() {
     emit(0, "HEAP_SIZE equ %d", HEAP_SIZE);
 
     emit(0, "macro suda_push _value, _metadata {");
-    emit(8, "mov rax, _metadata");
-    emit(8, "mov [suda_sp], rax");
+    emit(8, "mov rbp, _metadata");
+    emit(8, "mov [suda_sp], rbp");
     emit(8, "add suda_sp, 8");
-    emit(8, "mov rax, _value");
-    emit(8, "mov [suda_sp], rax");
+    emit(8, "mov rbp, _value");
+    emit(8, "mov [suda_sp], rbp");
     emit(8, "add suda_sp, 8");
     emit(0, "}");
     emit(0, "macro suda_pop _value, _metadata {");
     emit(8, "sub suda_sp, 8");
-    emit(8, "mov rax, [suda_sp]");
-    emit(8, "mov _value, rax");
+    emit(8, "mov rbp, [suda_sp]");
+    emit(8, "mov _value, rbp");
     emit(8, "sub suda_sp, 8");
-    emit(8, "mov rax, [suda_sp]");
-    emit(8, "mov _metadata, rax");
+    emit(8, "mov rbp, [suda_sp]");
+    emit(8, "mov _metadata, rbp");
     emit(0, "}");
     
     emit(0, "macro ERROR {");
@@ -101,7 +101,6 @@ void emit_header() {
     emit(0, "segment readable executable");
     emit(0, "entry start");
     emit(0, "start:");
-    emit(8, "mov rbp, rsp");
     emit(8, "mov suda_sp, SUDA_STACK");
     emit(8, "mov suda_bp, SUDA_STACK");
     emit(8, "mov rsi, HEAP_SIZE");
