@@ -6,7 +6,6 @@ int op_offsets[] = {
     1, //OP_PRINTLN
     1, //OP_PRINT
     3, //OP_DEFINE_GLOBAL
-    2, //OP_DEFINE_LOCAL
     3, //OP_SET_GLOBAL
     3, //OP_GET_GLOBAL
     2, //OP_SET_LOCAL
