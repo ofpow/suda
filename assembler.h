@@ -506,6 +506,86 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "mov rdi, 0");
                 emit(8, "syscall");
                 break;
+            case OP_NOT:
+                emit_op_comment(OP_NOT);
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "test op1_value, op1_value");
+                emit(8, "setz al");
+                emit(8, "xor al, 1");
+                emit(8, "movzx rax, al");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_MODULO:
+                emit_op_comment(OP_MODULO);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rdi, op2_value");
+                emit(8, "mov rdx, 0");
+                emit(8, "div op1_value");
+                emit(8, "suda_push rdx, 0");
+                break;
+            case OP_OR:
+                emit_op_comment(OP_OR);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "or rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_AND:
+                emit_op_comment(OP_AND);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "and rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_BIT_OR:
+                emit_op_comment(OP_BIT_OR);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "or rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_BIT_AND:
+                emit_op_comment(OP_BIT_AND);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "and rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_BIT_XOR:
+                emit_op_comment(OP_BIT_XOR);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "xor rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_BIT_NOT:
+                emit_op_comment(OP_BIT_NOT);
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "not op1_value");
+                emit(8, "suda_push op1_value, 0");
+                break;
+            case OP_LSHIFT:
+                emit_op_comment(OP_LSHIFT);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "sal rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
+            case OP_RSHIFT:
+                emit_op_comment(OP_RSHIFT);
+                emit(8, "suda_pop op2_value, op2_metadata");
+                emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, op1_value");
+                emit(8, "sar rax, op2_value");
+                emit(8, "suda_push rax, 0");
+                break;
             default:
                 ERR("ERROR in %s on line %ld: cant emit asm for op type %s\n", locs.data[i].file, locs.data[i].line, find_op_code(code.data[i]))
                 break;
