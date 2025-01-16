@@ -212,9 +212,8 @@ void emit_alloc(void) {
     emit(8, "mov rax, [ALLOC_PTR]");
     emit(8, "add [ALLOC_PTR], rdi");
     emit(8, "ret");
-    emit(0, "collect:");
     emit(0, "alloc_error:");
-    emit(8, "ERROR");
+    emit(8, "error");
 }
 
 void emit_memcpy(void) {

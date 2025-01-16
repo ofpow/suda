@@ -7,6 +7,21 @@
 #define VALUE_ARRAY 2
 #define HEAP_SIZE 4096
 
+String_Array error_msgs;
+
+__attribute__((format(printf, 1, 2)))
+int append_error_msg(char *fmt, ...) {
+    char *s = malloc(254);
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(s, 254, fmt, args);
+    va_end(args);
+
+    append(error_msgs, s);
+
+    return error_msgs.index - 1;
+}
+
 #define emit_binary_op(_op)              \
     emit(8, "pop op2_value");            \
     emit(8, "pop op2_metadata");         \
@@ -31,7 +46,7 @@
     emit(8, "jmp %s_%d_done", name, i);  \
                                          \
     emit(0, "%s_%d_error:", name, i);    \
-    emit(8, "ERROR");                    \
+    emit(8, "error");                    \
     emit(0, "%s_%d_done:", name, i);     \
 
 Functions funcs;
@@ -65,9 +80,21 @@ void emit_header() {
     emit(8, "mov _metadata, rbp");
     emit(0, "}");
     
-    emit(0, "macro ERROR {");
+    emit(0, "macro error {");
     emit(8, "WRITE STR_ERROR, 5");
     emit(8, "WRITE STR_NEWLINE, 1");
+    emit(8, "mov rax, 60");
+    emit(8, "mov rdi, 1");
+    emit(8, "syscall");
+    emit(0, "}");
+
+    emit(0, "macro ERROR error_msg {");
+    emit(8, "mov rsi, error_msg");
+    emit(8, "mov rdi, 1");
+    emit(8, "mov dl, [error_msg#_len]");
+    emit(8, "movzx rdx, dl");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
     emit(8, "mov rax, 60");
     emit(8, "mov rdi, 1");
     emit(8, "syscall");
@@ -243,7 +270,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(0, "%s_%d_add_array:", name, i);
 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                emit(8, "error");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_SUBTRACT:
@@ -295,7 +322,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                emit(8, "error");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_LESS:
@@ -319,7 +346,8 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                int error_index = append_error_msg("ERROR in %s on line %d: cant add those", name, i);
+                emit(8, "ERROR ERROR_%d", error_index);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_LESS_EQUAL:
@@ -343,7 +371,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                emit(8, "error");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_GREATER:
@@ -367,7 +395,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                emit(8, "error");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_GREATER_EQUAL:
@@ -391,7 +419,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "ERROR");
+                emit(8, "error");
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_DEFINE_GLOBAL:
@@ -654,10 +682,21 @@ void emit_footer(Function *func) {
         }
     }
 
+    //error messages
+    for (int i = 0; i < error_msgs.index; i++) {
+        emit(0, "ERROR_%d: db \"%s\", 10, 0", i, error_msgs.data[i]);
+        emit(0, "ERROR_%d_len: db %ld", i, strlen(error_msgs.data[i]) + 1);
+    }
     emit(0, "SUDA_STACK: rb %d*16", STACK_SIZE);
 }
 
 void emit_asm(VM *vm) {
+    error_msgs = (String_Array){
+        calloc(10, sizeof(char*)),
+        0,
+        10
+    };
+
     f = fopen("out.asm", "w");
 
     funcs = vm->funcs;
@@ -676,5 +715,8 @@ void emit_asm(VM *vm) {
 
     emit_footer(&vm->funcs.data[0]);
 
+    for (int i = 0; i < error_msgs.index; i++)
+        free(error_msgs.data[i]);
+    free(error_msgs.data);
     fclose(f);
 }
