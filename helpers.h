@@ -55,7 +55,30 @@ int op_offsets[] = {
     1, //OP_DONE
 };
 
+#define emit_er(msg, ...) \
+    error_index = append_error_msg(msg, __VA_ARGS__);\
+    emit(8, "ERROR ERROR_%d", error_index)\
+
+#define emit_error(...) \
+    error_index = append_error_msg(__VA_ARGS__);\
+    emit(8, "ERROR ERROR_%d", error_index)\
+
 FILE *f;
+String_Array error_msgs;
+int error_index;
+
+__attribute__((format(printf, 1, 2)))
+int append_error_msg(char *fmt, ...) {
+    char *s = malloc(254);
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(s, 254, fmt, args);
+    va_end(args);
+
+    append(error_msgs, s);
+
+    return error_msgs.index - 1;
+}
 
 __attribute__((format(printf, 2, 3)))
 void emit(int indent, char *fmt, ...) {
@@ -213,7 +236,7 @@ void emit_alloc(void) {
     emit(8, "add [ALLOC_PTR], rdi");
     emit(8, "ret");
     emit(0, "alloc_error:");
-    emit(8, "error");
+    emit_error("ERROR couldnt alloc");
 }
 
 void emit_memcpy(void) {

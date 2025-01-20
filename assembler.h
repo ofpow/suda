@@ -7,47 +7,32 @@
 #define VALUE_ARRAY 2
 #define HEAP_SIZE 4096
 
-String_Array error_msgs;
-
-__attribute__((format(printf, 1, 2)))
-int append_error_msg(char *fmt, ...) {
-    char *s = malloc(254);
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(s, 254, fmt, args);
-    va_end(args);
-
-    append(error_msgs, s);
-
-    return error_msgs.index - 1;
-}
-
-#define emit_binary_op(_op)              \
-    emit(8, "pop op2_value");            \
-    emit(8, "pop op2_metadata");         \
-    emit(8, "pop op1_value");            \
-    emit(8, "pop op1_metadata");         \
-                                         \
-    emit(8, "mov rax, op1_metadata");    \
-    emit(8, "mov rbx, op2_metadata");    \
-    emit(8, "and rax, 3");               \
-    emit(8, "and rbx, 3");               \
-    emit(8, "xor rax, rbx");             \
-    emit(8, "cmp rax, 0");               \
-    emit(8, "jnz %s_%d_error", name, i); \
-                                         \
-    emit(8, "cmp rax, VALUE_NUMBER");    \
-    emit(8, "jne %s_%d_error", name, i); \
-                                         \
-    emit(8, "mov rax, op1_value");       \
-    emit(8, #_op " rax, op2_value");     \
-    emit(8, "push 0");                   \
-    emit(8, "push rax");                 \
-    emit(8, "jmp %s_%d_done", name, i);  \
-                                         \
-    emit(0, "%s_%d_error:", name, i);    \
-    emit(8, "error");                    \
-    emit(0, "%s_%d_done:", name, i);     \
+#define emit_binary_op(_op)                                                                             \
+    emit(8, "pop op2_value");                                                                           \
+    emit(8, "pop op2_metadata");                                                                        \
+    emit(8, "pop op1_value");                                                                           \
+    emit(8, "pop op1_metadata");                                                                        \
+                                                                                                        \
+    emit(8, "mov rax, op1_metadata");                                                                   \
+    emit(8, "mov rbx, op2_metadata");                                                                   \
+    emit(8, "and rax, 3");                                                                              \
+    emit(8, "and rbx, 3");                                                                              \
+    emit(8, "xor rax, rbx");                                                                            \
+    emit(8, "cmp rax, 0");                                                                              \
+    emit(8, "jnz %s_%d_error", name, i);                                                                \
+                                                                                                        \
+    emit(8, "cmp rax, VALUE_NUMBER");                                                                   \
+    emit(8, "jne %s_%d_error", name, i);                                                                \
+                                                                                                        \
+    emit(8, "mov rax, op1_value");                                                                      \
+    emit(8, #_op " rax, op2_value");                                                                    \
+    emit(8, "push 0");                                                                                  \
+    emit(8, "push rax");                                                                                \
+    emit(8, "jmp %s_%d_done", name, i);                                                                 \
+                                                                                                        \
+    emit(0, "%s_%d_error:", name, i);                                                                   \
+    emit_error("ERROR in %s on line %ld: cant " #_op " those", locs.data[i].file, locs.data[i].line);   \
+    emit(0, "%s_%d_done:", name, i);                                                                    \
 
 Functions funcs;
 
@@ -270,7 +255,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(0, "%s_%d_add_array:", name, i);
 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "error");
+                emit_error("ERROR in %s on line %ld: cant add those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_SUBTRACT:
@@ -322,7 +307,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "error");
+                emit_error("ERROR in %s on line %ld: cant is equal those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_LESS:
@@ -346,8 +331,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                int error_index = append_error_msg("ERROR in %s on line %d: cant add those", name, i);
-                emit(8, "ERROR ERROR_%d", error_index);
+                emit_error("ERROR in %s on line %ld: cant less than those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_LESS_EQUAL:
@@ -371,7 +355,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "error");
+                emit_error("ERROR in %s on line %ld: cant less equal those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_GREATER:
@@ -395,7 +379,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "error");
+                emit_error("ERROR in %s on line %ld: cant greater than those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_GREATER_EQUAL:
@@ -419,7 +403,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "jmp %s_%d_done", name, i);
                 
                 emit(0, "%s_%d_error:", name, i);
-                emit(8, "error");
+                emit_error("ERROR in %s on line %ld: cant greater equal those", locs.data[i].file, locs.data[i].line);
                 emit(0, "%s_%d_done:", name, i);
                 break;
             case OP_DEFINE_GLOBAL:
