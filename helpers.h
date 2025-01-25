@@ -55,17 +55,19 @@ int op_offsets[] = {
     1, //OP_DONE
 };
 
-#define emit_er(msg, ...) \
-    error_index = append_error_msg(msg, __VA_ARGS__);\
-    emit(8, "ERROR ERROR_%d", error_index)\
-
 #define emit_error(...) \
     error_index = append_error_msg(__VA_ARGS__);\
     emit(8, "ERROR ERROR_%d", error_index)\
 
+#define emit_debug(...) \
+    debug_index = append_debug_msg(__VA_ARGS__);\
+    emit(8, "DEBUG DEBUG_%d", debug_index)\
+
 FILE *f;
 String_Array error_msgs;
 int error_index;
+String_Array debug_msgs;
+int debug_index;
 
 __attribute__((format(printf, 1, 2)))
 int append_error_msg(char *fmt, ...) {
@@ -78,6 +80,19 @@ int append_error_msg(char *fmt, ...) {
     append(error_msgs, s);
 
     return error_msgs.index - 1;
+}
+
+__attribute__((format(printf, 1, 2)))
+int append_debug_msg(char *fmt, ...) {
+    char *s = malloc(254);
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(s, 254, fmt, args);
+    va_end(args);
+
+    append(debug_msgs, s);
+
+    return debug_msgs.index - 1;
 }
 
 __attribute__((format(printf, 2, 3)))

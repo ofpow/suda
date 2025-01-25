@@ -85,12 +85,59 @@ void emit_header() {
     emit(8, "syscall");
     emit(0, "}");
 
-    emit(0, "macro PRINTLN_NUM _num {");
+    emit(0, "macro DEBUG debug_msg {");
+    emit(8, "push rsi");
     emit(8, "push rdi");
+    emit(8, "push rdx");
+    emit(8, "push rax");
+    emit(8, "mov rsi, debug_msg");
+    emit(8, "mov rdi, 1");
+    emit(8, "mov dl, [debug_msg#_len]");
+    emit(8, "movzx rdx, dl");
+    emit(8, "mov rax, 1");
+    emit(8, "syscall");
+    emit(8, "pop rax");
+    emit(8, "pop rdx");
+    emit(8, "pop rdi");
+    emit(8, "pop rsi");
+    emit(0, "}");
+
+    emit(0, "macro PRINTLN_NUM _num {");
+    emit(8, "push rax");
+    emit(8, "push rbx");
+    emit(8, "push rcx");
+    emit(8, "push rdx");
+    emit(8, "push rbp");
+    emit(8, "push rsp");
+    emit(8, "push rsi");
+    emit(8, "push rdi");
+    emit(8, "push r8");
+    emit(8, "push r9");
+    emit(8, "push r10");
+    emit(8, "push r11");
+    emit(8, "push r12");
+    emit(8, "push r13");
+    emit(8, "push r14");
+    emit(8, "push r15");
     emit(8, "mov rdi, _num");
     emit(8, "call write_num");
     emit(8, "WRITE STR_NEWLINE, 1");
+    emit(8, "pop r15");
+    emit(8, "pop r14");
+    emit(8, "pop r13");
+    emit(8, "pop r12");
+    emit(8, "pop r11");
+    emit(8, "pop r10");
+    emit(8, "pop r9");
+    emit(8, "pop r8");
     emit(8, "pop rdi");
+    emit(8, "pop rsi");
+    emit(8, "pop rsp");
+    emit(8, "pop rbp");
+    emit(8, "pop rdx");
+    emit(8, "pop rcx");
+    emit(8, "pop rbx");
+    emit(8, "pop rax");
     emit(0, "}");
 
     emit(0, "macro WRITE _val, _len {");
@@ -671,11 +718,20 @@ void emit_footer(Function *func) {
         emit(0, "ERROR_%d: db \"%s\", 10, 0", i, error_msgs.data[i]);
         emit(0, "ERROR_%d_len: db %ld", i, strlen(error_msgs.data[i]) + 1);
     }
+    for (int i = 0; i < debug_msgs.index; i++) {
+        emit(0, "DEBUG_%d: db \"%s\", 10, 0", i, debug_msgs.data[i]);
+        emit(0, "DEBUG_%d_len: db %ld", i, strlen(debug_msgs.data[i]) + 1);
+    }
     emit(0, "SUDA_STACK: rb %d*16", STACK_SIZE);
 }
 
 void emit_asm(VM *vm) {
     error_msgs = (String_Array){
+        calloc(10, sizeof(char*)),
+        0,
+        10
+    };
+    debug_msgs = (String_Array){
         calloc(10, sizeof(char*)),
         0,
         10
