@@ -133,6 +133,7 @@ void emit_write_num(void) {
     emit(0, ".L4:");
     emit(8, "mov     eax, 24");
     emit(8, "mov     rdx, rcx");
+    emit(8, "sub rdx, 1");
     emit(8, "mov     edi, 1");
     emit(8, "sub     rax, rcx");
     emit(8, "lea     rsi, [rsp+8+rax]");
