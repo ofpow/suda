@@ -758,5 +758,8 @@ void emit_asm(VM *vm) {
     for (int i = 0; i < error_msgs.index; i++)
         free(error_msgs.data[i]);
     free(error_msgs.data);
+    for (int i = 0; i < debug_msgs.index; i++)
+        free(debug_msgs.data[i]);
+    free(debug_msgs.data);
     fclose(f);
 }
