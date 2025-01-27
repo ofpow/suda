@@ -719,8 +719,8 @@ void emit_footer(Function *func) {
         emit(0, "ERROR_%d_len: db %ld", i, strlen(error_msgs.data[i]) + 1);
     }
     for (int i = 0; i < debug_msgs.index; i++) {
-        emit(0, "DEBUG_%d: db \"%s\", 10, 0", i, debug_msgs.data[i]);
-        emit(0, "DEBUG_%d_len: db %ld", i, strlen(debug_msgs.data[i]) + 1);
+        emit(0, "DEBUG_%d: db \"%s\", 0", i, debug_msgs.data[i]);
+        emit(0, "DEBUG_%d_len: db %ld", i, strlen(debug_msgs.data[i]));
     }
     emit(0, "SUDA_STACK: rb %d*16", STACK_SIZE);
 }
