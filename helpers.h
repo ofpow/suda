@@ -1,5 +1,42 @@
 #pragma once
 
+#define push_all_reg()   \
+    emit(8, "push rax"); \
+    emit(8, "push rbx"); \
+    emit(8, "push rcx"); \
+    emit(8, "push rdx"); \
+    emit(8, "push rbp"); \
+    emit(8, "push rsp"); \
+    emit(8, "push rsi"); \
+    emit(8, "push rdi"); \
+    emit(8, "push r8");  \
+    emit(8, "push r9");  \
+    emit(8, "push r10"); \
+    emit(8, "push r11"); \
+    emit(8, "push r12"); \
+    emit(8, "push r13"); \
+    emit(8, "push r14"); \
+    emit(8, "push r15")
+
+#define pop_all_reg()   \
+    emit(8, "pop r15"); \
+    emit(8, "pop r14"); \
+    emit(8, "pop r13"); \
+    emit(8, "pop r12"); \
+    emit(8, "pop r11"); \
+    emit(8, "pop r10"); \
+    emit(8, "pop r9");  \
+    emit(8, "pop r8");  \
+    emit(8, "pop rdi"); \
+    emit(8, "pop rsi"); \
+    emit(8, "pop rsp"); \
+    emit(8, "pop rbp"); \
+    emit(8, "pop rdx"); \
+    emit(8, "pop rcx"); \
+    emit(8, "pop rbx"); \
+    emit(8, "pop rax")
+
+
 int op_offsets[] = {
     3, //OP_CONSTANT
     3, //OP_ARRAY
@@ -268,9 +305,45 @@ void emit_memcpy(void) {
     emit(8, "ret");
 }
 
+void emit_memset(void) {
+    //byte dil, dest rsi, len rdx
+    emit(0, "memset:");
+    emit(8, "mov rax, 0");
+    emit(0, "memset_start:");
+    emit(8, "mov [rsi + rax], dil");
+    emit(8, "add rax, 1");
+    emit(8, "cmp rax, rdx");
+    emit(8, "jne memset_start");
+    emit(8, "ret");
+}
+
+void emit_collect(void) {
+    emit(0, "collect:");
+    push_all_reg();
+
+    emit(8, "mov rax, [FROM_SPACE]");
+    emit(8, "mov rbx, [TO_SPACE]");
+    emit(8, "mov [FROM_SPACE], rbx");
+    emit(8, "mov [TO_SPACE], rax");
+    emit(8, "mov [FREE_PTR], rbx");
+    emit(8, "mov [SCAN_PTR], rbx");
+
+    emit(0, "scan_globals:");
+    emit_debug("VALUE: ");
+    emit(8, "suda_pop op1_value, op1_metadata");
+    emit(8, "call print_value");
+    emit(8, "WRITE STR_NEWLINE, 1");
+    emit(8, "cmp suda_sp, SUDA_STACK");
+    emit(8, "jg scan_globals");
+    emit_error("FOOOOOOO");
+    pop_all_reg();
+}
+
 void emit_helpers() {
     emit_write_num();
     emit_print_value();
     emit_alloc();
     emit_memcpy();
+    emit_memset();
+    emit_collect();
 }

@@ -103,41 +103,11 @@ void emit_header() {
     emit(0, "}");
 
     emit(0, "macro PRINTLN_NUM _num {");
-    emit(8, "push rax");
-    emit(8, "push rbx");
-    emit(8, "push rcx");
-    emit(8, "push rdx");
-    emit(8, "push rbp");
-    emit(8, "push rsp");
-    emit(8, "push rsi");
-    emit(8, "push rdi");
-    emit(8, "push r8");
-    emit(8, "push r9");
-    emit(8, "push r10");
-    emit(8, "push r11");
-    emit(8, "push r12");
-    emit(8, "push r13");
-    emit(8, "push r14");
-    emit(8, "push r15");
+    push_all_reg();
     emit(8, "mov rdi, _num");
     emit(8, "call write_num");
     emit(8, "WRITE STR_NEWLINE, 1");
-    emit(8, "pop r15");
-    emit(8, "pop r14");
-    emit(8, "pop r13");
-    emit(8, "pop r12");
-    emit(8, "pop r11");
-    emit(8, "pop r10");
-    emit(8, "pop r9");
-    emit(8, "pop r8");
-    emit(8, "pop rdi");
-    emit(8, "pop rsi");
-    emit(8, "pop rsp");
-    emit(8, "pop rbp");
-    emit(8, "pop rdx");
-    emit(8, "pop rcx");
-    emit(8, "pop rbx");
-    emit(8, "pop rax");
+    pop_all_reg();
     emit(0, "}");
 
     emit(0, "macro WRITE _val, _len {");
@@ -169,15 +139,15 @@ void emit_header() {
     emit(8, "mov r9, 0");
     emit(8, "mov rax, 9");
     emit(8, "syscall");
-    emit(8, "mov [HEAP_1], rax");
+    emit(8, "mov [FROM_SPACE], rax");
     emit(8, "mov rax, 9");
     emit(8, "syscall");
-    emit(8, "mov [HEAP_2], rax");
-    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "mov [TO_SPACE], rax");
+    emit(8, "mov rax, [FROM_SPACE]");
     emit(8, "mov [HEAP_START], rax");
-    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "mov rax, [FROM_SPACE]");
     emit(8, "mov [ALLOC_PTR], rax");
-    emit(8, "mov rax, [HEAP_1]");
+    emit(8, "mov rax, [FROM_SPACE]");
     emit(8, "add rax, HEAP_SIZE");
     emit(8, "mov [HEAP_END], rax");
 }
@@ -661,11 +631,14 @@ void emit_footer(Function *func) {
     emit(0, "STR_ARRAY_SEP: db \", \", 0");
     emit(0, "STR_ARRAY_END: db \"]\", 0");
     emit(0, "STR_QUOTE: db 34, 0");
-    emit(0, "HEAP_1: dq 0");
-    emit(0, "HEAP_2: dq 0");
+    emit(0, "FROM_SPACE: dq 0");
+    emit(0, "TO_SPACE: dq 0");
     emit(0, "HEAP_START: rb 8");
     emit(0, "HEAP_END: rb 8");
     emit(0, "ALLOC_PTR: rb 8");
+    emit(0, "FREE_PTR: rb 8");
+    emit(0, "SCAN_PTR: rb 8");
+    emit(0, "GLOBALS_START:");
 
     //globals
     for (int i = 0; i < func->code.index; i += op_offsets[func->code.data[i]]) {
@@ -673,6 +646,7 @@ void emit_footer(Function *func) {
             emit(0, "%s: rb 16", func->constants.data[COMBYTE(func->code.data[i + 1], func->code.data[i + 2])].val.str.chars);
         }
     }
+    emit(0, "GLOBALS_END:");
 
     //string and array constants
     for (int i = 0; i < funcs.index; i++) {
