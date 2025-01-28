@@ -142,7 +142,6 @@ void emit(int indent, char *fmt, ...) {
     fprintf(f, "\n");
 }
 
-
 void emit_write_num(void) {
     // num rdi
     emit(0, "write_num:");

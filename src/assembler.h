@@ -86,20 +86,14 @@ void emit_header() {
     emit(0, "}");
 
     emit(0, "macro DEBUG debug_msg {");
-    emit(8, "push rsi");
-    emit(8, "push rdi");
-    emit(8, "push rdx");
-    emit(8, "push rax");
+    push_all_reg();
     emit(8, "mov rsi, debug_msg");
     emit(8, "mov rdi, 1");
     emit(8, "mov dl, [debug_msg#_len]");
     emit(8, "movzx rdx, dl");
     emit(8, "mov rax, 1");
     emit(8, "syscall");
-    emit(8, "pop rax");
-    emit(8, "pop rdx");
-    emit(8, "pop rdi");
-    emit(8, "pop rsi");
+    pop_all_reg();
     emit(0, "}");
 
     emit(0, "macro PRINTLN_NUM _num {");
@@ -693,8 +687,14 @@ void emit_footer(Function *func) {
         emit(0, "ERROR_%d_len: db %ld", i, strlen(error_msgs.data[i]) + 1);
     }
     for (int i = 0; i < debug_msgs.index; i++) {
-        emit(0, "DEBUG_%d: db \"%s\", 0", i, debug_msgs.data[i]);
-        emit(0, "DEBUG_%d_len: db %ld", i, strlen(debug_msgs.data[i]));
+        int len = strlen(debug_msgs.data[i]);
+        if (debug_msgs.data[i][len - 1] == '\n') {
+            emit(0, "DEBUG_%d: db \"%.*s\", 10, 0", i, len - 1, debug_msgs.data[i]);
+            emit(0, "DEBUG_%d_len: db %d", i, len + 1);
+        } else {
+            emit(0, "DEBUG_%d: db \"%s\", 0", i, debug_msgs.data[i]);
+            emit(0, "DEBUG_%d_len: db %d", i, len);
+        }
     }
     emit(0, "SUDA_STACK: rb %d*16", STACK_SIZE);
 }
