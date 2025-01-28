@@ -690,7 +690,7 @@ void emit_footer(Function *func) {
         int len = strlen(debug_msgs.data[i]);
         if (debug_msgs.data[i][len - 1] == '\n') {
             emit(0, "DEBUG_%d: db \"%.*s\", 10, 0", i, len - 1, debug_msgs.data[i]);
-            emit(0, "DEBUG_%d_len: db %d", i, len + 1);
+            emit(0, "DEBUG_%d_len: db %d", i, len);
         } else {
             emit(0, "DEBUG_%d: db \"%s\", 0", i, debug_msgs.data[i]);
             emit(0, "DEBUG_%d_len: db %d", i, len);
