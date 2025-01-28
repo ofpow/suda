@@ -35,8 +35,8 @@ def run_tests():
     print(f"BYTECODE:  {sucesses} tests succeded and {failures} tests failed")
 
 if __name__ == "__main__":
-    print("[CMD] gcc -o suda suda.c")
-    subprocess.run(["gcc", "-o", "suda", "suda.c"])
+    print("[CMD] gcc -o suda src/suda.c")
+    subprocess.run(["gcc", "-o", "suda", "src/suda.c"])
     if len(sys.argv) != 2:
         run_tests()
     elif sys.argv[1] == 'record':
