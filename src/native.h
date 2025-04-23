@@ -79,6 +79,21 @@ Value rand_native() {
     };
 }
 
+Value pop(Value *args, Location loc) {
+    if (args[0].type == Value_Array) {
+        int arr_len = ARRAY_LEN(args[0].val.array[0].val.num);
+        int arr_size = ARRAY_SIZE(args[0].val.array[0].val.num);
+
+        Value val = args[0].val.array[arr_len - 1];
+
+        args[0].val.array[arr_len - 1] = (Value) {0};
+        args[0].val.array[0].val.num = MAKE_ARRAY_INFO(arr_size, arr_len - 1);
+
+        return val;
+    } else ERR("ERROR in %s on line %ld: cant pop from type %s\n", loc.file, loc.line, find_value_type(args[0].type))
+    return (Value) {0};
+}
+
 typedef Value (*Native)(Value*, Location);
 
 //    c function name     suda function name     number of arguments
@@ -89,6 +104,7 @@ typedef Value (*Native)(Value*, Location);
     X(len,          len,   1)\
     X(exit_native,  exit,  1)\
     X(rand_native,  rand,  0)\
+    X(pop,          pop,   1)\
 
 #define X(func, name, arity) func,
 Native natives[] = {
