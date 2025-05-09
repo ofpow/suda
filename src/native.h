@@ -15,7 +15,7 @@ Value add1(Value *args, Location loc) {
     };
 }
 
-Value input() {
+Value input(Value *args, Location loc) {
     int input_capacity = 10;
     int input_index = 0;
     char *input = calloc(input_capacity, sizeof(char));
@@ -31,15 +31,21 @@ Value input() {
         true,
         0
     };
+    //wunused parameter
+    (void) args;
+    (void) loc;
 }
 
-Value clock_native() {
+Value clock_native(Value *args, Location loc) {
     return (Value){
         Value_Number,
         .val.num=clock() / 1000,
         false,
         0
     };
+    //wunused parameter
+    (void) args;
+    (void) loc;
 }
 
 Value len(Value *args, Location loc) {
@@ -70,13 +76,16 @@ Value exit_native(Value *args, Location loc) {
     return (Value) {0};
 }
 
-Value rand_native() {
+Value rand_native(Value *args, Location loc) {
     return (Value){
         Value_Number,
         .val.num=rand(),
         false,
         0
     };
+    //wunused parameter
+    (void) args;
+    (void) loc;
 }
 
 Value pop(Value *args, Location loc) {
