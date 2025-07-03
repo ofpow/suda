@@ -1,6 +1,6 @@
 run:
-	@cc -o suda suda.c -Wall -Wextra && ./suda -a foo.suda
+	@cc -o suda src/suda.c -Wall -Wextra && ./suda -a foo.suda
 d:
-	@cc suda.c -o suda -g -Wall -Wextra && gdb -tui suda
+	@cc src/suda.c -o suda -g -Wall -Wextra && gdb -tui suda
 val:
-	@cc -o suda suda.c -Wall -Wextra -g && valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./suda -a foo.suda
+	@cc -o suda src/suda.c -Wall -Wextra -g && valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./suda -a foo.suda
