@@ -276,16 +276,18 @@ void emit_print_value(void) {
 void emit_alloc(void) {
     // size rdi
     emit(0, "alloc:");
-    emit(8, "mov rax, [ALLOC_PTR]");
+    emit(8, "add rdi, 8");
+    emit(8, "mov rax, ALLOC_PTR");
     emit(8, "add rax, rdi");
     emit(8, "cmp rax, [HEAP_END]");
     emit(8, "jge collect");
-    emit(8, "mov rax, [ALLOC_PTR]");
+    emit(8, "mov rax, ALLOC_PTR");
     emit(8, "add rax, rdi");
     emit(8, "cmp rax, [HEAP_END]");
     emit(8, "jge alloc_error");
-    emit(8, "mov rax, [ALLOC_PTR]");
-    emit(8, "add [ALLOC_PTR], rdi");
+    emit(8, "mov rax, ALLOC_PTR");
+    emit(8, "add rax, 8");
+    emit(8, "add ALLOC_PTR, rdi");
     emit(8, "ret");
     emit(0, "alloc_error:");
     emit_error("ERROR couldnt alloc");

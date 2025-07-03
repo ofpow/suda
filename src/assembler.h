@@ -46,6 +46,7 @@ void emit_header() {
     emit(0, "op2_metadata equ r11");
     emit(0, "suda_sp equ r15");
     emit(0, "suda_bp equ r14");
+    emit(0, "ALLOC_PTR equ r13");
     emit(0, "HEAP_SIZE equ %d", HEAP_SIZE);
 
     emit(0, "macro suda_push _value, _metadata {");
@@ -140,7 +141,7 @@ void emit_header() {
     emit(8, "mov rax, [FROM_SPACE]");
     emit(8, "mov [HEAP_START], rax");
     emit(8, "mov rax, [FROM_SPACE]");
-    emit(8, "mov [ALLOC_PTR], rax");
+    emit(8, "mov ALLOC_PTR, rax");
     emit(8, "mov rax, [FROM_SPACE]");
     emit(8, "add rax, HEAP_SIZE");
     emit(8, "mov [HEAP_END], rax");
@@ -234,18 +235,17 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "shr rdi, 4");
                 emit(8, "shr rax, 4");
                 emit(8, "add rdi, rax");
-                emit(8, "mov rbx, rdi");
+                emit(8, "mov rsi, rdi");
                 emit(8, "call alloc");
-                emit(8, "mov r12, rax");
+                emit(8, "push rax");
                 
+                emit(8, "mov rsi, rax");
                 emit(8, "mov rdi, op1_value");
-                emit(8, "mov rsi, r12");
                 emit(8, "mov rdx, op1_metadata");
                 emit(8, "shr rdx, 4");
                 emit(8, "call memcpy");
 
                 emit(8, "mov rdi, op2_value");
-                emit(8, "mov rsi, r12");
                 emit(8, "mov rdx, op1_metadata");
                 emit(8, "shr rdx, 4");
                 emit(8, "add rsi, rdx");
@@ -259,7 +259,8 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "shl rbx, 4");
                 emit(8, "or rbx, VALUE_STRING");
                 
-                emit(8, "suda_push r12, rbx");
+                emit(8, "pop rax");
+                emit(8, "suda_push rax, rbx");
 
                 emit(8, "jmp %s_%d_done", name, i);
                 
@@ -629,7 +630,6 @@ void emit_footer(Function *func) {
     emit(0, "TO_SPACE: dq 0");
     emit(0, "HEAP_START: rb 8");
     emit(0, "HEAP_END: rb 8");
-    emit(0, "ALLOC_PTR: rb 8");
     emit(0, "FREE_PTR: rb 8");
     emit(0, "SCAN_PTR: rb 8");
     emit(0, "GLOBALS_START:");

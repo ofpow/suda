@@ -1,11 +1,2 @@
 let y = "foo" + "bar"
-let z = y
-let x = 0
-let i = 1
-while (i < 501)
-    x = "he" + "l" + "l" + "o" + " " + "w" + "o" + "r" + "l" + "d"
-    i = (i + 1)
-;
-println x
 println y
-println z
