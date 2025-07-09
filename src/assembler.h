@@ -106,19 +106,25 @@ void emit_header() {
     emit(0, "}");
 
     emit(0, "macro WRITE _val, _len {");
-    emit(8, "push rsi");
-    emit(8, "push rdx");
-    emit(8, "push rax");
-    emit(8, "push rdi");
+    emit(8, "pushfq");   
+    emit(8, "push rax"); 
+    emit(8, "push rdx"); 
+    emit(8, "push rsi"); 
+    emit(8, "push rdi"); 
+    emit(8, "push r11"); 
+
     emit(8, "mov rdi, 1");
     emit(8, "mov rsi, _val");
     emit(8, "mov rdx, _len");
     emit(8, "mov rax, 1");
     emit(8, "syscall");
-    emit(8, "pop rdi");
-    emit(8, "pop rax");
-    emit(8, "pop rdx");
-    emit(8, "pop rsi");
+
+    emit(8, "pop r11"); 
+    emit(8, "pop rdi"); 
+    emit(8, "pop rsi"); 
+    emit(8, "pop rdx"); 
+    emit(8, "pop rax"); 
+    emit(8, "popfq");
     emit(0, "}");
 
     emit(0, "format ELF64 executable 3");
