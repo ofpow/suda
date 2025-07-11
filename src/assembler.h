@@ -8,10 +8,8 @@
 #define HEAP_SIZE 4096
 
 #define emit_binary_op(_op)                                                                             \
-    emit(8, "pop op2_value");                                                                           \
-    emit(8, "pop op2_metadata");                                                                        \
-    emit(8, "pop op1_value");                                                                           \
-    emit(8, "pop op1_metadata");                                                                        \
+    emit(8, "suda_pop op2_value, op2_metadata");                                                        \
+    emit(8, "suda_pop op1_value, op1_metadata");                                                        \
                                                                                                         \
     emit(8, "mov rax, op1_metadata");                                                                   \
     emit(8, "mov rbx, op2_metadata");                                                                   \
@@ -26,8 +24,7 @@
                                                                                                         \
     emit(8, "mov rax, op1_value");                                                                      \
     emit(8, #_op " rax, op2_value");                                                                    \
-    emit(8, "push 0");                                                                                  \
-    emit(8, "push rax");                                                                                \
+    emit(8, "suda_push rax, 0");                                                                        \
     emit(8, "jmp %s_%d_done", name, i);                                                                 \
                                                                                                         \
     emit(0, "%s_%d_error:", name, i);                                                                   \
@@ -492,8 +489,8 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 break;}
             case OP_GET_LOCAL_GET_CONSTANT: {
                 emit_op_comment(OP_GET_LOCAL_GET_CONSTANT);
-                emit(8, "push qword [rbp + %d]", 16 * code.data[i + 1] + 8);
-                emit(8, "push qword [rbp + %d]", 16 * code.data[++i]);
+                i++;
+                emit(8, "suda_push [suda_bp + %d], [suda_bp + %d]", 16 * code.data[i] + 8, 16 * code.data[i]);
                 Value val = constants.data[read_index];
                 switch (val.type) {
                     case Value_Number:
@@ -514,6 +511,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
                 emit(8, "sub suda_bp, %d", funcs.data[read_index].arity * 16);
                 emit(8, "call %s_label_0", funcs.data[read_index].name);
                 emit(8, "pop suda_bp");
+                emit(8, "sub suda_sp, %d", funcs.data[read_index].arity * 16);
                 emit(8, "cmp rax, 1");
                 emit(8, "je %s_%d_no_return_value", name, i);
                 emit(8, "suda_push op1_value, op1_metadata");
@@ -523,6 +521,7 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
             case OP_RETURN:
                 emit_op_comment(OP_RETURN);
                 emit(8, "suda_pop op1_value, op1_metadata");
+                emit(8, "mov rax, 0");
                 emit(8, "ret");
                 break;
             case OP_RETURN_NOTHING:
