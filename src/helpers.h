@@ -1,6 +1,7 @@
 #pragma once
 
 #define push_all_reg()   \
+    emit(8, "pushfq");   \
     emit(8, "push rax"); \
     emit(8, "push rbx"); \
     emit(8, "push rcx"); \
@@ -34,7 +35,8 @@
     emit(8, "pop rdx"); \
     emit(8, "pop rcx"); \
     emit(8, "pop rbx"); \
-    emit(8, "pop rax")
+    emit(8, "pop rax"); \
+    emit(8, "popfq")
 
 
 int op_offsets[] = {
