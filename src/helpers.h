@@ -340,6 +340,40 @@ void emit_collect(void) {
     emit(8, "jg scan_globals");
     emit_error("FOOOOOOO");
     pop_all_reg();
+void emit_hex_dump(void) {
+// rdi len rsi buf
+    emit(0, "hex_dump:");
+    emit(8, "mov rax, 0");
+    emit(8, "mov rdx, 0");
+    emit(0, "hex_start:");
+    emit(8, "cmp rax, rdi");
+    emit(8, "jge hex_done");
+
+    emit(8, "mov bl, byte [rsi + rax]");
+    emit(8, "shr rbx, 4");
+    emit(8, "and rbx, 0xF");
+    emit(8, "lea rbx, [hex_chars + rbx]");
+    emit(8, "WRITE rbx, 1");
+
+    emit(8, "mov bl, byte [rsi + rax]");
+    emit(8, "and rbx, 0xF");
+    emit(8, "lea rbx, [hex_chars + rbx]");
+    emit(8, "WRITE rbx, 1");
+
+    emit(8, "WRITE STR_SPACE, 1");
+
+    emit(8, "inc rdx");
+    emit(8, "cmp rdx, 16");
+    emit(8, "jle hex_cont");
+    emit(8, "mov rdx, 0");
+    emit(8, "WRITE STR_NEWLINE, 1");
+
+    emit(0, "hex_cont:");
+    emit(8, "inc rax");
+    emit(8, "jmp hex_start");
+    emit(0, "hex_done:");
+    emit(8, "WRITE STR_NEWLINE, 1");
+    emit(8, "ret");
 }
 
 void emit_helpers() {
@@ -349,4 +383,6 @@ void emit_helpers() {
     emit_memcpy();
     emit_memset();
     emit_collect();
+    emit_copy();
+    emit_hex_dump();
 }

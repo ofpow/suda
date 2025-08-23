@@ -624,6 +624,8 @@ void emit_func(char *name, Code code, Locations locs, Constants constants) {
 
 void emit_footer(Function *func) {
     emit(0, "segment readable writeable");
+    emit(0, "hex_chars: db \"0123456789abcdef\"");
+    emit(0, "STR_SPACE: db \" \", 0");
     emit(0, "call_stack: rb 64*16");
     emit(0, "STR_NEWLINE: db 10, 0");
     emit(0, "STR_ERROR: db \"ERROR\", 0");
