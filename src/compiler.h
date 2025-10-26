@@ -405,13 +405,16 @@ void compile_expr(Node *n, Compiler *c) {
 
             int index = is_native(n->value->value);
             if (index > -1) {
-                ASSERT(native_arities[index] == n->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", n->file, n->line, STR(n->value->value), n->func_args_index, native_arities[index])
+                if (native_arities[index] != -1)
+                    ASSERT(native_arities[index] == n->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", n->file, n->line, STR(n->value->value), n->func_args_index, native_arities[index])
                 ASSERT(native_returns_value[index] == true, "ERROR in %s on line %ld: cant call native function %s that doesnt return value as expression\n", n->file, n->line, STR(n->value->value))
 
                 append_code(OP_CALL_NATIVE, current_loc(n));
                 append_code(FIRST_BYTE(index), INVALID_LOC);
                 append_code(SECOND_BYTE(index), INVALID_LOC);
                 append_code(1, INVALID_LOC); // function does return value
+                append_code(FIRST_BYTE(n->func_args_index), INVALID_LOC);
+                append_code(SECOND_BYTE(n->func_args_index), INVALID_LOC);
             } else {
 
                 u_int16_t index = resolve_func(n->value);
@@ -633,12 +636,14 @@ void compile(Node **nodes, int64_t nodes_size, Compiler *c) {
 
                 int index = is_native(nodes[i]->value->value);
                 if (index > -1) {
-
-                    ASSERT(native_arities[index - 1] == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, native_arities[index - 1])
+                    if (native_arities[index] != -1)
+                        ASSERT(native_arities[index] == nodes[i]->func_args_index, "ERROR in %s on line %ld: cant call native function %s with %ld args, it needs %d\n", nodes[i]->file, nodes[i]->line, STR(nodes[i]->value->value), nodes[i]->func_args_index, native_arities[index - 1])
                     append_code(OP_CALL_NATIVE, current_loc(nodes[i]));
                     append_code(FIRST_BYTE(index), INVALID_LOC);
                     append_code(SECOND_BYTE(index), INVALID_LOC);
                     append_code(native_returns_value[index], INVALID_LOC);
+                    append_code(FIRST_BYTE(nodes[i]->func_args_index), INVALID_LOC);
+                    append_code(SECOND_BYTE(nodes[i]->func_args_index), INVALID_LOC);
                 } else {
 
                     u_int16_t index = resolve_func(nodes[i]->value);

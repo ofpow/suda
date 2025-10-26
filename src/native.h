@@ -139,20 +139,50 @@ Value foobar(Value *args, Location loc) {
     return (Value) {0};
 }
 
+char *format_array(Value *val);
+
+// TODO: make sure number of passed arguments is accurate to format string
+Value printf_native(Value *args, Location loc) {
+    if (args[0].type == Value_String) {
+        int len = strlen(args[0].val.str.chars);
+        char *format = args[0].val.str.chars;
+        int argcount = 1;
+        for (int i = 0; i < len; i++) {
+            if ((format[i] == '%') && (format[i + 1] != '%') && (format[i - 1] != '%')) {
+                Value print = args[argcount++];
+                if (print.type == Value_Number) {
+                    printf("%ld", print.val.num);
+                } else if (print.type == Value_String) {
+                    printf("%.*s", Print(print.val.str));
+                    if (print.mutable == true) free(print.val.str.chars);
+                } else if (print.type == Value_Array) {
+                    char *s = format_array(&print);
+                    printf("%s", s);
+                    free(s);
+                    if (print.mutable == true) free_value_array(print.val.array);
+                } else
+                    ERR("ERROR in %s on line %ld: cant print type %s\n", loc.file, loc.line, find_value_type(print.type))
+            } else putc(format[i], stdout);
+        }
+    } else ERR("ERROR in %s on line %ld: cant printf format string of type %s\n", loc.file, loc.line, find_value_type(args[0].type))
+    return (Value) {0};
+}
+
 typedef Value (*Native)(Value*, Location);
 
 //    c function name     suda function name     number of arguments     returns value
 #define NATIVES \
-    X(add1,         add1,  1, 1)\
-    X(input,        input, 0, 1)\
-    X(clock_native, clock, 0, 1)\
-    X(len,          len,   1, 1)\
-    X(exit_native,  exit,  1, 1)\
-    X(rand_native,  rand,  0, 1)\
-    X(pop,          pop,   1, 1)\
-    X(ord,          ord,   1, 1)\
-    X(chr,          chr,   1, 1)\
-    X(foobar, foobar, 1, 0)\
+    X(add1,          add1,      1, 1)\
+    X(input,         input,     0, 1)\
+    X(clock_native,  clock,     0, 1)\
+    X(len,           len,       1, 1)\
+    X(exit_native,   exit,      1, 1)\
+    X(rand_native,   rand,      0, 1)\
+    X(pop,           pop,       1, 1)\
+    X(ord,           ord,       1, 1)\
+    X(chr,           chr,       1, 1)\
+    X(foobar,        foobar,    1, 0)\
+    X(printf_native, printf,   -1, 0)\
 
 #define X(func, name, arity, returns_value) func,
 Native natives[] = {

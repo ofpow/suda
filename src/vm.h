@@ -307,8 +307,8 @@ void disassemble(VM *vm) {
                     i += 2;
                     break;
                 case OP_CALL_NATIVE:
-                    printf("%-6d %s OP_CALL_NATIVE:       func: %s, returns value %d\n", i, line_str, native_names[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])], func.code.data[i + 3]); 
-                    i += 3;
+                    printf("%-6d %s OP_CALL_NATIVE:       func: %s, returns value %d, arity %d\n", i, line_str, native_names[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])], func.code.data[i + 3], COMBYTE(func.code.data[i + 4], func.code.data[i + 5])); 
+                    i += 5;
                     break;
                 case OP_RETURN:
                     printf("%-6d %s OP_RETURN\n", i, line_str);
@@ -903,13 +903,13 @@ void run(VM *vm) {
             dispatch();}
         OP_CALL_NATIVE:{
             Native native = natives[read_index];
-            Value result = native(vm->stack_top - native_arities[read_index], make_loc(get_loc));
-            vm->stack_top -= native_arities[read_index];
-            stack_push(result);
-            pc += 2;
-            if (vm->func->code.data[pc + 1])
+            bool returns_value = vm->func->code.data[pc + 3];
+            int arity = COMBYTE(vm->func->code.data[pc + 4], vm->func->code.data[pc + 5]);
+            Value result = native(vm->stack_top - arity, make_loc(get_loc));
+            vm->stack_top -= arity;
+            if (returns_value)
                 stack_push(result);
-            pc++;
+            pc += 5;
             dispatch();}
         OP_RETURN:{
             #ifdef PROFILE
