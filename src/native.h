@@ -133,38 +133,50 @@ Value chr(Value *args, Location loc) {
     return (Value) {0};
 }
 
+Value foobar(Value *args, Location loc) {
+    (void)loc;
+    printf("foobar %ld\n", args[0].val.num);
+    return (Value) {0};
+}
+
 typedef Value (*Native)(Value*, Location);
 
-//    c function name     suda function name     number of arguments
+//    c function name     suda function name     number of arguments     returns value
 #define NATIVES \
-    X(add1,         add1,  1)\
-    X(input,        input, 0)\
-    X(clock_native, clock, 0)\
-    X(len,          len,   1)\
-    X(exit_native,  exit,  1)\
-    X(rand_native,  rand,  0)\
-    X(pop,          pop,   1)\
-    X(ord,          ord,   1)\
-    X(chr,          chr,   1)\
+    X(add1,         add1,  1, 1)\
+    X(input,        input, 0, 1)\
+    X(clock_native, clock, 0, 1)\
+    X(len,          len,   1, 1)\
+    X(exit_native,  exit,  1, 1)\
+    X(rand_native,  rand,  0, 1)\
+    X(pop,          pop,   1, 1)\
+    X(ord,          ord,   1, 1)\
+    X(chr,          chr,   1, 1)\
+    X(foobar, foobar, 1, 0)\
 
-#define X(func, name, arity) func,
+#define X(func, name, arity, returns_value) func,
 Native natives[] = {
     NATIVES
 };
 #undef X
 
-#define X(func, name, arity) #name,
+#define X(func, name, arity, returns_value) #name,
 char* native_names[] = {
     NATIVES
 };
 #undef X
 
-#define X(func, name, arity) arity,
+#define X(func, name, arity, returns_value) arity,
 int native_arities[] = {
     NATIVES
 };
 #undef X
 
+#define X(func, name, arity, returns_value) returns_value,
+int native_returns_value[] = {
+    NATIVES
+};
+#undef X
 
 int is_native(char *func) {
     for (u_int32_t i = 0; i < (sizeof(native_names) / 8); i++)

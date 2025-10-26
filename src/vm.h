@@ -307,8 +307,8 @@ void disassemble(VM *vm) {
                     i += 2;
                     break;
                 case OP_CALL_NATIVE:
-                    printf("%-6d %s OP_CALL_NATIVE:       func: %s\n", i, line_str, native_names[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])]); 
-                    i += 2;
+                    printf("%-6d %s OP_CALL_NATIVE:       func: %s, returns value %d\n", i, line_str, native_names[COMBYTE(func.code.data[i + 1], func.code.data[i + 2])], func.code.data[i + 3]); 
+                    i += 3;
                     break;
                 case OP_RETURN:
                     printf("%-6d %s OP_RETURN\n", i, line_str);
@@ -907,6 +907,9 @@ void run(VM *vm) {
             vm->stack_top -= native_arities[read_index];
             stack_push(result);
             pc += 2;
+            if (vm->func->code.data[pc + 1])
+                stack_push(result);
+            pc++;
             dispatch();}
         OP_RETURN:{
             #ifdef PROFILE
