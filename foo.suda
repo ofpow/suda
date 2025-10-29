@@ -1,6 +1,10 @@
-fn fib(n) 
-    if (n < 2) return 1;
-    return fib(n - 2) + fib(n - 1)
-;
+fn foo()
+    let x = [1, 2, 3]
+    let y = [4, 5, 6]
 
-println fib(20)
+    
+    append x y
+    return x
+;
+let var = foo()
+println var

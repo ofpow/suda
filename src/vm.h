@@ -66,13 +66,21 @@ Value *dup_array(Value *val) {
     Value *array = calloc(ARRAY_SIZE(val[0].val.num), sizeof(Value));
 
     u_int32_t len = ARRAY_LEN(val[0].val.num);
-    for (u_int32_t i = 0; i < len; i++) {
-        if ((val[i].type == Value_Number) || (val[i].type == Value_Array)) {
+    array[0] = val[0];
+    for (u_int32_t i = 1; i < len; i++) {
+        if (val[i].type == Value_Number) {
             array[i] = val[i];
         } else if (val[i].type == Value_String) {
             array[i] = (Value){
                 Value_String,
                 .val.str={strdup(val[i].val.str.chars), val[i].val.str.len},
+                true,
+                0
+            };
+        } else if (val[i].type == Value_Array) {
+            array[i] = (Value){
+                Value_Array,
+                .val.array=dup_array(val[i].val.array),
                 true,
                 0
             };
